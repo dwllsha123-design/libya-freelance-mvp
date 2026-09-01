@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { Cairo } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   description: PLATFORM_TAGLINE_AR,
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-[#F6F8FA] font-sans text-[#0B132B] antialiased">
