@@ -1,8 +1,6 @@
 import {
   ConflictException,
   ForbiddenException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
   PreconditionFailedException,
@@ -22,8 +20,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PaymentService } from '../payments/payment.service.js';
 import { ProposalStateService } from '../proposals/proposal-validation.util.js';
+import { acceptProposalInTransaction } from '../proposals/proposal-acceptance.util.js';
 import { calculateEscrowFees, ESCROW_CURRENCY } from './escrow.constants.js';
-import { ProposalsService } from '../proposals/proposals.service.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -33,8 +31,6 @@ export class EscrowService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly paymentService: PaymentService,
-    @Inject(forwardRef(() => ProposalsService))
-    private readonly proposalsService: ProposalsService,
   ) {}
 
   async getByProposal(proposalId: string, userId: string) {
@@ -226,12 +222,7 @@ export class EscrowService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       await this.ensureFundedEscrowInTx(tx, clientId, proposal);
-      return this.proposalsService.acceptInTransaction(
-        tx,
-        proposalId,
-        proposal.projectId,
-        pendingFreelancerIds,
-      );
+      return acceptProposalInTransaction(tx, proposalId, proposal.projectId);
     });
 
     await this.notifications.create(
@@ -266,7 +257,22 @@ export class EscrowService {
       }
     }
 
-    return this.proposalsService.getClientProposalById(clientId, proposalId);
+    const accepted = await this.prisma.proposal.findUniqueOrThrow({
+      where: { id: proposalId },
+      select: {
+        id: true,
+        status: true,
+        coverLetter: true,
+        proposedPrice: true,
+        estimatedDurationDays: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...accepted,
+      proposedPrice: Number(accepted.proposedPrice),
+    };
   }
 
   async assertFundedForAccept(proposalId: string) {
