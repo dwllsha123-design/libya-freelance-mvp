@@ -1,0 +1,4 @@
+export const COVER_LETTER_MIN = 50;
+export const COVER_LETTER_MAX = 5000;
+export const ESTIMATED_DURATION_MIN_DAYS = 1;
+export const ESTIMATED_DURATION_MAX_DAYS = 365;

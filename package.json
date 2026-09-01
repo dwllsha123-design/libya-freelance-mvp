@@ -1,0 +1,21 @@
+{
+  "name": "libya-freelance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Libya Freelance — ليبيا فريلانس marketplace MVP",
+  "scripts": {
+    "dev:api": "npm run start:dev --prefix backend",
+    "dev:web": "npm run dev --prefix frontend",
+    "build:api": "npm run build --prefix backend",
+    "build:web": "npm run build --prefix frontend",
+    "lint:api": "npm run lint --prefix backend",
+    "lint:web": "npm run lint --prefix frontend",
+    "typecheck:api": "npm run typecheck --prefix backend",
+    "typecheck:web": "npm run typecheck --prefix frontend",
+    "test:api": "npm run test --prefix backend",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "test:db:start": "docker compose -f docker-compose.test.yml up -d --wait",
+    "test:db:stop": "docker compose -f docker-compose.test.yml down -v"
+  }
+}
