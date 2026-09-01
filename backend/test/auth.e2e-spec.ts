@@ -225,7 +225,7 @@ describe('Auth E2E (PostgreSQL)', () => {
     const agent = authAgent(app);
     const email = `rotate-${Date.now()}@test.ly`;
 
-    await agent
+    const registerRes = await agent
       .post('/api/auth/register')
       .set(CLIENT_HEADER)
       .send({
@@ -238,26 +238,22 @@ describe('Auth E2E (PostgreSQL)', () => {
       })
       .expect(201);
 
-    const cookies = (await agent.post('/api/auth/refresh').set(CLIENT_HEADER))
-      .headers['set-cookie'];
+    const setCookie = registerRes.headers['set-cookie'];
+    expect(setCookie).toBeTruthy();
 
-    expect(cookies).toBeTruthy();
+    const oldRefreshCookie = (
+      Array.isArray(setCookie) ? setCookie[0] : setCookie
+    ).split(';')[0];
+
+    await agent.post('/api/auth/refresh').set(CLIENT_HEADER).expect(200);
 
     const agent2 = authAgent(app);
-    if (cookies) {
-      const cookiePair = Array.isArray(cookies) ? cookies[0] : cookies;
-      const cookieValue = cookiePair.split(';')[0];
-
-      await agent2
-        .post('/api/auth/refresh')
-        .set(CLIENT_HEADER)
-        .set('Cookie', cookieValue)
-        .expect(200);
-    }
-
-    await agent
+    await agent2
       .post('/api/auth/refresh')
       .set(CLIENT_HEADER)
+      .set('Cookie', oldRefreshCookie)
       .expect(401);
+
+    await agent.post('/api/auth/refresh').set(CLIENT_HEADER).expect(200);
   });
 });

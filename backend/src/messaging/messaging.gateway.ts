@@ -1,4 +1,5 @@
 import {
+  Ack,
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
@@ -110,11 +111,13 @@ export class MessagingGateway
   async handleJoin(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
 
     if (!user) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     const allowed = await this.messagingService.authorizeRoomJoin(
@@ -123,23 +126,26 @@ export class MessagingGateway
     );
 
     if (!allowed) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     await client.join(conversationRoom(body.conversationId));
 
-    return { ok: true };
+    ack({ ok: true });
   }
 
   @SubscribeMessage('message:send')
   async handleSend(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string; content: string },
+    @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
 
     if (!user) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     const allowed = await this.messagingService.authorizeRoomJoin(
@@ -148,7 +154,8 @@ export class MessagingGateway
     );
 
     if (!allowed) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     const message = await this.messagingService.sendMessage(
@@ -166,19 +173,24 @@ export class MessagingGateway
       lastMessageAt: message.createdAt,
     });
 
-    return { message };
+    ack({ message });
   }
 
   @SubscribeMessage('typing:start')
   async handleTypingStart(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
-    if (!user) return { error: 'غير مصرح' };
+    if (!user) {
+      ack({ error: 'غير مصرح' });
+      return;
+    }
 
     if (!this.messagingService.assertTypingRateLimit(user.id)) {
-      return { throttled: true };
+      ack({ throttled: true });
+      return;
     }
 
     const allowed = await this.messagingService.authorizeRoomJoin(
@@ -187,7 +199,8 @@ export class MessagingGateway
     );
 
     if (!allowed) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     client
@@ -197,19 +210,24 @@ export class MessagingGateway
         userId: user.id,
       });
 
-    return { ok: true };
+    ack({ ok: true });
   }
 
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
-    if (!user) return { error: 'غير مصرح' };
+    if (!user) {
+      ack({ error: 'غير مصرح' });
+      return;
+    }
 
     if (!this.messagingService.assertTypingRateLimit(user.id)) {
-      return { throttled: true };
+      ack({ throttled: true });
+      return;
     }
 
     const allowed = await this.messagingService.authorizeRoomJoin(
@@ -218,7 +236,8 @@ export class MessagingGateway
     );
 
     if (!allowed) {
-      return { error: 'غير مصرح' };
+      ack({ error: 'غير مصرح' });
+      return;
     }
 
     client
@@ -228,7 +247,7 @@ export class MessagingGateway
         userId: user.id,
       });
 
-    return { ok: true };
+    ack({ ok: true });
   }
 }
-
+

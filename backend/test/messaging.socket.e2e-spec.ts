@@ -16,6 +16,7 @@ import {
 } from './helpers/project-e2e.helpers.js';
 import {
   connectSocket,
+  emitWithAck,
   expectUnauthenticatedSocketRejected,
 } from './helpers/socket-e2e.helpers.js';
 
@@ -114,14 +115,10 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
 
     const socket = await connectSocket(baseUrl, client.accessToken);
 
-    const joinResult = await new Promise<{ ok?: boolean; error?: string }>(
-      (resolve) => {
-        socket.emit(
-          'conversation:join',
-          { conversationId: conv.body.conversationId },
-          resolve,
-        );
-      },
+    const joinResult = await emitWithAck<{ ok?: boolean; error?: string }>(
+      socket,
+      'conversation:join',
+      { conversationId: conv.body.conversationId },
     );
 
     expect(joinResult.ok).toBe(true);
@@ -156,14 +153,10 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
 
     const socket = await connectSocket(baseUrl, outsider.accessToken);
 
-    const joinResult = await new Promise<{ ok?: boolean; error?: string }>(
-      (resolve) => {
-        socket.emit(
-          'conversation:join',
-          { conversationId: conv.body.conversationId },
-          resolve,
-        );
-      },
+    const joinResult = await emitWithAck<{ ok?: boolean; error?: string }>(
+      socket,
+      'conversation:join',
+      { conversationId: conv.body.conversationId },
     );
 
     expect(joinResult.error).toBeTruthy();
@@ -199,19 +192,11 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
     const senderSocket = await connectSocket(baseUrl, client.accessToken);
 
     await Promise.all([
-      new Promise<void>((resolve) => {
-        recipientSocket.emit(
-          'conversation:join',
-          { conversationId: conv.body.conversationId },
-          () => resolve(),
-        );
+      emitWithAck(recipientSocket, 'conversation:join', {
+        conversationId: conv.body.conversationId,
       }),
-      new Promise<void>((resolve) => {
-        senderSocket.emit(
-          'conversation:join',
-          { conversationId: conv.body.conversationId },
-          () => resolve(),
-        );
+      emitWithAck(senderSocket, 'conversation:join', {
+        conversationId: conv.body.conversationId,
       }),
     ]);
 
@@ -219,18 +204,12 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
       recipientSocket.on('message:new', (message) => resolve(message));
     });
 
-    const sendResult = await new Promise<{
+    const sendResult = await emitWithAck<{
       message?: { id: string; content: string };
       error?: string;
-    }>((resolve) => {
-      senderSocket.emit(
-        'message:send',
-        {
-          conversationId: conv.body.conversationId,
-          content: 'رسالة socket اختبار',
-        },
-        resolve,
-      );
+    }>(senderSocket, 'message:send', {
+      conversationId: conv.body.conversationId,
+      content: 'رسالة socket اختبار',
     });
 
     expect(sendResult.message?.content).toContain('socket');
@@ -275,14 +254,10 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
 
     const outsiderSocket = await connectSocket(baseUrl, outsider.accessToken);
 
-    const result = await new Promise<{ ok?: boolean; error?: string }>(
-      (resolve) => {
-        outsiderSocket.emit(
-          'typing:start',
-          { conversationId: conv.body.conversationId },
-          resolve,
-        );
-      },
+    const result = await emitWithAck<{ ok?: boolean; error?: string }>(
+      outsiderSocket,
+      'typing:start',
+      { conversationId: conv.body.conversationId },
     );
 
     expect(result.error).toBeTruthy();
@@ -316,22 +291,14 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
 
     const clientSocket = await connectSocket(baseUrl, client.accessToken);
 
-    await new Promise<void>((resolve) => {
-      clientSocket.emit(
-        'conversation:join',
-        { conversationId: conv.body.conversationId },
-        () => resolve(),
-      );
+    await emitWithAck(clientSocket, 'conversation:join', {
+      conversationId: conv.body.conversationId,
     });
 
-    const result = await new Promise<{ ok?: boolean; error?: string }>(
-      (resolve) => {
-        clientSocket.emit(
-          'typing:start',
-          { conversationId: conv.body.conversationId },
-          resolve,
-        );
-      },
+    const result = await emitWithAck<{ ok?: boolean; error?: string }>(
+      clientSocket,
+      'typing:start',
+      { conversationId: conv.body.conversationId },
     );
 
     expect(result.ok).toBe(true);

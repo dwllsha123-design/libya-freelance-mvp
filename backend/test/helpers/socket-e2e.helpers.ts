@@ -31,6 +31,15 @@ export function connectSocket(baseUrl: string, token: string): Promise<Socket> {
   });
 }
 
+export function emitWithAck<T>(
+  socket: Socket,
+  event: string,
+  payload: unknown,
+  timeoutMs = 5000,
+): Promise<T> {
+  return socket.timeout(timeoutMs).emitWithAck(event, payload);
+}
+
 export function expectUnauthenticatedSocketRejected(baseUrl: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = io(baseUrl, {
@@ -43,10 +52,6 @@ export function expectUnauthenticatedSocketRejected(baseUrl: string): Promise<vo
       socket.disconnect();
       reject(new Error('Unauthenticated socket was not rejected in time'));
     }, SOCKET_TIMEOUT_MS);
-
-    socket.on('connect', () => {
-      // Wait for server-side disconnect after failed auth.
-    });
 
     socket.on('connect_error', () => {
       clearTimeout(timer);

@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role, UserStatus } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { PUBLIC_ROLES } from './constants.js';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -334,6 +335,7 @@ export class AuthService {
     const refreshPayload = {
       sub: user.id,
       type: 'refresh' as const,
+      jti: randomUUID(),
     };
 
     const accessExpiresIn = (this.configService.get<string>('jwt.accessExpiresIn') ??
