@@ -36,7 +36,7 @@ export default function AdminUsersPage() {
   }, [api, page, q]);
 
   return (
-    <div>
+    <div className="min-w-0">
       <h1 className="text-2xl font-bold">المستخدمون</h1>
       <div className="mt-4">
         <AdminSearch value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="بحث بالاسم أو البريد" />
@@ -61,8 +61,8 @@ export default function AdminUsersPage() {
             <tbody>
               {data.items.map((user) => (
                 <tr key={String(user.id)} className="border-t">
-                  <td className="px-4 py-3">{String(user.displayName ?? '—')}</td>
-                  <td className="px-4 py-3">{String(user.email)}</td>
+                  <td className="max-w-[10rem] truncate px-4 py-3">{String(user.displayName ?? '—')}</td>
+                  <td className="max-w-[12rem] break-all px-4 py-3">{String(user.email)}</td>
                   <td className="px-4 py-3">{String(user.role)}</td>
                   <td className="px-4 py-3">
                     <StatusBadge

@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { use } from 'react';
+import { BackLink } from '@/components/ui/back-link';
 import { ChatPanel } from '@/components/messaging/chat-panel';
 
 export default function ConversationPage({
@@ -13,12 +13,12 @@ export default function ConversationPage({
 
   return (
     <>
-      <div className="flex items-center gap-3 border-b p-3 lg:hidden">
-        <Link href="/messages" className="text-sm text-[#00A86B]">
-          ← الرسائل
-        </Link>
+      <div className="flex shrink-0 items-center gap-3 border-b p-3 lg:hidden">
+        <BackLink href="/messages">الرسائل</BackLink>
       </div>
-      <ChatPanel conversationId={conversationId} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <ChatPanel conversationId={conversationId} />
+      </div>
     </>
   );
 }

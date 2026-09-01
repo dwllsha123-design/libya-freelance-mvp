@@ -91,7 +91,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="text-left">
+          <div className="text-end">
             <Link href="/forgot-password" className="text-sm text-[#00A86B]">
               نسيت كلمة المرور؟
             </Link>

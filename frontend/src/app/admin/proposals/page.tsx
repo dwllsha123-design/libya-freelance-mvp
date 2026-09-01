@@ -16,7 +16,7 @@ export default function AdminProposalsPage() {
   }, [api, page]);
 
   return (
-    <div>
+    <div className="min-w-0">
       <h1 className="text-2xl font-bold">العروض</h1>
       <p className="mt-2 text-sm text-slate-500">للاطلاع والمراجعة فقط — لا يمكن قبول العروض من لوحة الإدارة.</p>
       <div className="mt-6 overflow-x-auto rounded-xl border bg-white">
@@ -31,8 +31,8 @@ export default function AdminProposalsPage() {
             <tbody>
               {data.items.map((p) => (
                 <tr key={String(p.id)} className="border-t">
-                  <td className="px-4 py-3">{String((p.project as { title?: string })?.title ?? '—')}</td>
-                  <td className="px-4 py-3">{String((p.freelancer as { displayName?: string })?.displayName ?? '—')}</td>
+                  <td className="max-w-[12rem] truncate px-4 py-3">{String((p.project as { title?: string })?.title ?? '—')}</td>
+                  <td className="max-w-[10rem] truncate px-4 py-3">{String((p.freelancer as { displayName?: string })?.displayName ?? '—')}</td>
                   <td className="px-4 py-3">{String(p.proposedPrice)}</td>
                   <td className="px-4 py-3">{String(p.status)}</td>
                 </tr>

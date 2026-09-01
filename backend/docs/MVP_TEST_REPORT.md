@@ -90,11 +90,13 @@
 | Package | Critical | High | Moderate | Low |
 |---------|----------|------|----------|-----|
 | frontend | 0 | 0 | 0 | 0 |
-| backend | 0 | 5 | 1 | 2 |
+| backend (2026-09-01, after removing `@nestjs/mau`) | 0 | 3 | 0 | 0 |
 
-Backend highs are in dev-tooling paths (`@nestjs/mau` → `undici`, `tmp`); not blindly force-upgraded.
+Backend remaining highs: `prisma` → `@prisma/config` → `deepmerge-ts` (dev/CLI only). Full assessment: `docs/DEPENDENCY_AUDIT.md`.
 
 ## Bugs fixed during verification (2026-09-01)
+
+### CI / backend
 
 1. Auth rate limits blocked E2E registration (429) — disabled in `NODE_ENV=test` / `REQUIRE_E2E=1`.
 2. Refresh tokens lacked `jti` — duplicate `tokenHash` on rapid register/login.
@@ -105,16 +107,24 @@ Backend highs are in dev-tooling paths (`@nestjs/mau` → `undici`, `tmp`); not 
 7. Review unauthorized users returned 400 instead of 403.
 8. Accept on closed project returned 400 instead of 409.
 
+### Web QA gate (frontend, same date)
+
+9. Mobile navigation missing — messages unreachable below 768px (`navbar.tsx` hamburger drawer).
+10. Messages layout scroll/composer broken on mobile — flex `min-h-0`, `100dvh` height chain.
+11. `/how-it-works` 404 — homepage section anchor `id="how-it-works"`.
+12. RTL back links and filter drawer — `BackLink`, logical `end`/`start` positioning.
+13. Admin table overflow on narrow screens — truncation/`break-all`.
+14. Removed unused `@nestjs/mau` devDependency (audit noise).
+
 ## Not verified in this report
 
-- Manual responsive WEB QA (390–1920px breakpoints)
-- Cross-browser manual QA (Chrome/Edge/Safari)
-- RTL visual audit
-- Production boot on target hosting
-- Demo seed execution in test environment (production block code-reviewed only)
+- Full manual responsive WEB QA at all breakpoints (partial code review — see `docs/WEB_QA_REPORT.md`)
+- Cross-browser manual QA (Chrome/Edge/Safari) on staging
+- Staging HTTPS deployment smoke (`docs/STAGING_SMOKE_REPORT.md`)
+- Demo seed execution with `NODE_ENV=production` (code guard verified in `seed-demo.ts`)
 
 ## Beta readiness status
 
-**BACKEND VERIFIED — WEB STAGING QA PENDING**
+**BACKEND VERIFIED — STAGING + FULL BROWSER QA PENDING**
 
-All PostgreSQL migrations, seeds, unit tests, and E2E suites (×2) pass in CI with zero skipped marketplace tests. Manual responsive/browser QA and production deployment smoke test remain before full **BETA READY** classification.
+All PostgreSQL migrations, seeds, unit tests, and E2E suites (×2) pass in CI with zero skipped marketplace tests. Staging deployment, HTTPS cookie/CORS/Socket.IO integration, and complete responsive browser matrix remain before **BETA READY**. See `docs/BETA_READINESS.md`.

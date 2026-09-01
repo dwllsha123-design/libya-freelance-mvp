@@ -127,7 +127,7 @@ export default function ProjectsDirectoryPage() {
               aria-label="إغلاق الفلاتر"
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className="absolute inset-y-0 right-0 w-full max-w-sm overflow-y-auto bg-[#F6F8FA] p-4 shadow-xl">
+            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto bg-[#F6F8FA] p-4 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-bold">فلترة المشاريع</h2>
                 <button
@@ -177,7 +177,7 @@ export default function ProjectsDirectoryPage() {
             >
               فلترة
               {activeFilterCount > 0 ? (
-                <span className="absolute -left-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#00A86B] text-xs text-white">
+                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#00A86B] text-xs text-white">
                   {activeFilterCount}
                 </span>
               ) : null}

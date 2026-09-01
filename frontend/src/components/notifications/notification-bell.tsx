@@ -148,7 +148,7 @@ export function NotificationBell() {
       >
         <span aria-hidden>🔔</span>
         {badge ? (
-          <span className="absolute -left-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
             {badge}
           </span>
         ) : null}
@@ -156,7 +156,7 @@ export function NotificationBell() {
 
       {open ? (
         <div
-          className="absolute left-0 top-full z-50 mt-2 hidden w-80 rounded-xl border bg-white p-3 shadow-xl md:block"
+          className="absolute end-0 top-full z-50 mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-xl border bg-white p-3 shadow-xl md:block"
           role="menu"
           aria-label="أحدث الإشعارات"
         >

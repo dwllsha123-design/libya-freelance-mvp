@@ -20,7 +20,7 @@ export default function AdminProjectsPage() {
   }, [api, page]);
 
   return (
-    <div>
+    <div className="min-w-0">
       <h1 className="text-2xl font-bold">المشاريع</h1>
       <div className="mt-6 overflow-x-auto rounded-xl border bg-white">
         {!data?.items.length ? (
@@ -37,8 +37,8 @@ export default function AdminProjectsPage() {
             <tbody>
               {data.items.map((p) => (
                 <tr key={String(p.id)} className="border-t">
-                  <td className="px-4 py-3">{String(p.title)}</td>
-                  <td className="px-4 py-3">{String((p.client as { displayName?: string })?.displayName ?? '—')}</td>
+                  <td className="max-w-[12rem] truncate px-4 py-3">{String(p.title)}</td>
+                  <td className="max-w-[10rem] truncate px-4 py-3">{String((p.client as { displayName?: string })?.displayName ?? '—')}</td>
                   <td className="px-4 py-3"><StatusBadge label={projectStatusLabel(String(p.status))} tone="info" /></td>
                   <td className="px-4 py-3">{String(p.proposalCount)}</td>
                   <td className="px-4 py-3"><Link href={`/admin/projects/${p.id}`} className="text-[#00A86B]">عرض</Link></td>

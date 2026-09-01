@@ -32,7 +32,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-16">
+      <section id="how-it-works" className="mx-auto max-w-5xl px-4 py-16 scroll-mt-20">
         <h2 className="text-2xl font-bold text-[#0B132B]">كيف تعمل المنصة</h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {[

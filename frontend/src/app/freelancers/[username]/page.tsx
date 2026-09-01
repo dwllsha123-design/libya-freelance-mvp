@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { apiRequest, type PublicPortfolioItem, type PublicProfile } from '@/lib/api';
-import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { ProfileReviewsSection } from '@/components/rating/profile-reviews-section';
 
 function isSafeUrl(url: string) {
@@ -51,7 +51,7 @@ export default function FreelancerProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <Link href="/freelancers" className="text-sm text-[#00A86B]">← العودة للمستقلين</Link>
+      <BackLink href="/freelancers">العودة للمستقلين</BackLink>
 
       <div className="mt-6 rounded-2xl border bg-white p-8 shadow-sm">
         <h1 className="text-3xl font-bold text-[#0B132B]">

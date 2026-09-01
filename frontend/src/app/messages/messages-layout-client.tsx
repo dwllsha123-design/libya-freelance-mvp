@@ -43,14 +43,14 @@ export default function MessagesLayoutClient({
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl overflow-hidden rounded-xl border bg-white shadow-sm">
-      <aside className="hidden w-full max-w-sm shrink-0 border-l lg:block lg:w-80">
+    <div className="mx-auto flex h-[min(100dvh-7rem,48rem)] min-h-[20rem] w-full max-w-6xl flex-1 overflow-hidden rounded-xl border bg-white shadow-sm sm:h-[min(100dvh-8rem,52rem)]">
+      <aside className="hidden w-full max-w-sm shrink-0 border-s border-slate-200 lg:block lg:w-80">
         <div className="border-b p-4">
           <h1 className="text-xl font-bold text-[#0B132B]">الرسائل</h1>
         </div>
         <ConversationList conversations={conversations} isLoading={isLoading} />
       </aside>
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</main>
     </div>
   );
 }

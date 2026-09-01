@@ -51,7 +51,7 @@ export function ConversationList({
                     </p>
                   ) : null}
                 </div>
-                <div className="shrink-0 text-left">
+                <div className="shrink-0 text-end">
                   <p className="text-xs text-slate-400">
                     {new Date(c.lastMessageAt).toLocaleDateString('ar-LY')}
                   </p>

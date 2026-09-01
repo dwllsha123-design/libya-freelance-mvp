@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-[#F6F8FA] font-sans text-[#0B132B] antialiased">
+      <body className="flex min-h-full flex-col overflow-x-hidden bg-[#F6F8FA] font-sans text-[#0B132B] antialiased">
         <AuthProvider>
           <SocketProvider>
             <AppChrome>{children}</AppChrome>

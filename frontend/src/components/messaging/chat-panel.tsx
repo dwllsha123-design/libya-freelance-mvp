@@ -109,8 +109,8 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-1 flex-col">
-      <div className="border-b bg-white p-4">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b bg-white p-4">
         <h2 className="font-bold text-[#0B132B]">
           {conversation?.otherParticipant?.name}
         </h2>
@@ -122,7 +122,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[#F6F8FA] p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F6F8FA] p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-slate-500">لا توجد رسائل بعد — ابدأ المحادثة</p>
         ) : null}
@@ -157,7 +157,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
       </div>
 
       {conversation?.canSend ? (
-        <form onSubmit={(e) => void handleSend(e)} className="border-t bg-white p-4">
+        <form onSubmit={(e) => void handleSend(e)} className="shrink-0 border-t bg-white p-4">
           {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
           <div className="flex gap-2">
             <input
@@ -177,7 +177,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
           </div>
         </form>
       ) : (
-        <p className="border-t bg-amber-50 p-4 text-center text-sm text-amber-800">
+        <p className="shrink-0 border-t bg-amber-50 p-4 text-center text-sm text-amber-800">
           هذه المحادثة للقراءة فقط
         </p>
       )}

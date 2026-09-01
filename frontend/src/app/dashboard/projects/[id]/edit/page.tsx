@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { ProjectStatusActions } from '@/components/projects/project-status-actions';
 import { ProjectCompletionPanel } from '@/components/projects/project-completion-panel';
 import { useAuth } from '@/contexts/auth-context';
@@ -103,7 +103,7 @@ export default function EditProjectPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/dashboard/projects" className="text-sm text-[#00A86B]">← مشاريعي</Link>
+      <BackLink href="/dashboard/projects">مشاريعي</BackLink>
       <h1 className="mt-4 text-3xl font-bold text-[#0B132B]">تعديل المشروع</h1>
 
       {readOnly ? (

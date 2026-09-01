@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ProposalFormModal } from '@/components/proposals/proposal-form-modal';
+import { BackLink } from '@/components/ui/back-link';
 import { useAuth } from '@/contexts/auth-context';
 import { useProjectsApi } from '@/hooks/use-projects';
 import { useProposalsApi, type FreelancerProposal } from '@/hooks/use-proposals';
@@ -85,9 +86,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <Link href="/projects" className="text-sm text-[#00A86B]">
-        ← تصفح المشاريع
-      </Link>
+      <BackLink href="/projects">تصفح المشاريع</BackLink>
 
       <article className="mt-6">
         <h1 className="text-3xl font-bold text-[#0B132B]">{project.title}</h1>

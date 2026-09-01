@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { useAuth } from '@/contexts/auth-context';
 import { ProjectForm, type ProjectFormValues } from '@/components/projects/project-form';
 import { useProjectsApi } from '@/hooks/use-projects';
@@ -85,7 +86,7 @@ export default function NewProjectPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/dashboard/projects" className="text-sm text-[#00A86B]">← مشاريعي</Link>
+      <BackLink href="/dashboard/projects">مشاريعي</BackLink>
       <h1 className="mt-4 text-3xl font-bold text-[#0B132B]">مشروع جديد</h1>
       <div className="mt-8">
         <ProjectForm

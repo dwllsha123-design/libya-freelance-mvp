@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
@@ -96,9 +97,7 @@ export default function ProjectProposalsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <Link href="/dashboard/projects" className="text-sm text-[#00A86B]">
-        ← مشاريعي
-      </Link>
+      <BackLink href="/dashboard/projects">مشاريعي</BackLink>
       <h1 className="mt-4 text-3xl font-bold text-[#0B132B]">عروض المشروع</h1>
 
       {error ? <p className="mt-4 text-red-600">{error}</p> : null}
