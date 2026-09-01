@@ -82,10 +82,7 @@ describe('Auth E2E (PostgreSQL)', () => {
 
     await agent.post('/api/auth/logout').set(CLIENT_HEADER).expect(200);
 
-    await agent
-      .get('/api/auth/me')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(401);
+    await agent.post('/api/auth/refresh').set(CLIENT_HEADER).expect(401);
   });
 
   it('registers FREELANCER successfully', async (ctx) => {

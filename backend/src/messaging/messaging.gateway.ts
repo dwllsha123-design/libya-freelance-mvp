@@ -15,6 +15,7 @@ import { Logger } from '@nestjs/common';
 import type { Server, Socket } from 'socket.io';
 
 import type { AuthUser } from '../auth/types/auth-user.type.js';
+import { Public } from '../common/decorators/public.decorator.js';
 import { NotificationsRealtimeService } from '../notifications/notifications-realtime.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { conversationRoom } from './messaging.constants.js';
@@ -24,6 +25,7 @@ interface AuthenticatedSocket extends Socket {
   data: { user?: AuthUser };
 }
 
+@Public()
 @WebSocketGateway({
   cors: {
     origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
@@ -109,8 +111,8 @@ export class MessagingGateway
 
   @SubscribeMessage('conversation:join')
   async handleJoin(
-    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
     @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
@@ -137,8 +139,8 @@ export class MessagingGateway
 
   @SubscribeMessage('message:send')
   async handleSend(
-    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string; content: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
     @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
@@ -178,8 +180,8 @@ export class MessagingGateway
 
   @SubscribeMessage('typing:start')
   async handleTypingStart(
-    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
     @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
@@ -215,8 +217,8 @@ export class MessagingGateway
 
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
-    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: { conversationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
     @Ack() ack: (response: unknown) => void,
   ) {
     const user = await this.requireActiveUser(client);
