@@ -47,34 +47,95 @@ Cross-subdomain cookie issues may require `sameSite=lax` — test login/refresh 
 
 ## Database migrations (production)
 
+Migrations run in a **separate CI/release job** (Pattern A), not inside the production API runtime.
+
+### Pattern A — CI / release migration job (selected for this project)
+
+GitHub Actions CI implements this pattern. For non-Docker hosts, use the **runtime packager** (deterministic `.prisma` copy):
+
+1. **Migration job** (full dev + build dependencies):
+   ```bash
+   cd backend
+   npm ci --legacy-peer-deps          # lockfile-pinned; never npm install
+   node node_modules/prisma/build/index.js validate
+   node node_modules/prisma/build/index.js generate
+   node node_modules/prisma/build/index.js migrate deploy   # staging/production DATABASE_URL
+   node node_modules/prisma/build/index.js migrate status
+   npm run prisma:seed                # reference data only; never prisma:seed:demo in production
+   npm run build
+   ```
+2. **Runtime bundle** (automated — no manual copy):
+   ```bash
+   cd backend
+   npm run package:runtime            # creates .runtime-bundle/ with dist + .prisma + prod deps
+   cd .runtime-bundle && node dist/main.js
+   ```
+
+CI reference: `.github/workflows/ci.yml` — migrations, E2E, `verify:prod-boundary`, `package:runtime`.
+
+### Pattern B — multi-stage Docker
+
+Dockerfiles are checked in:
+
+| Image | File |
+|-------|------|
+| Backend runtime | `backend/Dockerfile` (target `runtime`) |
+| Backend build/migrate | `backend/Dockerfile` (target `build`) |
+| Frontend | `frontend/Dockerfile` |
+
+Local staging reference: `docker-compose.staging.yml` (PostgreSQL + API + web; run `migrate` profile for deploy/seed).
+
 ```bash
-npx prisma migrate deploy
+# Build backend runtime image (Prisma client copied in Dockerfile — deterministic)
+docker build -f backend/Dockerfile --target runtime -t libya-freelance-api ./backend
+
+# Migrations (separate job / compose profile — NOT in runtime container)
+docker compose -f docker-compose.staging.yml --profile tools run --rm migrate
 ```
-
-**Never** use `prisma migrate dev` or `prisma db push` against production.
-
-**Never** run `prisma:seed:demo` in production.
 
 ## Build & start
 
 ```bash
-# Backend
-cd backend && npm ci && npx prisma generate && npm run build
-npm run start:prod
+# Build stage (CI or release)
+cd backend && npm ci --legacy-peer-deps
+node node_modules/prisma/build/index.js generate
+npm run build
+
+# Runtime (automated bundle — recommended)
+npm run package:runtime
+cd .runtime-bundle && node dist/main.js
 
 # Frontend
-cd frontend && npm ci && npm run build
-npm run start
+cd frontend && npm ci && npm run build && npm run start
 ```
+
+**Never** use `prisma migrate dev` or `prisma db push` against production/staging databases.
+
+**Never** run `prisma:seed:demo` when `NODE_ENV=production`.
+
+Verify: `npm run verify:prod-boundary` and `npm run package:runtime`
+
+Use **`npm ci`** (not `npm install`) in all deploy pipelines to preserve the lockfile.
+
+Do **not** run `npm audit fix --force` during deployment.
 
 ## Health checks
 
 - Liveness: `GET /api/health`
 - Readiness: `GET /api/health/ready` (includes DB connectivity)
 
+## Staging URLs (target)
+
+| Service | URL | Status |
+|---------|-----|--------|
+| Frontend | `https://staging.libyafreelance.ly` | **NOT DEPLOYED** — no hosting/DNS/credentials in repo |
+| API | `https://api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
+
+Reference stack: `docker-compose.staging.yml`
+
 ## Storage
 
-Development may serve `uploads/` locally. Production must use object storage adapter (configure when deploying).
+**Beta blocker:** Only `LocalStorageService` is implemented (`backend/src/storage/`). Production and staging require an S3-compatible adapter (R2, S3, Spaces). Local `uploads/` is acceptable for development only.
 
 ## Rate limiting
 

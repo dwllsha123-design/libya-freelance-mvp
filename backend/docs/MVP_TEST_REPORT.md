@@ -123,8 +123,20 @@ Backend remaining highs: `prisma` → `@prisma/config` → `deepmerge-ts` (dev/C
 - Staging HTTPS deployment smoke (`docs/STAGING_SMOKE_REPORT.md`)
 - Demo seed execution with `NODE_ENV=production` (code guard verified in `seed-demo.ts`)
 
+## Deployment automation (final beta gate, 2026-09-01)
+
+| Artifact | Purpose |
+|----------|---------|
+| `npm run package:runtime` | Deterministic runtime bundle with `node_modules/.prisma` copied automatically |
+| `npm run verify:prod-boundary` | Validates `--omit=dev` excludes Prisma CLI; runtime boots |
+| `backend/Dockerfile` | Multi-stage build; runtime stage copies `.prisma` in Dockerfile |
+| `frontend/Dockerfile` | Next.js production image |
+| `docker-compose.staging.yml` | Reference staging stack (PostgreSQL + migrate profile + API + web) |
+
+CI workflow includes `verify:prod-boundary` and `package:runtime` after backend build.
+
 ## Beta readiness status
 
-**BACKEND VERIFIED — STAGING + FULL BROWSER QA PENDING**
+**NOT YET BETA READY**
 
-All PostgreSQL migrations, seeds, unit tests, and E2E suites (×2) pass in CI with zero skipped marketplace tests. Staging deployment, HTTPS cookie/CORS/Socket.IO integration, and complete responsive browser matrix remain before **BETA READY**. See `docs/BETA_READINESS.md`.
+Automated verification complete. Staging deployment, persistent object storage, HTTPS integration tests, and full browser responsive QA remain. See `docs/BETA_READINESS.md` and `docs/STAGING_SMOKE_REPORT.md`.

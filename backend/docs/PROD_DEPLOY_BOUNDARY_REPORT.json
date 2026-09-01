@@ -1,0 +1,23 @@
+{
+  "auditedAt": "2026-09-01T20:30:00.000Z",
+  "prismaVersion": "6.19.3",
+  "prismaCliClassification": "devDependency (backend/package.json devDependencies)",
+  "prismaClientClassification": "production dependency (backend/package.json dependencies)",
+  "omitDevResult": "PASS",
+  "prismaCliAbsentInProd": true,
+  "deepmergeTsAbsentInProd": true,
+  "prismaClientPresent": true,
+  "generatedClientPresent": true,
+  "generatedClientCopyRequired": true,
+  "prismaClientImport": "PASS",
+  "bootResult": "PASS (NestJS + Socket.IO + all routes; Prisma P1001 only when PostgreSQL unavailable)",
+  "healthResult": "PASS with DB — CI E2E; locally SKIP (no PostgreSQL)",
+  "readyResult": "PASS with DB — CI E2E; locally SKIP (no PostgreSQL)",
+  "migrationDeployResult": "PASS — CI run 33552148568 (prisma migrate deploy on PostgreSQL 16)",
+  "migrationStrategy": "Pattern A — CI/Release migration job (docs/DEPLOYMENT.md)",
+  "runtimePackagesAbsent": ["prisma", "deepmerge-ts", "@prisma/config", "vitest", "typescript", "@nestjs/cli"],
+  "runtimePackagesPresent": ["@prisma/client"],
+  "lockfileInstall": "npm ci (never npm install in deploy)",
+  "auditFixForceInDeploy": false,
+  "classification": "ACCEPTED DEV-TOOLING RISK — 0 runtime HIGH"
+}

@@ -88,6 +88,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify production deploy boundary
+        run: npm run verify:prod-boundary
+
+      - name: Package production runtime bundle
+        run: npm run package:runtime
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

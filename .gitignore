@@ -10,3 +10,5 @@ frontend/.env.local
 .DS_Store
 coverage/
 .turbo/
+backend/.prod-verify/
+backend/.runtime-bundle/

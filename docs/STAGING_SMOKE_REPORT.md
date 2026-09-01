@@ -1,136 +1,176 @@
-# Staging Smoke Test Report
+# Staging Smoke Test Report — Final Beta Gate
 
 **Date:** 2026-09-01  
-**Target domains (planned):**
-
-| Service | URL | Status |
-|---------|-----|--------|
-| Frontend | `https://staging.libyafreelance.ly` | **NOT DEPLOYED** |
-| API | `https://api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
-
-No staging infrastructure, DNS, managed PostgreSQL, or object storage credentials are configured in this repository. Deployment guide: `docs/DEPLOYMENT.md`.
+**Gate:** Final Web Beta Gate (Phase 1 — Web only)
 
 ---
 
-## Environment separation
+## Staging URLs
+
+| Service | Target URL | Actual status |
+|---------|------------|---------------|
+| Frontend | `https://staging.libyafreelance.ly` | **NOT DEPLOYED** |
+| API | `https://api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
+
+No staging hosting, DNS, managed PostgreSQL credentials, or object storage keys exist in this repository. Deployment automation added (`backend/Dockerfile`, `docker-compose.staging.yml`, `npm run package:runtime`) but **not executed against live staging hosts**.
+
+---
+
+## 1. Deployment pipeline safety
+
+| Check | Result |
+|-------|--------|
+| Prisma CLI is `devDependency` | **PASS** — `backend/package.json` |
+| `@prisma/client` is production dependency | **PASS** |
+| Deterministic `.prisma` copy (no manual step) | **PASS** — `npm run package:runtime`, `backend/Dockerfile` runtime stage |
+| CI runs `verify:prod-boundary` | **PASS** — `.github/workflows/ci.yml` |
+| CI runs `package:runtime` | **ADDED** — pending CI run after push |
+| Lockfile installs use `npm ci` | **PASS** — documented; no `npm audit fix --force` in deploy |
+
+---
+
+## 2. Staging environment
 
 | Requirement | Status |
 |-------------|--------|
 | Separate PostgreSQL | **NOT CONFIGURED** |
-| Separate storage bucket/prefix | **NOT CONFIGURED** |
-| Separate secrets | **NOT CONFIGURED** |
-| Separate admin account | **NOT CREATED** |
-| No production DB connection | **N/A** — staging absent |
+| Separate storage | **NOT CONFIGURED** (local disk only in code) |
+| Separate JWT secrets | **NOT CONFIGURED** |
+| Staging admin (`admin:create`) | **NOT EXECUTED** |
 
 ---
 
-## Migration on staging
+## 3. Staging database migrations
 
-| Step | Result |
-|------|--------|
-| `npx prisma migrate deploy` | **NOT EXECUTED** — no staging DB |
-| `npx prisma migrate status` | **NOT EXECUTED** |
-| Reference seed | **NOT EXECUTED** |
-
-CI reference (PostgreSQL 16): **9/9 migrations PASS** — see `backend/docs/MVP_TEST_REPORT.md`.
-
----
-
-## Backend boot / health
-
-| Check | Staging | CI/local |
-|-------|---------|----------|
-| `GET /api/health` | **NOT TESTED** | PASS (E2E) |
-| `GET /api/health/ready` | **NOT TESTED** | PASS (E2E) |
-| DB unavailable → 503 ready | **NOT TESTED** | Partial (unit/E2E patterns) |
-| Socket.IO starts | **NOT TESTED** on staging | PASS (E2E) |
-| Storage persistent | **NOT TESTED** | Local dev uploads only |
+| Step | Staging | CI (PostgreSQL 16) |
+|------|---------|-------------------|
+| `prisma migrate deploy` | **NOT EXECUTED** | **PASS** (9/9) |
+| `prisma migrate status` | **NOT EXECUTED** | **PASS** |
+| `npm run prisma:seed` | **NOT EXECUTED** | **PASS** + idempotent |
+| Drift / failed migration | N/A | **None** |
 
 ---
 
-## HTTPS cookies (staging)
+## 4. Demo data guard
 
 | Check | Result |
 |-------|--------|
-| Register/login over HTTPS | **NOT TESTED** |
+| `NODE_ENV=production` blocks `prisma:seed:demo` | **CODE VERIFIED** (`prisma/seed-demo.ts` exits before DB writes) |
+| Demo seed on staging | **NOT USED** (no staging DB) |
+| Fake users auto-seeded to public staging | **N/A** |
+
+---
+
+## 5. Production-like backend boot (deployed)
+
+| Check | Staging | Verified locally |
+|-------|---------|------------------|
+| NestJS starts | **NOT TESTED** | **PASS** — prod tree boots to module init |
+| PostgreSQL connects | **NOT TESTED** | CI E2E **PASS** |
+| Prisma Client loads | **NOT TESTED** | **PASS** — after `package:runtime` pattern |
+| Socket.IO starts | **NOT TESTED** | **PASS** — local prod boot logs |
+| No missing modules | **NOT TESTED** | **PASS** |
+| `GET /api/health` | **NOT TESTED** | CI E2E **PASS** |
+| `GET /api/health/ready` | **NOT TESTED** | CI E2E **PASS** |
+
+---
+
+## 6. HTTPS auth cookie
+
+| Check | Result |
+|-------|--------|
+| Register/login on HTTPS | **NOT TESTED** |
 | Refresh cookie httpOnly/secure/sameSite | **NOT TESTED** on real hosts |
-| Page reload session recovery | **NOT TESTED** on staging |
-| Logout clears refresh | PASS — E2E only |
+| Full page reload session recovery | **NOT TESTED** on staging |
+| Logout clears refresh | E2E **PASS** (localhost) |
 
 ---
 
-## CORS (staging hosts)
+## 7. CORS
 
 | Check | Result |
 |-------|--------|
-| Frontend → API with credentials | **NOT TESTED** |
-| REST + refresh + logout | **NOT TESTED** on real hosts |
-| Socket.IO cross-origin | **NOT TESTED** on real hosts |
-| No wildcard CORS | PASS — code + E2E |
+| No `*` with credentials | **PASS** — code + E2E |
+| Staging frontend → staging API | **NOT TESTED** |
+| REST / refresh / logout / upload / Socket.IO | **NOT TESTED** on real hosts |
 
 ---
 
-## Socket.IO staging (two sessions)
+## 8. Socket.IO on staging
 
 | Check | Result |
 |-------|--------|
-| Realtime messages | **NOT TESTED** on staging — PASS E2E |
-| Typing / read / reconnect | **NOT TESTED** on staging — PASS E2E |
-| Notifications push | **NOT TESTED** on staging — PASS E2E |
+| Two-browser CLIENT + FREELANCER | **NOT TESTED** on staging |
+| Realtime / typing / read / notifications | E2E **PASS** |
+| No localhost socket URL in prod build | **CODE REVIEW** — uses `NEXT_PUBLIC_API_URL` |
+| Hard refresh + token refresh reconnect | **NOT TESTED** on staging |
 
 ---
 
-## Storage staging
+## 9. Account suspension on staging
 
 | Check | Result |
 |-------|--------|
-| Profile photo upload | **NOT TESTED** on object storage |
-| Portfolio images persist after redeploy | **NOT TESTED** |
-| Ephemeral local storage in prod | **NOT PRODUCTION-READY** if used — documented in `DEPLOYMENT.md` |
+| Admin suspend → socket disconnect | E2E **PASS** |
+| Manual staging browser test | **NOT TESTED** |
 
 ---
 
-## Manual marketplace flow (staging)
-
-| Actor | Flow step | Result |
-|-------|-----------|--------|
-| CLIENT | Register → profile → project → publish | **NOT TESTED** on staging |
-| FREELANCER | Register → profile → skills → portfolio → proposal | **NOT TESTED** on staging |
-| CLIENT | Review proposal → message → accept | **NOT TESTED** on staging |
-| Both | Realtime messages | **NOT TESTED** on staging |
-| FREELANCER | Request completion | **NOT TESTED** on staging |
-| CLIENT | Complete + review | **NOT TESTED** on staging |
-| FREELANCER | Review client | **NOT TESTED** on staging |
-| ADMIN | Login → users/projects/reviews | **NOT TESTED** on staging |
-
-**E2E equivalent:** MVP happy-path + security journey — **PASS** in CI (not a substitute for staging HTTPS smoke).
-
----
-
-## Refresh / direct URL / 404 (staging)
+## 10. Persistent storage
 
 | Check | Result |
 |-------|--------|
-| Hard refresh on dashboard/messages/admin | **NOT TESTED** on staging |
-| Direct URL paste (project, messages, admin) | **NOT TESTED** on staging |
-| 404 for invalid slug/conversation | **NOT TESTED** on staging — partial E2E |
+| S3-compatible adapter implemented | **NO** — only `LocalStorageService` |
+| Profile/portfolio persist after redeploy | **NOT VERIFIED** |
+| Foreign ownership rejected | E2E **PASS** (local uploads) |
+
+**Classification: BETA BLOCKER** — ephemeral local disk is not acceptable for Beta per gate criteria.
 
 ---
 
-## Staging admin creation
+## 11–23. Manual marketplace / admin flows (staging browser)
 
-`npm run admin:create` — **NOT EXECUTED** (no staging DB). Script available; credentials must not be committed.
+| Flow | Result |
+|------|--------|
+| CLIENT full flow | **NOT TESTED** on staging |
+| FREELANCER full flow | **NOT TESTED** on staging |
+| ADMIN flow | **NOT TESTED** on staging |
+| Full happy path (register → reviews) | E2E **PASS** (CI, not browser staging) |
 
 ---
 
-## Log review (staging)
+## 28–34. Direct URL / errors / SEO / performance
 
-**NOT EXECUTED** — no staging deployment. Code audit: structured logging avoids JWT/password leakage (see hardening docs).
+| Area | Staging browser | Automated |
+|------|-----------------|-----------|
+| Hard refresh protected routes | **NOT TESTED** | Partial E2E |
+| 404 / error states | **NOT TESTED** | E2E partial |
+| Empty states Arabic copy | **NOT TESTED** | Code review |
+| SEO public metadata | **NOT TESTED** | Root metadata present; per-page **CODE REVIEW** |
+| Performance | **NOT TESTED** | — |
 
 ---
 
-## Classification
+## 35. Final CI re-run
 
-**Staging smoke: INCOMPLETE**
+| Gate | Status |
+|------|--------|
+| Migrations 9/9 | **PASS** (last CI run 33552148568) |
+| Unit 63/63 | **PASS** |
+| E2E 123/123 ×2, 0 skipped | **PASS** |
+| Frontend lint/typecheck/build | **PASS** (local 2026-09-01) |
+| Backend lint/typecheck/build | **PASS** (CI); local partial node_modules |
+| `verify:prod-boundary` | **PASS** (verified earlier) |
+| `package:runtime` | **ADDED** — pending CI after push |
+| Dependency audit | **ACCEPTED** — 0 runtime HIGH |
 
-Staging deployment and HTTPS integration tests are **blockers** for **BETA READY** per `docs/BETA_READINESS.md`.
+---
+
+## Summary
+
+**Staging smoke: NOT EXECUTED** — no live staging deployment.
+
+**Beta blockers from this gate:**
+1. Staging not deployed (HTTPS cookies, CORS, Socket.IO, manual flows)
+2. Persistent object storage not configured
+3. Full responsive/browser QA not executed on deployed hosts
