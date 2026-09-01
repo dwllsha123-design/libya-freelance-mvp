@@ -100,7 +100,9 @@ After `npm ci --omit=dev --legacy-peer-deps` in an isolated runtime directory:
 | Critical | 0 |
 | High | **0** (prisma/deepmerge-ts chain not installed) |
 
-`npm audit` on the production-only tree reports **0 high** because the vulnerable packages are devDependencies excluded by `--omit=dev`.
+Production runtime includes `@aws-sdk/client-s3` (required for `STORAGE_DRIVER=s3`). Audit the **runtime bundle** (`npm run package:runtime`) separately from the full dev tree. As of 2026-09-01, `@aws-sdk/client-s3` introduces no HIGH/CRITICAL findings in the production dependency tree.
+
+`npm audit` on the **full** developer install still reports 3 HIGH (Prisma CLI tooling only).
 
 ---
 

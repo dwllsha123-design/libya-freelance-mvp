@@ -1,14 +1,7 @@
-# Beta Readiness Checklist — Final Web Beta Gate
+# Beta Readiness Checklist — Operational Gate
 
 **Date:** 2026-09-01  
 **Classification:** **NOT YET BETA READY**
-
-Evidence:
-- CI: `backend/docs/MVP_TEST_REPORT.md` (run 33552148568)
-- Web QA: `docs/WEB_QA_REPORT.md`
-- Staging: `docs/STAGING_SMOKE_REPORT.md`
-- Dependencies: `docs/DEPENDENCY_AUDIT.md`
-- Deploy boundary: `backend/docs/PROD_DEPLOY_BOUNDARY_REPORT.json`
 
 ---
 
@@ -16,82 +9,63 @@ Evidence:
 
 | Check | Status |
 |-------|--------|
-| PostgreSQL 16 | **PASS** |
-| Prisma migrations 9/9 | **PASS** |
-| Reference seed + idempotent | **PASS** |
-| Unit 63/63 | **PASS** |
-| E2E 123/123 ×2, 0 skipped | **PASS** |
-| Happy path / security / concurrency / socket | **PASS** |
-| Production runtime boundary | **PASS** |
-| Runtime HIGH/CRITICAL vulns | **0** |
-| Dev tooling 3 HIGH | **ACCEPTED** (isolated) |
-| Deterministic deploy (`package:runtime`, Dockerfile) | **PASS** (automation added) |
+| PostgreSQL 16, migrations 9/9 | **PASS** (CI) |
+| Unit 63/63 + storage unit tests | **76/76 PASS** (local; CI pending) |
+| E2E 123/123 ×2, 0 skipped | **PASS** (CI run 33552148568 — pre-4726e25) |
+| Runtime dependency boundary | **PASS** |
+| Runtime HIGH/CRITICAL | **0** |
+| Deterministic deploy (`package:runtime`, Dockerfile) | **IMPLEMENTED** |
 
 ---
 
-## Staging & integration — INCOMPLETE
+## Storage — IMPLEMENTED, staging verification PENDING
 
 | Check | Status |
 |-------|--------|
-| Staging frontend deployed | **NOT DEPLOYED** |
-| Staging API deployed | **NOT DEPLOYED** |
-| Staging migrations/seed | **NOT EXECUTED** |
-| Health/readiness on staging HTTPS | **NOT TESTED** |
-| HTTPS refresh cookies | **NOT TESTED** |
-| CORS on real hosts | **NOT TESTED** |
-| Socket.IO two-browser staging | **NOT TESTED** |
-| Suspension manual staging | **NOT TESTED** (E2E PASS) |
-| Persistent S3-compatible storage | **NOT CONFIGURED — BLOCKER** |
-| Manual CLIENT/FREELANCER/ADMIN flows | **NOT TESTED** on staging |
+| S3-compatible `StorageService` adapter | **IMPLEMENTED** (`S3StorageService`) |
+| `STORAGE_DRIVER=s3` required in production | **IMPLEMENTED** (startup fail-safe) |
+| Safe random object keys | **IMPLEMENTED** |
+| Profile upload-before-delete | **PASS** (existing flow) |
+| Unit tests for S3 adapter | **IMPLEMENTED** |
+| Staging persistence test (upload → redeploy) | **NOT EXECUTED** — **BLOCKER** |
 
 ---
 
-## Web QA — PARTIAL
+## CI after deployment commits — PENDING PUSH
+
+| Commit | Content |
+|--------|---------|
+| `20af371` | Mobile/RTL QA fixes |
+| `4726e25` | Deploy packaging + beta docs |
+| *(pending)* | S3 storage + staging deploy docs |
+
+**Action required:** Push to GitHub and confirm new CI run includes `verify:prod-boundary` + `package:runtime` **PASS**.
+
+---
+
+## Staging — NOT DEPLOYED
 
 | Check | Status |
 |-------|--------|
-| P0 mobile nav + messages fixes | **FIXED** (code) |
-| RTL fixes (BackLink, logical CSS) | **FIXED** (code) |
-| Responsive matrix 390–1920 browser QA | **NOT TESTED** on staging |
-| Chrome desktop QA | **NOT TESTED** |
-| Edge QA | **NOT TESTED** |
-| Safari/WebKit | **NOT TESTED** |
+| `staging.libyafreelance.ly` | **NOT DEPLOYED** |
+| `api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
+| HTTPS cookies / CORS / Socket.IO on real hosts | **NOT TESTED** |
+| Manual marketplace flow | **NOT TESTED** |
+| Responsive browser QA 390–1920 | **NOT TESTED** |
+| Chrome / Edge | **NOT TESTED** |
+| Safari | **NOT TESTED** |
 
----
-
-## Beta acceptance criteria mapping
-
-| Criterion | Met? |
-|-----------|------|
-| CI fully green | **YES** (pre-deploy-automation commit; re-run pending push) |
-| Staging backend boots | **NO** — not deployed |
-| Staging PostgreSQL | **NO** |
-| Health/readiness staging | **NO** |
-| HTTPS cookies | **NO** |
-| CORS staging | **NO** |
-| Socket.IO staging | **NO** |
-| Persistent storage | **NO — BLOCKER** |
-| Responsive QA no blockers | **PARTIAL** — code fixes only |
-| RTL QA | **PARTIAL** |
-| Chrome/Edge PASS | **NO** |
-| Manual happy path staging | **NO** |
-| Admin staging flow | **NO** |
-| No runtime HIGH/CRITICAL | **YES** |
-| No release-blocking UI defect | **UNKNOWN** — browser QA not run |
+Operator guide: `docs/STAGING_DEPLOY.md`
 
 ---
 
 ## NOT YET BETA READY
 
-### Remaining blockers (ordered)
+### Remaining blockers
 
-1. **Configure persistent S3-compatible storage** (R2/S3/Spaces) — replace or supplement `LocalStorageService` for staging/production
-2. **Deploy staging** (`staging.libyafreelance.ly` / `api-staging.libyafreelance.ly`) using `docker-compose.staging.yml` or host of choice
-3. Run migrations + `admin:create` on staging DB
-4. Execute full `STAGING_SMOKE_REPORT.md` checklist on HTTPS
-5. Complete responsive/browser QA at 390/430/768/1024/1440/1920
-6. Re-run CI after pushing deployment automation commits
-
-### Ready for Beta once above complete
-
-All automated marketplace, security, and deployment-boundary work is complete. The product is **technically verified in CI** but **not operationally verified** on a production-like staging environment.
+1. **Push commits** and get green CI with `4726e25` + S3 changes
+2. **Deploy staging** per `docs/STAGING_DEPLOY.md`
+3. **Verify S3 persistence** on staging (upload → redeploy → still loads)
+4. **HTTPS integration tests** (cookies, CORS, Socket.IO)
+5. **Full responsive/browser QA** on staging
+6. **Manual CLIENT/FREELANCER/ADMIN** flows on staging

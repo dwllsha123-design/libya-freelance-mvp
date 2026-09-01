@@ -30,7 +30,7 @@
 |-------|--------|
 | lint | **PASS** |
 | typecheck | **PASS** |
-| unit tests | **PASS** — 63/63 |
+| Unit tests | **PASS** — 76/76 (includes S3 storage adapter tests) |
 | build | **PASS** |
 
 ## Frontend quality gate

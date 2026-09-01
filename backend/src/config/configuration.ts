@@ -25,7 +25,18 @@ export default () => ({
       process.env.EMAIL_VERIFICATION_TOKEN_EXPIRES_IN ?? '24h',
   },
   storage: {
+    driver: process.env.STORAGE_DRIVER ?? 'local',
     localDir: process.env.STORAGE_LOCAL_DIR,
     publicBaseUrl: process.env.STORAGE_PUBLIC_BASE_URL,
+    portfolioPublicBaseUrl: process.env.STORAGE_PORTFOLIO_PUBLIC_BASE_URL,
+    s3: {
+      endpoint: process.env.S3_ENDPOINT,
+      region: process.env.S3_REGION ?? 'auto',
+      bucket: process.env.S3_BUCKET,
+      accessKeyId: process.env.S3_ACCESS_KEY_ID,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+      publicBaseUrl: process.env.S3_PUBLIC_BASE_URL,
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE ?? 'false',
+    },
   },
 });

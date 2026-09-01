@@ -135,7 +135,18 @@ Reference stack: `docker-compose.staging.yml`
 
 ## Storage
 
-**Beta blocker:** Only `LocalStorageService` is implemented (`backend/src/storage/`). Production and staging require an S3-compatible adapter (R2, S3, Spaces). Local `uploads/` is acceptable for development only.
+**Implementation:** `StorageService` abstraction with `local` (development) and `s3` (staging/production) drivers.
+
+| Driver | When |
+|--------|------|
+| `STORAGE_DRIVER=local` | Development / E2E with test storage |
+| `STORAGE_DRIVER=s3` | **Required** when `NODE_ENV=production` |
+
+Full documentation: `backend/docs/STORAGE.md`
+
+Staging checklist: `docs/STAGING_DEPLOY.md`
+
+**Beta requirement:** persistent S3-compatible storage configured and verified on staging (upload → redeploy → image still loads).
 
 ## Rate limiting
 
