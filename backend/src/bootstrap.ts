@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { join } from 'node:path';
 import { AppModule } from './app.module.js';
-import { authRateLimiters } from './common/middleware/auth-rate-limit.js';
+import { authRateLimiters, isRateLimitDisabled } from './common/middleware/auth-rate-limit.js';
 
 export function configureApp(app: NestExpressApplication) {
   const expressApp = app.getHttpAdapter().getInstance();
@@ -15,20 +15,22 @@ export function configureApp(app: NestExpressApplication) {
   app.setGlobalPrefix('api');
   app.use(cookieParser());
 
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 500,
-      standardHeaders: true,
-      legacyHeaders: false,
-    }),
-  );
+  if (!isRateLimitDisabled()) {
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 500,
+        standardHeaders: true,
+        legacyHeaders: false,
+      }),
+    );
 
-  expressApp.use('/api/auth/login', authRateLimiters.login);
-  expressApp.use('/api/auth/register', authRateLimiters.register);
-  expressApp.use('/api/auth/forgot-password', authRateLimiters.forgotPassword);
-  expressApp.use('/api/auth/reset-password', authRateLimiters.resetPassword);
-  expressApp.use('/api/auth/refresh', authRateLimiters.refresh);
+    expressApp.use('/api/auth/login', authRateLimiters.login);
+    expressApp.use('/api/auth/register', authRateLimiters.register);
+    expressApp.use('/api/auth/forgot-password', authRateLimiters.forgotPassword);
+    expressApp.use('/api/auth/reset-password', authRateLimiters.resetPassword);
+    expressApp.use('/api/auth/refresh', authRateLimiters.refresh);
+  }
 
   const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
     .split(',')

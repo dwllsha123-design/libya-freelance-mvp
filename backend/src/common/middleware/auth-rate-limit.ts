@@ -1,6 +1,19 @@
+import type { NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 
+function noopRateLimit(_req: Request, _res: Response, next: NextFunction) {
+  next();
+}
+
+export function isRateLimitDisabled(): boolean {
+  return process.env.NODE_ENV === 'test' || process.env.REQUIRE_E2E === '1';
+}
+
 export function createAuthRateLimiter(max: number) {
+  if (isRateLimitDisabled()) {
+    return noopRateLimit;
+  }
+
   return rateLimit({
     windowMs: 15 * 60 * 1000,
     max,

@@ -8,6 +8,7 @@ export default defineConfig({
     root: './',
     include: ['**/*.e2e-spec.ts'],
     globalSetup: ['./test/e2e-global-setup.ts'],
+    fileParallelism: false,
     reporters: process.env.REQUIRE_E2E === '1' ? ['default', './test/e2e-ci-reporter.ts'] : ['default'],
     passWithNoTests: false,
   },
