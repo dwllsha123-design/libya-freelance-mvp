@@ -17,9 +17,9 @@ export default class E2eCiReporter implements Reporter {
     for (const mod of testModules) {
       for (const task of mod.children.allTests()) {
         const state = task.result()?.state;
-        if (state === 'skip') skipped += 1;
-        if (state === 'pass') passed += 1;
-        if (state === 'fail') failed += 1;
+        if (state === 'skipped') skipped += 1;
+        if (state === 'passed') passed += 1;
+        if (state === 'failed') failed += 1;
       }
     }
 
