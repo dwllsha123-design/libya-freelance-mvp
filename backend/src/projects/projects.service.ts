@@ -733,7 +733,7 @@ export class ProjectsService {
     const clientProfile = project.client.profile;
 
     const base = {
-      ...(summary ? {} : { id: project.id }),
+      id: project.id,
       slug: project.slug,
       title: project.title,
       description: summary

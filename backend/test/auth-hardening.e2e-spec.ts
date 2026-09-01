@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import type { AddressInfo } from 'node:net';
-import { io, type Socket } from 'socket.io-client';
+import { PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   CLIENT_HEADER,
@@ -14,34 +13,9 @@ import {
   registerUser,
   seedTestReferenceData,
 } from './helpers/project-e2e.helpers.js';
+import { connectSocket } from './helpers/socket-e2e.helpers.js';
 
 const prisma = new PrismaClient();
-
-function connectSocket(baseUrl: string, token: string): Promise<Socket> {
-  return new Promise((resolve, reject) => {
-    const socket = io(baseUrl, {
-      auth: { token },
-      transports: ['websocket'],
-      forceNew: true,
-      reconnection: false,
-    });
-
-    const timer = setTimeout(() => {
-      socket.disconnect();
-      reject(new Error('Socket connect timeout'));
-    }, 5000);
-
-    socket.on('connect', () => {
-      clearTimeout(timer);
-      resolve(socket);
-    });
-
-    socket.on('connect_error', (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
-}
 
 describe('Auth hardening E2E (PostgreSQL)', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>;

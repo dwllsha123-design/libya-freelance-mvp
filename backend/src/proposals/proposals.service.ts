@@ -244,7 +244,13 @@ export class ProposalsService {
       throw new ForbiddenException('ليس لديك صلاحية على هذا العرض');
     }
 
-    ProjectStateService.assertCanAcceptProposal(proposal.project.status);
+    if (
+      proposal.project.status !== ProjectStatus.OPEN ||
+      proposal.project.acceptedProposalId !== null
+    ) {
+      throw new ConflictException('المشروع لم يعد يقبل قبول عروض');
+    }
+
     ProposalStateService.assertCanAccept(proposal.status);
 
     const pendingFreelancerIds = (

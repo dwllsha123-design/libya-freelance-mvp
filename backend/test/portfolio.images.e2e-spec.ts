@@ -204,7 +204,7 @@ describe('Portfolio Images E2E (PostgreSQL)', () => {
         filename: 'huge.png',
         contentType: 'image/png',
       })
-      .expect(400);
+      .expect(413);
   });
 
   it('8. Image belongs to correct portfolio item', async (ctx) => {

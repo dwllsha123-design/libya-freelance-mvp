@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
   ProjectStatus,
   ProposalStatus,
@@ -105,7 +105,7 @@ export function deriveReviewTarget(
     return ctx.clientId;
   }
 
-  throw new BadRequestException('غير مصرح بإرسال تقييم لهذا المشروع');
+  throw new ForbiddenException('غير مصرح بإرسال تقييم لهذا المشروع');
 }
 
 export function validateRating(rating: number): number {

@@ -1,6 +1,5 @@
 import type { AddressInfo } from 'node:net';
 import { PrismaClient } from '@prisma/client';
-import { io, type Socket } from 'socket.io-client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   CLIENT_HEADER,
@@ -15,6 +14,10 @@ import {
   seedTestReferenceData,
   validProjectPayload,
 } from './helpers/project-e2e.helpers.js';
+import {
+  connectSocket,
+  expectUnauthenticatedSocketRejected,
+} from './helpers/socket-e2e.helpers.js';
 
 const prisma = new PrismaClient();
 
@@ -45,32 +48,6 @@ async function publishProject(
     .expect(201);
 
   return created.body;
-}
-
-function connectSocket(baseUrl: string, token?: string): Promise<Socket> {
-  return new Promise((resolve, reject) => {
-    const socket = io(baseUrl, {
-      auth: token ? { token } : {},
-      transports: ['websocket'],
-      forceNew: true,
-      reconnection: false,
-    });
-
-    const timer = setTimeout(() => {
-      socket.disconnect();
-      reject(new Error('Socket connect timeout'));
-    }, 5000);
-
-    socket.on('connect', () => {
-      clearTimeout(timer);
-      resolve(socket);
-    });
-
-    socket.on('connect_error', (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
 }
 
 describe('Messaging Socket.IO (PostgreSQL)', () => {
@@ -107,7 +84,7 @@ describe('Messaging Socket.IO (PostgreSQL)', () => {
   it('rejects unauthenticated socket connection', async (ctx) => {
     if (!dbReady) ctx.skip();
 
-    await expect(connectSocket(baseUrl)).rejects.toBeTruthy();
+    await expectUnauthenticatedSocketRejected(baseUrl);
   });
 
   it('authenticated member can join conversation room', async (ctx) => {

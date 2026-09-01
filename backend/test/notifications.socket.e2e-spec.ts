@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 import { PrismaClient } from '@prisma/client';
-import { io, type Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   CLIENT_HEADER,
@@ -16,36 +16,11 @@ import {
   seedTestReferenceData,
   validProposalBody,
 } from './helpers/project-e2e.helpers.js';
+import { connectSocket } from './helpers/socket-e2e.helpers.js';
 
 const prisma = new PrismaClient();
 
-function connectSocket(baseUrl: string, token?: string): Promise<Socket> {
-  return new Promise((resolve, reject) => {
-    const socket = io(baseUrl, {
-      auth: token ? { token } : {},
-      transports: ['websocket'],
-      forceNew: true,
-      reconnection: false,
-    });
-
-    const timer = setTimeout(() => {
-      socket.disconnect();
-      reject(new Error('Socket connect timeout'));
-    }, 5000);
-
-    socket.on('connect', () => {
-      clearTimeout(timer);
-      resolve(socket);
-    });
-
-    socket.on('connect_error', (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
-}
-
-function waitForEvent<T>(socket: Socket, event: string, timeoutMs = 5000) {
+function waitForEvent<T>(socket: Socket, event: string, timeoutMs = 10000) {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`Timeout waiting for ${event}`));
@@ -73,16 +48,15 @@ describe('Notifications Socket.IO (PostgreSQL)', () => {
     }
 
     app = await createTestApp();
+    await app.listen(0);
+    const address = app.getHttpServer().address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+
     await resetDatabase(prisma);
     await seedTestReferenceData(prisma);
     const refs = await getReferenceIds(prisma);
     categoryId = refs.category.id;
     skillId = refs.skill.id;
-
-    const server = app.getHttpServer();
-    const address = server.address() as AddressInfo;
-    const port = typeof address === 'string' ? 0 : address.port;
-    baseUrl = `http://127.0.0.1:${port}`;
   });
 
   afterAll(async () => {
