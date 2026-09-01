@@ -1,66 +1,84 @@
 # Beta Readiness Checklist
 
-Only check items verified with evidence in `backend/docs/MVP_TEST_REPORT.md`.
+Evidence: `backend/docs/MVP_TEST_REPORT.md` — CI run [33552148568](https://github.com/dwllsha123-design/libya-freelance-mvp/actions/runs/33552148568) (2026-09-01).
 
 ## Database
 
-- [ ] `prisma migrate deploy` succeeds on empty PostgreSQL
-- [ ] `prisma migrate status` shows all migrations applied
-- [ ] Reference seed (`npm run prisma:seed`) works
-- [ ] Demo seed blocked in production
+- [x] `prisma migrate deploy` succeeds on empty PostgreSQL
+- [x] `prisma migrate status` shows all migrations applied (9)
+- [x] Reference seed (`npm run prisma:seed`) works
+- [x] Reference seed idempotent (second run, CI)
+- [ ] Demo seed blocked in production (code guard present; not CI-tested)
 
 ## Security
 
-- [ ] JWT validated + DB status checked on every protected request
-- [ ] Suspend/ban revokes refresh tokens
-- [ ] Suspend/ban disconnects active sockets (single instance)
-- [ ] CORS explicit origins (no wildcard with credentials)
-- [ ] CSRF header on cookie auth routes
-- [ ] File upload MIME/size validation
-- [ ] No passwordHash/tokens in API responses
+- [x] JWT validated + DB status checked on every protected HTTP request
+- [x] Suspend/ban revokes refresh tokens
+- [x] Suspend/ban disconnects active sockets (single instance)
+- [x] CORS explicit origins (no wildcard with credentials)
+- [x] CSRF header on cookie auth routes
+- [x] File upload MIME/size validation
+- [x] No passwordHash/tokens in API responses (audited in hardening)
 
 ## Authentication
 
-- [ ] Register/login/refresh/logout flow
-- [ ] Password reset revokes sessions
-- [ ] Suspended/banned blocked immediately on protected routes
-- [ ] ADMIN not registrable publicly
+- [x] Register/login/refresh/logout flow (E2E)
+- [x] Refresh token rotation invalidates old token (E2E + `jti` fix)
+- [x] Password reset revokes sessions (E2E)
+- [x] Suspended/banned blocked immediately on protected routes (E2E)
+- [x] ADMIN not registrable publicly (E2E)
 
 ## Marketplace modules
 
-- [ ] Projects lifecycle (draft → open → in progress → completed)
-- [ ] Proposals (submit, accept, concurrency)
-- [ ] Messaging REST + Socket.IO
-- [ ] Portfolio + images
-- [ ] Reviews + rating cache
-- [ ] Notifications REST + realtime
-- [ ] Admin panel + audit log
+- [x] Projects lifecycle (draft → open → in progress → completed)
+- [x] Proposals (submit, accept, concurrency)
+- [x] Messaging REST + Socket.IO
+- [x] Portfolio + images
+- [x] Reviews + rating cache
+- [x] Notifications REST + realtime
+- [x] Admin panel + audit log
 
 ## Storage
 
-- [ ] Production storage strategy documented (S3-compatible)
-- [ ] Local uploads not used for scaled production
+- [x] Production storage strategy documented (S3-compatible)
+- [x] Local uploads acceptable for dev/test; production requires object storage
 
 ## Responsive / UX
 
-- [ ] Mobile layouts (390px) usable
-- [ ] Arabic RTL correct
-- [ ] Loading/empty/error states on MVP routes
+- [ ] Mobile layouts (390px) manually verified
+- [ ] Arabic RTL manually verified across MVP routes
+- [ ] Loading/empty/error states manually verified
 
 ## Deployment
 
-- [ ] `docs/DEPLOYMENT.md` complete
-- [ ] `backend/docs/BACKUP_RECOVERY.md` complete
-- [ ] CI workflow configured
+- [x] `docs/DEPLOYMENT.md` complete
+- [x] `backend/docs/BACKUP_RECOVERY.md` complete
+- [x] CI workflow configured and passing
 
 ## Tests
 
-- [ ] All E2E suites pass on PostgreSQL test database
-- [ ] MVP happy-path E2E passes
-- [ ] MVP security journey E2E passes
-- [ ] Unit tests pass
+- [x] All E2E suites pass on PostgreSQL (123/123, run 1)
+- [x] All E2E suites pass on PostgreSQL (123/123, run 2)
+- [x] Zero required E2E skipped in CI
+- [x] MVP happy-path E2E passes
+- [x] MVP security journey E2E passes
+- [x] Unit tests pass (63/63)
 
 ## Monitoring
 
-- [ ] Health/readiness endpoints configured in hosting platform
-- [ ] Structured error logging (no secrets in logs)
+- [x] Health/readiness endpoints implemented (`/api/health`, `/api/health/ready`)
+- [ ] Health/readiness configured on hosting platform (pre-deploy)
+- [x] Structured error logging (no secrets in logs)
+
+---
+
+## Classification
+
+**NOT YET BETA READY**
+
+Backend and automated marketplace verification are complete on PostgreSQL 16 in CI. Remaining before **BETA READY**:
+
+1. Manual responsive WEB QA (390–1920px) on MVP routes
+2. Manual RTL / cross-browser smoke QA
+3. Production deployment smoke test (boot, health, HTTPS, object storage)
+4. Optional: explicit CI test for demo-seed production block
