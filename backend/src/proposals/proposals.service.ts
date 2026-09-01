@@ -231,8 +231,6 @@ export class ProposalsService {
   }
 
   async accept(clientId: string, proposalId: string) {
-    await this.escrowService.assertFundedForAccept(proposalId);
-
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
       include: {
@@ -259,6 +257,8 @@ export class ProposalsService {
     }
 
     ProposalStateService.assertCanAccept(proposal.status);
+
+    await this.escrowService.assertFundedForAccept(proposalId);
 
     const pendingFreelancerIds = (
       await this.prisma.proposal.findMany({

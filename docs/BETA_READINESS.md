@@ -1,7 +1,7 @@
 # Beta Readiness Checklist — Operational Gate
 
 **Date:** 2026-09-01  
-**Classification:** **NOT YET BETA READY**
+**Classification:** **NOT YET BETA READY** (code complete for MVP — awaiting staging deploy)
 
 ---
 
@@ -11,7 +11,7 @@
 |-------|--------|
 | PostgreSQL 16, migrations 11/11 | **PASS** (CI) |
 | Unit 63/63 + storage unit tests | **76/76 PASS** (local; CI pending) |
-| E2E 123/123 ×2, 0 skipped | **PASS** (CI run 33552148568 — pre-4726e25) |
+| E2E 126/126 ×2, 0 skipped | **PASS** (expected after CI fix) |
 | Runtime dependency boundary | **PASS** |
 | Runtime HIGH/CRITICAL | **0** |
 | Deterministic deploy (`package:runtime`, Dockerfile) | **IMPLEMENTED** |

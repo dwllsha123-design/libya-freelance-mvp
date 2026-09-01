@@ -556,20 +556,37 @@ export class EscrowService {
 
     let escrow = await tx.escrow.findUnique({ where: { proposalId: proposal.id } });
 
+    const projectEscrow = await tx.escrow.findUnique({
+      where: { projectId: proposal.projectId },
+    });
+    if (projectEscrow && projectEscrow.proposalId !== proposal.id) {
+      throw new ConflictException('المشروع لم يعد يقبل قبول عروض');
+    }
+
     if (!escrow) {
-      escrow = await tx.escrow.create({
-        data: {
-          projectId: proposal.projectId,
-          proposalId: proposal.id,
-          clientId,
-          freelancerId: proposal.freelancerId,
-          amount,
-          platformFee,
-          freelancerPayout,
-          currency: ESCROW_CURRENCY,
-          status: EscrowStatus.PENDING_FUNDING,
-        },
-      });
+      try {
+        escrow = await tx.escrow.create({
+          data: {
+            projectId: proposal.projectId,
+            proposalId: proposal.id,
+            clientId,
+            freelancerId: proposal.freelancerId,
+            amount,
+            platformFee,
+            freelancerPayout,
+            currency: ESCROW_CURRENCY,
+            status: EscrowStatus.PENDING_FUNDING,
+          },
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException('المشروع لم يعد يقبل قبول عروض');
+        }
+        throw error;
+      }
     }
 
     if (escrow.status === EscrowStatus.PENDING_FUNDING) {

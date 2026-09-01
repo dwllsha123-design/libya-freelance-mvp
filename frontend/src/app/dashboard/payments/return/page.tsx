@@ -22,13 +22,13 @@ function PaymentReturnContent() {
   const paymentsApi = usePaymentsApi();
   const [payment, setPayment] = useState<PaymentRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [pollDone, setPollDone] = useState(false);
+
+  const shouldPoll = Boolean(user && paymentId);
+  const isLoading = authLoading || (shouldPoll && !pollDone && !error);
 
   useEffect(() => {
-    if (!user || !paymentId) {
-      setIsLoading(false);
-      return;
-    }
+    if (!shouldPoll) return;
 
     let cancelled = false;
     let attempts = 0;
@@ -38,18 +38,16 @@ function PaymentReturnContent() {
         const data = await paymentsApi.getPayment(paymentId!);
         if (cancelled) return;
         setPayment(data);
-        if (data.status === 'PROCESSING' || data.status === 'PENDING') {
-          if (attempts < 8) {
-            attempts += 1;
-            window.setTimeout(() => void poll(), 2000);
-            return;
-          }
+        if ((data.status === 'PROCESSING' || data.status === 'PENDING') && attempts < 8) {
+          attempts += 1;
+          window.setTimeout(() => void poll(), 2000);
+          return;
         }
-        setIsLoading(false);
+        setPollDone(true);
       } catch {
         if (!cancelled) {
           setError('تعذر التحقق من حالة الدفع');
-          setIsLoading(false);
+          setPollDone(true);
         }
       }
     }
@@ -59,9 +57,9 @@ function PaymentReturnContent() {
     return () => {
       cancelled = true;
     };
-  }, [user, paymentId, paymentsApi]);
+  }, [shouldPoll, paymentId, paymentsApi]);
 
-  if (authLoading || isLoading) {
+  if (isLoading) {
     return <div className="p-8 text-center">جاري التحقق من الدفع...</div>;
   }
 

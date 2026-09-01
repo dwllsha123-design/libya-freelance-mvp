@@ -1,17 +1,16 @@
 # Post-MVP Backlog
 
-Features explicitly **out of scope** for MVP. Do not implement without a new phase.
+Features **not** in the current MVP scope. Escrow, disputes, and payment abstraction are **implemented** (simulated driver).
 
-## Payments & billing
+## Payments & billing (remaining)
 
-- Escrow
+- Real Libyan payment gateway integration
 - Wallet / credits
 - Subscriptions
-- Invoicing
+- Invoicing PDF / tax receipts
 
-## Trust & safety
+## Trust & safety (remaining)
 
-- Dispute center
 - Support ticketing
 - Admin impersonation
 - Super-admin hierarchy
@@ -29,3 +28,4 @@ Features explicitly **out of scope** for MVP. Do not implement without a new pha
 - Socket.IO Redis adapter for multi-instance
 - Full-text search (Elasticsearch / PG FTS)
 - Email delivery production integration (SMTP provider)
+- Production/staging hosting automation (Railway, Render, VPS)
