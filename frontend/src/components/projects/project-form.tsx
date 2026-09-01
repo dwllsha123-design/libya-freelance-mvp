@@ -22,6 +22,7 @@ export interface ProjectFormValues {
 
 interface ProjectFormProps {
   initial?: ManageProject | null;
+  prefill?: Partial<ProjectFormValues>;
   categories: Category[];
   skills: Skill[];
   cities: City[];
@@ -60,6 +61,7 @@ function mapInitialToValues(initial: ManageProject): ProjectFormValues {
 
 export function ProjectForm({
   initial,
+  prefill,
   categories,
   skills,
   cities,
@@ -68,7 +70,9 @@ export function ProjectForm({
   onPublish,
 }: ProjectFormProps) {
   const [values, setValues] = useState<ProjectFormValues>(() =>
-    initial ? mapInitialToValues(initial) : defaultValues,
+    initial
+      ? mapInitialToValues(initial)
+      : { ...defaultValues, ...prefill },
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -143,7 +147,7 @@ export function ProjectForm({
       ) : null}
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">1. أساسيات المشروع</h2>
+        <h2 className="font-semibold text-on-surface">1. أساسيات المشروع</h2>
         <div className="mt-4 space-y-4">
           <div>
             <label className="mb-1 block text-sm">عنوان المشروع</label>
@@ -170,7 +174,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">2. التصنيف والمهارات</h2>
+        <h2 className="font-semibold text-on-surface">2. التصنيف والمهارات</h2>
         <div className="mt-4 space-y-4">
           <div>
             <label className="mb-1 block text-sm">التصنيف</label>
@@ -195,7 +199,7 @@ export function ProjectForm({
                   onClick={() => toggleSkill(skill.id)}
                   className={`rounded-full px-3 py-1 text-sm ${
                     values.skillIds.includes(skill.id)
-                      ? 'bg-[#00A86B] text-white'
+                      ? 'bg-primary text-white'
                       : 'border border-slate-300'
                   }`}
                 >
@@ -211,7 +215,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">3. الميزانية</h2>
+        <h2 className="font-semibold text-on-surface">3. الميزانية</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm">نوع الميزانية</label>
@@ -249,7 +253,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">4. مستوى الخبرة</h2>
+        <h2 className="font-semibold text-on-surface">4. مستوى الخبرة</h2>
         <select
           value={values.experienceLevel}
           onChange={(e) =>
@@ -264,7 +268,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">5. الموقع</h2>
+        <h2 className="font-semibold text-on-surface">5. الموقع</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm">نمط العمل</label>
@@ -300,7 +304,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-[#0B132B]">6. موعد التسليم</h2>
+        <h2 className="font-semibold text-on-surface">6. موعد التسليم</h2>
         <input
           type="date"
           value={values.deadline ?? ''}
@@ -314,7 +318,7 @@ export function ProjectForm({
           type="button"
           disabled={isSubmitting}
           onClick={() => void handleDraft()}
-          className="rounded-lg border border-[#0B132B] px-6 py-2.5 font-semibold disabled:opacity-60"
+          className="rounded-lg border border-secondary px-6 py-2.5 font-semibold disabled:opacity-60"
         >
           حفظ كمسودة
         </button>
@@ -322,7 +326,7 @@ export function ProjectForm({
           type="button"
           disabled={isSubmitting}
           onClick={() => void handlePublish()}
-          className="rounded-lg bg-[#00A86B] px-6 py-2.5 font-semibold text-white disabled:opacity-60"
+          className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-white disabled:opacity-60"
         >
           {isSubmitting ? 'جاري الحفظ...' : 'نشر المشروع'}
         </button>

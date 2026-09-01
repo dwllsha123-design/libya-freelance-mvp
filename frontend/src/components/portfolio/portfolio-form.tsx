@@ -107,7 +107,7 @@ export function PortfolioForm({
                 onClick={() => toggleSkill(skill.id)}
                 className={`rounded-full px-3 py-1 text-xs ${
                   selected
-                    ? 'bg-[#00A86B] text-white'
+                    ? 'bg-primary text-white'
                     : 'border bg-white text-slate-700'
                 }`}
               >
@@ -160,7 +160,7 @@ export function PortfolioForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
         </button>

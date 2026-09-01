@@ -39,4 +39,9 @@ export default () => ({
       forcePathStyle: process.env.S3_FORCE_PATH_STYLE ?? 'false',
     },
   },
+  payment: {
+    driver: process.env.PAYMENT_DRIVER ?? 'simulated',
+    currency: process.env.PAYMENT_CURRENCY ?? 'LYD',
+    simulatedFailure: process.env.PAYMENT_SIMULATED_FAILURE ?? 'false',
+  },
 });

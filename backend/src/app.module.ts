@@ -23,6 +23,9 @@ import { NotificationsModule } from './notifications/notifications.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { ClientRequestGuard } from './common/guards/client-request.guard.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
+import { PlatformModule } from './platform/platform.module.js';
+import { EscrowModule } from './escrow/escrow.module.js';
+import { PaymentsModule } from './payments/payment.module.js';
 
 @Module({
   imports: [
@@ -47,6 +50,9 @@ import { RealtimeModule } from './realtime/realtime.module.js';
     NotificationsModule,
     AdminModule,
     RealtimeModule,
+    PlatformModule,
+    PaymentsModule,
+    EscrowModule,
   ],
   controllers: [HealthController],
   providers: [

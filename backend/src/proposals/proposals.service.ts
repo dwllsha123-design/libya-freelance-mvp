@@ -1,6 +1,8 @@
 import {
   ConflictException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -20,6 +22,7 @@ import {
   ProposalStateService,
   validateProposalInput,
 } from './proposal-validation.util.js';
+import { EscrowService } from '../escrow/escrow.service.js';
 
 const freelancerPublicSelect = {
   profile: {
@@ -48,6 +51,8 @@ export class ProposalsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly portfolio: PortfolioService,
+    @Inject(forwardRef(() => EscrowService))
+    private readonly escrowService: EscrowService,
   ) {}
 
   async submit(freelancerId: string, projectId: string, dto: CreateProposalDto) {
@@ -226,6 +231,8 @@ export class ProposalsService {
   }
 
   async accept(clientId: string, proposalId: string) {
+    await this.escrowService.assertFundedForAccept(proposalId);
+
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
       include: {
@@ -264,51 +271,9 @@ export class ProposalsService {
       })
     ).map((p) => p.freelancerId);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const projectUpdate = await tx.project.updateMany({
-        where: {
-          id: proposal.projectId,
-          status: ProjectStatus.OPEN,
-          acceptedProposalId: null,
-        },
-        data: ProjectStateService.transitionToInProgress(proposalId),
-      });
-
-      if (projectUpdate.count === 0) {
-        throw new ConflictException('المشروع لم يعد يقبل قبول عروض');
-      }
-
-      const accepted = await tx.proposal.updateMany({
-        where: {
-          id: proposalId,
-          status: ProposalStatus.PENDING,
-          projectId: proposal.projectId,
-        },
-        data: ProposalStateService.transitionToAccepted(),
-      });
-
-      if (accepted.count === 0) {
-        throw new ConflictException('العرض لم يعد متاحاً للقبول');
-      }
-
-      const rejected = await tx.proposal.updateMany({
-        where: {
-          projectId: proposal.projectId,
-          status: ProposalStatus.PENDING,
-          id: { not: proposalId },
-        },
-        data: ProposalStateService.transitionToRejected(),
-      });
-
-      const updatedProposal = await tx.proposal.findUnique({
-        where: { id: proposalId },
-        include: {
-          project: { select: { title: true, slug: true } },
-        },
-      });
-
-      return { updatedProposal, rejectedCount: rejected.count };
-    });
+    const result = await this.prisma.$transaction((tx) =>
+      this.acceptInTransaction(tx, proposalId, proposal.projectId, pendingFreelancerIds),
+    );
 
     await this.notifications.create(
       proposal.freelancerId,
@@ -330,9 +295,58 @@ export class ProposalsService {
       }
     }
 
+    return this.getClientProposalById(clientId, proposalId);
+  }
+
+  async acceptInTransaction(
+    tx: Prisma.TransactionClient,
+    proposalId: string,
+    projectId: string,
+    pendingFreelancerIds: string[],
+  ) {
+    const projectUpdate = await tx.project.updateMany({
+      where: {
+        id: projectId,
+        status: ProjectStatus.OPEN,
+        acceptedProposalId: null,
+      },
+      data: ProjectStateService.transitionToInProgress(proposalId),
+    });
+
+    if (projectUpdate.count === 0) {
+      throw new ConflictException('المشروع لم يعد يقبل قبول عروض');
+    }
+
+    const accepted = await tx.proposal.updateMany({
+      where: {
+        id: proposalId,
+        status: ProposalStatus.PENDING,
+        projectId,
+      },
+      data: ProposalStateService.transitionToAccepted(),
+    });
+
+    if (accepted.count === 0) {
+      throw new ConflictException('العرض لم يعد متاحاً للقبول');
+    }
+
+    const rejected = await tx.proposal.updateMany({
+      where: {
+        projectId,
+        status: ProposalStatus.PENDING,
+        id: { not: proposalId },
+      },
+      data: ProposalStateService.transitionToRejected(),
+    });
+
+    return { rejectedCount: rejected.count };
+  }
+
+  async getClientProposalById(clientId: string, proposalId: string) {
+    const proposal = await this.findOwnedProposal(clientId, proposalId);
     return this.formatClientProposal(
       await this.prisma.proposal.findUniqueOrThrow({
-        where: { id: proposalId },
+        where: { id: proposal.id },
         include: { freelancer: { include: freelancerPublicSelect } },
       }),
     );

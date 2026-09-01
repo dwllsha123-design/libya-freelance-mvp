@@ -15,6 +15,7 @@ import {
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 import { PortfolioService } from '../portfolio/portfolio.service.js';
 import { ReviewsService } from '../reviews/reviews.service.js';
+import { isFreelancerVerified } from './freelancer-verification.util.js';
 
 const profileInclude = {
   city: true,
@@ -349,20 +350,7 @@ export class ProfilesService {
     return {
       ...base,
       freelancer: profile.freelancerProfile
-        ? {
-            professionalTitle: profile.freelancerProfile.professionalTitle,
-            availability: profile.freelancerProfile.availability,
-            hourlyRate: profile.freelancerProfile.hourlyRate
-              ? Number(profile.freelancerProfile.hourlyRate)
-              : null,
-            completedProjects: profile.freelancerProfile.completedProjects,
-            averageRating: profile.freelancerProfile.averageRating,
-            skills: profile.freelancerProfile.skills.map((fs) => ({
-              id: fs.skill.id,
-              name: fs.skill.name,
-              slug: fs.skill.slug,
-            })),
-          }
+        ? this.formatPublicFreelancer(profile)
         : null,
       client: profile.clientProfile
         ? {
@@ -371,6 +359,34 @@ export class ProfilesService {
             averageRating: profile.clientProfile.averageRating,
           }
         : null,
+    };
+  }
+
+  private formatPublicFreelancer(
+    profile: Prisma.ProfileGetPayload<{ include: typeof profileInclude }>,
+  ) {
+    const fp = profile.freelancerProfile!;
+    const skills = fp.skills.map((fs) => ({
+      id: fs.skill.id,
+      name: fs.skill.name,
+      slug: fs.skill.slug,
+    }));
+
+    return {
+      professionalTitle: fp.professionalTitle,
+      availability: fp.availability,
+      hourlyRate: fp.hourlyRate ? Number(fp.hourlyRate) : null,
+      completedProjects: fp.completedProjects,
+      averageRating: fp.averageRating,
+      skills,
+      isVerified: isFreelancerVerified({
+        emailVerified: profile.user.emailVerified,
+        profilePhoto: profile.profilePhoto,
+        bio: profile.bio,
+        completedProjects: fp.completedProjects,
+        averageRating: fp.averageRating,
+        skillCount: skills.length,
+      }),
     };
   }
 }

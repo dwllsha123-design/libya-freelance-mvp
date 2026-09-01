@@ -63,9 +63,15 @@ S3_ACCESS_KEY_ID=...
 S3_SECRET_ACCESS_KEY=...
 S3_PUBLIC_BASE_URL=https://...
 S3_FORCE_PATH_STYLE=false
+
+PAYMENT_DRIVER=simulated
+PAYMENT_CURRENCY=LYD
+PAYMENT_SIMULATED_FAILURE=false
 ```
 
 **Never** use development defaults or production credentials.
+
+Payment webhooks (when a real gateway is added): `POST https://api-staging.../api/payments/webhooks/<provider>`
 
 ---
 
@@ -80,7 +86,7 @@ DATABASE_URL="..." node node_modules/prisma/build/index.js migrate status
 DATABASE_URL="..." npm run prisma:seed
 ```
 
-Expected: **9/9 migrations**, reference data seeded, no drift.
+Expected: **11/11 migrations**, reference data seeded, no drift.
 
 **Do not** use `migrate dev`, `db push`, or `db reset`.
 
@@ -163,10 +169,19 @@ Or `docker build -f Dockerfile --build-arg NEXT_PUBLIC_API_URL=... -t libya-web-
 
 ---
 
+## 11. Escrow + payments smoke
+
+- [ ] Client: fund-and-accept proposal (simulated payment)
+- [ ] Freelancer: request completion; client confirms → escrow released
+- [ ] Optional: open dispute → admin resolves
+- [ ] `GET /api/platform/payment-config` returns `provider: simulated`
+
+---
+
 ## Docker Compose (local/VPS reference)
 
 ```bash
-cp backend/.env.staging.example .env.staging   # fill secrets
+cp .env.staging.example .env.staging   # fill secrets at repo root
 docker compose -f docker-compose.staging.yml --env-file .env.staging --profile tools run --rm migrate
 docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
 ```

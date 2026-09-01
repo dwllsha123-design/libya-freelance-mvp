@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ProjectStatus, Role, UserStatus } from '@prisma/client';
+import { DisputeStatus, ProjectStatus, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -19,6 +19,7 @@ export class AdminDashboardService {
       completedProjects,
       totalProposals,
       totalReviews,
+      openDisputes,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: Role.FREELANCER } }),
@@ -31,6 +32,9 @@ export class AdminDashboardService {
       this.prisma.project.count({ where: { status: ProjectStatus.COMPLETED } }),
       this.prisma.proposal.count(),
       this.prisma.review.count(),
+      this.prisma.escrowDispute.count({
+        where: { status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+      }),
     ]);
 
     return {
@@ -49,6 +53,7 @@ export class AdminDashboardService {
       },
       proposals: { total: totalProposals },
       reviews: { total: totalReviews },
+      escrow: { openDisputes },
     };
   }
 }

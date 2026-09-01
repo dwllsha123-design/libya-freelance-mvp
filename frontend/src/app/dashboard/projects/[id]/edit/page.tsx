@@ -104,7 +104,7 @@ export default function EditProjectPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <BackLink href="/dashboard/projects">مشاريعي</BackLink>
-      <h1 className="mt-4 text-3xl font-bold text-[#0B132B]">تعديل المشروع</h1>
+      <h1 className="mt-4 text-3xl font-bold text-on-surface">تعديل المشروع</h1>
 
       {readOnly ? (
         <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">

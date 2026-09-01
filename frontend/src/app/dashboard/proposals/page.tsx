@@ -91,14 +91,14 @@ export default function MyProposalsPage() {
     return (
       <div className="p-8 text-center">
         <p>هذه الصفحة للمستقلين فقط</p>
-        <Link href="/dashboard" className="text-[#00A86B]">العودة</Link>
+        <Link href="/dashboard" className="text-primary">العودة</Link>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#0B132B]">عروضي</h1>
+      <h1 className="text-3xl font-bold text-on-surface">عروضي</h1>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {TABS.map((tab) => (
@@ -107,7 +107,7 @@ export default function MyProposalsPage() {
             type="button"
             onClick={() => setFilter(tab.key)}
             className={`rounded-full px-4 py-1.5 text-sm ${
-              filter === tab.key ? 'bg-[#0B132B] text-white' : 'border bg-white'
+              filter === tab.key ? 'bg-on-surface text-white' : 'border bg-white'
             }`}
           >
             {tab.label}
@@ -128,7 +128,7 @@ export default function MyProposalsPage() {
               <div>
                 <Link
                   href={`/projects/${proposal.project.slug}`}
-                  className="text-lg font-bold text-[#0B132B] hover:text-[#00A86B]"
+                  className="text-lg font-bold text-on-surface hover:text-primary"
                 >
                   {proposal.project.title}
                 </Link>
@@ -150,7 +150,7 @@ export default function MyProposalsPage() {
                     type="button"
                     disabled={messagingId === proposal.id}
                     onClick={() => void openChat(proposal)}
-                    className="rounded-lg border px-4 py-2 text-sm text-[#00A86B]"
+                    className="rounded-lg border px-4 py-2 text-sm text-primary"
                   >
                     {messagingId === proposal.id
                       ? 'جاري الفتح...'

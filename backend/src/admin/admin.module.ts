@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ReviewsModule } from '../reviews/reviews.module.js';
+import { EscrowModule } from '../escrow/escrow.module.js';
 import { AdminAuditController } from './admin-audit.controller.js';
 import { AdminAuditService } from './admin-audit.service.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
@@ -12,7 +13,7 @@ import { AdminSkillsService } from './admin-skills.service.js';
 import { AdminUsersService } from './admin-users.service.js';
 
 @Module({
-  imports: [ReviewsModule],
+  imports: [ReviewsModule, EscrowModule],
   controllers: [AdminController, AdminAuditController],
   providers: [
     AdminAuditService,

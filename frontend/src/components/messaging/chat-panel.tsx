@@ -111,18 +111,18 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 border-b bg-white p-4">
-        <h2 className="font-bold text-[#0B132B]">
+        <h2 className="font-bold text-on-surface">
           {conversation?.otherParticipant?.name}
         </h2>
         <p className="text-sm text-slate-500">{conversation?.project?.title}</p>
         {conversation?.proposal ? (
-          <p className="mt-1 text-xs text-[#00A86B]">
+          <p className="mt-1 text-xs text-primary">
             العرض: {conversation.proposal.proposedPrice} · {conversation.proposal.status}
           </p>
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F6F8FA] p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-surface-container-low p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-slate-500">لا توجد رسائل بعد — ابدأ المحادثة</p>
         ) : null}
@@ -137,7 +137,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
                     isMine
-                      ? 'bg-[#0B132B] text-white'
+                      ? 'bg-on-surface text-white'
                       : 'border bg-white text-slate-800'
                   }`}
                 >
@@ -170,7 +170,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
             <button
               type="submit"
               disabled={isSending || !draft.trim()}
-              className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               إرسال
             </button>

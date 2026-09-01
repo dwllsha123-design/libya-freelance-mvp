@@ -20,7 +20,7 @@ export function NotificationCard({
       type="button"
       onClick={() => onOpen(item)}
       className={`flex w-full gap-4 rounded-xl border bg-white p-4 text-right transition hover:shadow-sm ${
-        item.isRead ? 'border-slate-200' : 'border-[#00A86B]/30 bg-emerald-50/30'
+        item.isRead ? 'border-slate-200' : 'border-primary/30 bg-emerald-50/30'
       }`}
     >
       <span
@@ -31,9 +31,9 @@ export function NotificationCard({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <span className="font-semibold text-[#0B132B]">{item.title}</span>
+          <span className="font-semibold text-on-surface">{item.title}</span>
           {!item.isRead ? (
-            <span className="shrink-0 rounded-full bg-[#00A86B] px-2 py-0.5 text-[10px] text-white">
+            <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-white">
               جديد
             </span>
           ) : null}

@@ -81,11 +81,11 @@ export function ProjectFiltersSidebar({
   return (
     <div className="space-y-4 rounded-xl border bg-white p-4">
       <div className="flex items-center justify-between">
-        <p className="font-semibold text-[#0B132B]">الفلاتر</p>
+        <p className="font-semibold text-on-surface">الفلاتر</p>
         <button
           type="button"
           onClick={onClear}
-          className="text-sm text-[#00A86B] hover:underline"
+          className="text-sm text-primary hover:underline"
         >
           مسح الفلاتر
         </button>

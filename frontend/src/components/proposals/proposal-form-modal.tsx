@@ -79,9 +79,9 @@ export function ProposalFormModal({
         onSubmit={(e) => void handleSubmit(e)}
         className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
       >
-        <h2 className="text-xl font-bold text-[#0B132B]">تقديم عرض</h2>
+        <h2 className="text-xl font-bold text-on-surface">تقديم عرض</h2>
         <p className="mt-1 text-sm text-slate-600">{project.title}</p>
-        <p className="mt-2 text-sm text-[#00A86B]">
+        <p className="mt-2 text-sm text-primary">
           ميزانية المشروع: {project.budgetMin}–{project.budgetMax}{' '}
           {project.currency}
         </p>
@@ -142,7 +142,7 @@ export function ProposalFormModal({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {isSubmitting ? 'جاري الإرسال...' : 'إرسال العرض'}
           </button>

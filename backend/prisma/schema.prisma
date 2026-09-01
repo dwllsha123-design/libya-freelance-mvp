@@ -66,6 +66,10 @@ enum NotificationType {
   PROJECT_COMPLETION_REQUESTED
   PROJECT_COMPLETED
   NEW_REVIEW
+  ESCROW_FUNDED
+  ESCROW_RELEASED
+  ESCROW_DISPUTED
+  ESCROW_DISPUTE_RESOLVED
 }
 
 enum AdminAuditAction {
@@ -83,6 +87,44 @@ enum AdminAuditAction {
   SKILL_UPDATED
   SKILL_DEACTIVATED
   SKILL_ACTIVATED
+  ESCROW_DISPUTE_RESOLVED
+}
+
+enum EscrowStatus {
+  PENDING_FUNDING
+  FUNDED
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum EscrowTransactionType {
+  DEPOSIT
+  RELEASE
+  REFUND
+  PLATFORM_FEE
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_REFUND_CLIENT
+  RESOLVED_RELEASE_FREELANCER
+  CLOSED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  ESCROW_FUNDING
+  ESCROW_REFUND
 }
 
 model User {
@@ -108,6 +150,12 @@ model User {
   reviewsReceived         Review[]                 @relation("ReviewsReceived")
   notifications           Notification[]
   adminAuditLogs          AdminAuditLog[]
+  escrowsAsClient         Escrow[]                 @relation("EscrowClient")
+  escrowsAsFreelancer     Escrow[]                 @relation("EscrowFreelancer")
+  escrowTransactions      EscrowTransaction[]      @relation("EscrowTransactionActor")
+  escrowDisputesOpened    EscrowDispute[]          @relation("EscrowDisputeOpener")
+  escrowDisputesResolved  EscrowDispute[]          @relation("EscrowDisputeResolver")
+  payments                Payment[]                @relation("PaymentClient")
 
   @@index([role])
   @@index([status])
@@ -296,6 +344,7 @@ model Project {
   proposals        Proposal[]     @relation("ProjectProposals")
   reviews          Review[]
   conversations    Conversation[]
+  escrow           Escrow?
 
   @@index([status])
   @@index([publishedAt])
@@ -335,6 +384,7 @@ model Proposal {
   freelancer         User           @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
   acceptedForProject Project?       @relation("AcceptedProposal")
   conversations      Conversation[]
+  escrow             Escrow?
 
   @@unique([projectId, freelancerId])
   @@index([freelancerId])
@@ -479,4 +529,100 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+model Escrow {
+  id               String       @id @default(uuid())
+  projectId        String       @unique
+  proposalId       String       @unique
+  clientId         String
+  freelancerId     String
+  amount           Decimal      @db.Decimal(12, 2)
+  platformFee      Decimal      @db.Decimal(12, 2)
+  freelancerPayout Decimal      @db.Decimal(12, 2)
+  currency         String       @default("LYD")
+  status           EscrowStatus @default(PENDING_FUNDING)
+  fundedAt         DateTime?
+  releasedAt       DateTime?
+  refundedAt       DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  proposal     Proposal            @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  client       User                @relation("EscrowClient", fields: [clientId], references: [id], onDelete: Cascade)
+  freelancer   User                @relation("EscrowFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
+  transactions EscrowTransaction[]
+  dispute      EscrowDispute?
+  payments     Payment[]
+
+  @@index([clientId])
+  @@index([freelancerId])
+  @@index([status])
+}
+
+model Payment {
+  id                String         @id @default(uuid())
+  escrowId          String
+  clientId          String
+  purpose           PaymentPurpose @default(ESCROW_FUNDING)
+  amount            Decimal        @db.Decimal(12, 2)
+  currency          String         @default("LYD")
+  status            PaymentStatus  @default(PENDING)
+  provider          String
+  providerReference String?
+  checkoutUrl       String?
+  idempotencyKey    String         @unique
+  metadata          Json?
+  failureCode       String?
+  failureMessage    String?
+  paidAt            DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  escrow Escrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  client User   @relation("PaymentClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([escrowId])
+  @@index([clientId])
+  @@index([status])
+  @@index([providerReference])
+  @@index([createdAt])
+}
+
+model EscrowTransaction {
+  id          String                @id @default(uuid())
+  escrowId    String
+  type        EscrowTransactionType
+  amount      Decimal               @db.Decimal(12, 2)
+  currency    String                @default("LYD")
+  note        String?
+  createdById String?
+  createdAt   DateTime              @default(now())
+
+  escrow    Escrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation("EscrowTransactionActor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([escrowId])
+  @@index([createdAt])
+}
+
+model EscrowDispute {
+  id           String        @id @default(uuid())
+  escrowId     String        @unique
+  openedById   String
+  reason       String
+  status       DisputeStatus @default(OPEN)
+  resolution   String?
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  escrow     Escrow @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+  openedBy   User   @relation("EscrowDisputeOpener", fields: [openedById], references: [id], onDelete: Cascade)
+  resolvedBy User?  @relation("EscrowDisputeResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
 }

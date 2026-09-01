@@ -39,7 +39,7 @@ export function ConversationList({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-[#0B132B]">
+                  <p className="truncate font-semibold text-on-surface">
                     {c.otherParticipant?.name ?? 'مستخدم'}
                   </p>
                   <p className="truncate text-xs text-slate-500">
@@ -56,7 +56,7 @@ export function ConversationList({
                     {new Date(c.lastMessageAt).toLocaleDateString('ar-LY')}
                   </p>
                   {c.unreadCount > 0 ? (
-                    <span className="mt-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#00A86B] px-1 text-xs text-white">
+                    <span className="mt-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs text-white">
                       {c.unreadCount}
                     </span>
                   ) : null}

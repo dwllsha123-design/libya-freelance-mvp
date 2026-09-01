@@ -39,7 +39,7 @@ function NotificationRow({
         {ui.icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-[#0B132B]">
+        <span className="block truncate text-sm font-semibold text-on-surface">
           {item.title}
         </span>
         <span className="mt-0.5 block line-clamp-2 text-xs text-slate-600">
@@ -50,7 +50,7 @@ function NotificationRow({
         </span>
       </span>
       {!item.isRead ? (
-        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#00A86B]" aria-hidden />
+        <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden />
       ) : null}
     </button>
   );
@@ -161,7 +161,7 @@ export function NotificationBell() {
           aria-label="أحدث الإشعارات"
         >
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-bold text-[#0B132B]">الإشعارات</p>
+            <p className="text-sm font-bold text-on-surface">الإشعارات</p>
             {badge ? (
               <span className="text-xs text-slate-500">{badge} غير مقروء</span>
             ) : null}
@@ -189,7 +189,7 @@ export function NotificationBell() {
 
           <Link
             href="/notifications"
-            className="mt-3 block rounded-lg border-t pt-3 text-center text-sm font-medium text-[#00A86B]"
+            className="mt-3 block rounded-lg border-t pt-3 text-center text-sm font-medium text-primary"
             onClick={() => setOpen(false)}
           >
             عرض كل الإشعارات

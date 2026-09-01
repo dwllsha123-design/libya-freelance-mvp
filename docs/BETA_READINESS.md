@@ -9,7 +9,7 @@
 
 | Check | Status |
 |-------|--------|
-| PostgreSQL 16, migrations 9/9 | **PASS** (CI) |
+| PostgreSQL 16, migrations 11/11 | **PASS** (CI) |
 | Unit 63/63 + storage unit tests | **76/76 PASS** (local; CI pending) |
 | E2E 123/123 ×2, 0 skipped | **PASS** (CI run 33552148568 — pre-4726e25) |
 | Runtime dependency boundary | **PASS** |
@@ -37,7 +37,7 @@
 |--------|---------|
 | `20af371` | Mobile/RTL QA fixes |
 | `4726e25` | Deploy packaging + beta docs |
-| *(pending)* | S3 storage + staging deploy docs |
+| *(pending)* | S3 storage + escrow/payments + staging deploy docs |
 
 **Action required:** Push to GitHub and confirm new CI run includes `verify:prod-boundary` + `package:runtime` **PASS**.
 
@@ -68,4 +68,5 @@ Operator guide: `docs/STAGING_DEPLOY.md`
 3. **Verify S3 persistence** on staging (upload → redeploy → still loads)
 4. **HTTPS integration tests** (cookies, CORS, Socket.IO)
 5. **Full responsive/browser QA** on staging
-6. **Manual CLIENT/FREELANCER/ADMIN** flows on staging
+6. **Manual CLIENT/FREELANCER/ADMIN** flows on staging (incl. escrow fund → complete → dispute)
+7. **Payment layer** verified (`PAYMENT_DRIVER=simulated` on staging until gateway chosen)

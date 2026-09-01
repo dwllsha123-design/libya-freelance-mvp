@@ -122,7 +122,7 @@ describe('MVP happy path E2E (PostgreSQL)', () => {
       .expect(201);
 
     await authAgent(app)
-      .post(`/api/proposals/${proposal.body.id}/accept`)
+      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);

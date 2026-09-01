@@ -44,6 +44,7 @@ export function useAdminApi() {
           };
           proposals: { total: number };
           reviews: { total: number };
+          escrow: { openDisputes: number };
         }>('/admin/dashboard', requireToken()),
 
       users: (params: Record<string, string | undefined> = {}) =>
@@ -147,6 +148,43 @@ export function useAdminApi() {
           `/admin/audit${qs(params)}`,
           requireToken(),
         ),
+
+      escrowDisputes: (status: 'open' | 'resolved' = 'open') =>
+        authenticatedRequest<AdminEscrowDispute[]>(
+          `/admin/escrow/disputes?status=${status}`,
+          requireToken(),
+        ),
+
+      resolveEscrowDispute: (
+        id: string,
+        body: { resolution: string; outcome: 'REFUND_CLIENT' | 'RELEASE_FREELANCER' },
+      ) =>
+        authenticatedRequest(`/admin/escrow/disputes/${id}/resolve`, requireToken(), {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }),
     };
   }, [accessToken]);
+}
+
+export interface AdminEscrowDispute {
+  id: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  resolution?: string | null;
+  resolvedAt?: string | null;
+  resolvedBy?: { id: string; name: string } | null;
+  openedBy: { id: string; name: string };
+  escrow: {
+    id: string;
+    amount: number;
+    platformFee: number;
+    freelancerPayout: number;
+    currency: string;
+    status: string;
+    project: { id: string; title: string; slug: string; status: string };
+    client: { id: string; name: string; username: string | null };
+    freelancer: { id: string; name: string; username: string | null };
+  };
 }

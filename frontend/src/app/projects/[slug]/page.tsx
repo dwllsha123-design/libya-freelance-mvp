@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PLATFORM_NAME_AR } from '@/lib/branding';
 import ProjectDetailClient from './project-detail-client';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -17,13 +18,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     );
 
     if (!res.ok) {
-      return { title: 'مشروع غير موجود | ليبيا فريلانس' };
+      return { title: `مشروع غير موجود | ${PLATFORM_NAME_AR}` };
     }
 
     const project = await res.json();
 
     return {
-      title: `${project.title} | ليبيا فريلانس`,
+      title: `${project.title} | ${PLATFORM_NAME_AR}`,
       description: project.description?.slice(0, 160),
       alternates: { canonical: `${baseUrl}/projects/${slug}` },
       openGraph: {
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: 'مشروع | ليبيا فريلانس' };
+    return { title: `مشروع | ${PLATFORM_NAME_AR}` };
   }
 }
 

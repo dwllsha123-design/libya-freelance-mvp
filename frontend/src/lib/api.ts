@@ -74,6 +74,7 @@ export interface PublicProfile {
     hourlyRate?: number | null;
     completedProjects: number;
     averageRating: number;
+    isVerified?: boolean;
     skills: Skill[];
     portfolio?: {
       count: number;

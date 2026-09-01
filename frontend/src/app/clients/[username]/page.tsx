@@ -36,7 +36,7 @@ export default function ClientProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#0B132B]">
+      <h1 className="text-3xl font-bold text-on-surface">
         {profile.client?.displayName ?? `${profile.firstName} ${profile.lastName}`}
       </h1>
       <p className="mt-2 text-slate-600">@{profile.username}</p>
@@ -59,7 +59,7 @@ export default function ClientProfilePage() {
         summary={profile.reviews}
       />
 
-      <Link href="/" className="mt-8 inline-block text-[#00A86B]">الرئيسية</Link>
+      <Link href="/" className="mt-8 inline-block text-primary">الرئيسية</Link>
     </div>
   );
 }

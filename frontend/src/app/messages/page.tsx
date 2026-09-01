@@ -34,7 +34,7 @@ export default function MessagesIndexPage() {
   return (
     <>
       <div className="border-b p-4 lg:hidden">
-        <h1 className="text-xl font-bold text-[#0B132B]">الرسائل</h1>
+        <h1 className="text-xl font-bold text-on-surface">الرسائل</h1>
       </div>
       <div className="lg:hidden">
         <ConversationList conversations={conversations} isLoading={isLoading} />
@@ -45,7 +45,7 @@ export default function MessagesIndexPage() {
       {!isLoading && conversations.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 lg:hidden">
           <p className="text-slate-500">لا توجد محادثات بعد</p>
-          <Link href="/projects" className="text-[#00A86B]">
+          <Link href="/projects" className="text-primary">
             تصفح المشاريع
           </Link>
         </div>

@@ -56,7 +56,7 @@ export default function AdminReviewsPage() {
                   إخفاء التقييم
                 </button>
               ) : (
-                <button type="button" onClick={() => setPending({ id: String(review.id), action: 'restore' })} className="text-sm text-[#00A86B]">
+                <button type="button" onClick={() => setPending({ id: String(review.id), action: 'restore' })} className="text-sm text-primary">
                   استعادة التقييم
                 </button>
               )}

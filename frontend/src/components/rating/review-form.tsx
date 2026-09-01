@@ -35,7 +35,7 @@ export function ReviewForm({
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 rounded-xl border bg-white p-4">
-      <p className="font-medium text-[#0B132B]">أضف تقييمك</p>
+      <p className="font-medium text-on-surface">أضف تقييمك</p>
       <RatingStars value={rating} onChange={setRating} />
       <textarea
         value={comment}
@@ -48,7 +48,7 @@ export function ReviewForm({
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {isSubmitting ? 'جاري الإرسال...' : 'إرسال التقييم'}
       </button>

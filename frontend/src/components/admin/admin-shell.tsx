@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { PLATFORM_NAME_AR } from '@/lib/branding';
 
 const NAV = [
   { href: '/admin', label: 'لوحة التحكم', exact: true },
@@ -10,6 +11,7 @@ const NAV = [
   { href: '/admin/projects', label: 'المشاريع' },
   { href: '/admin/proposals', label: 'العروض' },
   { href: '/admin/reviews', label: 'التقييمات' },
+  { href: '/admin/disputes', label: 'نزاعات الضمان' },
   { href: '/admin/categories', label: 'التصنيفات' },
   { href: '/admin/skills', label: 'المهارات' },
   { href: '/admin/audit', label: 'سجل التدقيق' },
@@ -21,15 +23,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#F6F8FA]">
+    <div className="min-h-screen bg-surface-container-low">
       <div className="border-b bg-white px-4 py-3">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div>
-            <p className="font-bold text-[#0B132B]">لوحة إدارة ليبيا فريلانس</p>
+            <p className="font-bold text-on-surface">لوحة إدارة {PLATFORM_NAME_AR}</p>
             <p className="text-xs text-slate-500">{user?.email}</p>
           </div>
           <div className="flex gap-3 text-sm">
-            <Link href="/" className="text-[#00A86B]">الموقع</Link>
+            <Link href="/" className="text-primary">الموقع</Link>
             <button type="button" onClick={() => void logout()} className="text-slate-600">
               خروج
             </button>
@@ -51,7 +53,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   className={`rounded-lg px-3 py-2 text-sm ${
                     active
-                      ? 'bg-[#0B132B] text-white'
+                      ? 'bg-on-surface text-white'
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >

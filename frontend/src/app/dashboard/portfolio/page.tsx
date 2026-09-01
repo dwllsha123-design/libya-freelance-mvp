@@ -108,7 +108,7 @@ export default function PortfolioDashboardPage() {
     return (
       <div className="p-8 text-center">
         <p>هذه الصفحة للمستقلين فقط</p>
-        <Link href="/dashboard" className="text-[#00A86B]">
+        <Link href="/dashboard" className="text-primary">
           العودة
         </Link>
       </div>
@@ -119,7 +119,7 @@ export default function PortfolioDashboardPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0B132B]">معرض الأعمال</h1>
+          <h1 className="text-3xl font-bold text-on-surface">معرض الأعمال</h1>
           <p className="mt-1 text-sm text-slate-500">اعرض أفضل مشاريعك للعملاء</p>
         </div>
         <button
@@ -128,7 +128,7 @@ export default function PortfolioDashboardPage() {
             setEditing(null);
             setIsCreating(true);
           }}
-          className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
         >
           إضافة عمل
         </button>
@@ -195,7 +195,7 @@ export default function PortfolioDashboardPage() {
               </div>
             )}
             <div className="p-4">
-              <h3 className="font-bold text-[#0B132B]">{item.title}</h3>
+              <h3 className="font-bold text-on-surface">{item.title}</h3>
               <p className="mt-1 line-clamp-2 text-sm text-slate-600">
                 {item.description}
               </p>
@@ -220,7 +220,7 @@ export default function PortfolioDashboardPage() {
                     setIsCreating(false);
                     setEditing(item);
                   }}
-                  className="rounded border px-3 py-1 text-xs text-[#00A86B]"
+                  className="rounded border px-3 py-1 text-xs text-primary"
                 >
                   تعديل
                 </button>

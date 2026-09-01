@@ -2,7 +2,7 @@
   "name": "libya-freelance",
   "version": "0.1.0",
   "private": true,
-  "description": "Libya Freelance — ليبيا فريلانس marketplace MVP",
+  "description": "Libyi Freelance — ليبي فريلانس marketplace MVP",
   "scripts": {
     "dev:api": "npm run start:dev --prefix backend",
     "dev:web": "npm run dev --prefix frontend",

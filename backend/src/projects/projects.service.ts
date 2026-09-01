@@ -12,6 +12,7 @@ import {
   ProposalStatus,
   Role,
   WorkMode,
+  EscrowStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PROJECT_CURRENCY } from './projects.constants.js';
@@ -32,6 +33,7 @@ import {
   assertClientCanComplete,
   assertFreelancerCanRequestCompletion,
 } from '../reviews/review-validation.util.js';
+import { EscrowService } from '../escrow/escrow.service.js';
 
 const projectInclude = {
   category: true,
@@ -75,6 +77,7 @@ export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly escrowService: EscrowService,
   ) {}
 
   async create(clientId: string, dto: CreateProjectDto) {
@@ -429,6 +432,13 @@ export class ProjectsService {
     assertClientCanComplete(clientId, ctx);
     ProjectStateService.assertCanComplete(project.status);
 
+    const existingEscrow = await this.prisma.escrow.findUnique({
+      where: { projectId },
+    });
+    if (existingEscrow?.status === EscrowStatus.DISPUTED) {
+      throw new ConflictException('لا يمكن إتمام المشروع أثناء وجود نزاع على الضمان');
+    }
+
     const freelancerId = project.acceptedProposal?.freelancerId;
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -462,6 +472,8 @@ export class ProjectsService {
         }
       }
 
+      await this.escrowService.releaseOnComplete(tx, projectId);
+
       return tx.project.findUniqueOrThrow({
         where: { id: projectId },
         include: projectInclude,
@@ -476,6 +488,16 @@ export class ProjectsService {
         `تم تأكيد إتمام مشروع "${updated.title}"`,
         `/dashboard/proposals`,
       );
+
+      if (existingEscrow?.status === EscrowStatus.FUNDED) {
+        await this.notifications.create(
+          freelancerId,
+          NotificationType.ESCROW_RELEASED,
+          'تم تحرير مبلغ الضمان',
+          `تم تحرير مبلغ المشروع إلى حسابك بعد إتمام "${updated.title}".`,
+          `/dashboard/escrow`,
+        );
+      }
     }
 
     return this.formatManageProject(updated);

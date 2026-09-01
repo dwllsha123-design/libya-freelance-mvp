@@ -51,7 +51,7 @@ export default function AdminCategoriesPage() {
       <form onSubmit={(e) => void onCreate(e)} className="flex flex-wrap gap-2 rounded-xl border bg-white p-4">
         <input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="الاسم بالعربية" className="rounded border px-3 py-2 text-sm" required />
         <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="slug" className="rounded border px-3 py-2 text-sm" required />
-        <button type="submit" className="rounded bg-[#00A86B] px-4 py-2 text-sm text-white">إضافة</button>
+        <button type="submit" className="rounded bg-primary px-4 py-2 text-sm text-white">إضافة</button>
       </form>
       <div className="space-y-2">
         {isLoading ? (
@@ -67,7 +67,7 @@ export default function AdminCategoriesPage() {
               {c.isActive ? (
                 <button type="button" onClick={() => void api.deactivateCategory(String(c.id)).then(reload)} className="text-sm text-red-600">تعطيل</button>
               ) : (
-                <button type="button" onClick={() => void api.activateCategory(String(c.id)).then(reload)} className="text-sm text-[#00A86B]">تفعيل</button>
+                <button type="button" onClick={() => void api.activateCategory(String(c.id)).then(reload)} className="text-sm text-primary">تفعيل</button>
               )}
             </div>
           </div>

@@ -154,6 +154,18 @@ export async function createOpenProject(
   return created.body as { id: string; title: string };
 }
 
+export async function fundAndAcceptProposal(
+  app: INestApplication,
+  clientToken: string,
+  proposalId: string,
+) {
+  return authAgent(app)
+    .post(`/api/escrow/fund-and-accept/${proposalId}`)
+    .set(CLIENT_HEADER)
+    .set('Authorization', `Bearer ${clientToken}`)
+    .expect(201);
+}
+
 export async function createInProgressProject(
   app: INestApplication,
   clientToken: string,
@@ -175,11 +187,7 @@ export async function createInProgressProject(
     .send(validProposalBody)
     .expect(201);
 
-  await authAgent(app)
-    .post(`/api/proposals/${proposal.body.id}/accept`)
-    .set(CLIENT_HEADER)
-    .set('Authorization', `Bearer ${clientToken}`)
-    .expect(201);
+  await fundAndAcceptProposal(app, clientToken, proposal.body.id);
 
   return {
     project,

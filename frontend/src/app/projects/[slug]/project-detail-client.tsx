@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { ProposalFormModal } from '@/components/proposals/proposal-form-modal';
 import { BackLink } from '@/components/ui/back-link';
 import { useAuth } from '@/contexts/auth-context';
 import { useProjectsApi } from '@/hooks/use-projects';
 import { useProposalsApi, type FreelancerProposal } from '@/hooks/use-proposals';
+import { buildAuthHref } from '@/lib/auth-redirect';
 import type { ProjectListItem } from '@/lib/schemas/project';
 
 const EXPERIENCE_LABELS: Record<string, string> = {
@@ -16,6 +18,7 @@ const EXPERIENCE_LABELS: Record<string, string> = {
 };
 
 export default function ProjectDetailClient({ slug }: { slug: string }) {
+  const pathname = usePathname();
   const { user } = useAuth();
   const api = useProjectsApi();
   const proposalsApi = useProposalsApi();
@@ -89,7 +92,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
       <BackLink href="/projects">تصفح المشاريع</BackLink>
 
       <article className="mt-6">
-        <h1 className="text-3xl font-bold text-[#0B132B]">{project.title}</h1>
+        <h1 className="text-3xl font-bold text-on-surface">{project.title}</h1>
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600">
           <span>
@@ -121,7 +124,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
             {project.skills.map((s) => (
               <span
                 key={s.slug}
-                className="rounded-full bg-[#F6F8FA] px-3 py-1 text-sm"
+                className="rounded-full bg-surface-container-low px-3 py-1 text-sm"
               >
                 {s.name}
               </span>
@@ -134,7 +137,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
             <h2 className="text-lg font-semibold">عن العميل</h2>
             <Link
               href={`/clients/${project.client.username}`}
-              className="mt-3 inline-block font-medium text-[#00A86B]"
+              className="mt-3 inline-block font-medium text-primary"
             >
               {project.client.displayName}
             </Link>
@@ -143,21 +146,38 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
 
         <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
           {!user ? (
-            <Link
-              href="/login"
-              className="inline-block rounded-lg bg-[#00A86B] px-8 py-3 font-semibold text-white"
-            >
-              سجّل الدخول لتقديم عرض
-            </Link>
+            <div className="space-y-4">
+              <p className="text-slate-600">
+                يمكنك قراءة تفاصيل المشروع بدون حساب. عند الرغبة في تقديم عرض، أنشئ حساباً
+                مستقل أو سجّل دخولك.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link
+                  href={buildAuthHref('/register', {
+                    next: pathname,
+                    role: 'FREELANCER',
+                  })}
+                  className="inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-white"
+                >
+                  إنشاء حساب وتقديم عرض
+                </Link>
+                <Link
+                  href={buildAuthHref('/login', { next: pathname })}
+                  className="inline-block rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-on-surface"
+                >
+                  تسجيل الدخول
+                </Link>
+              </div>
+            </div>
           ) : isOwner ? (
             <p className="text-slate-600">هذا مشروعك — لا يمكنك تقديم عرض عليه</p>
           ) : user.role === 'FREELANCER' ? (
             myProposal ? (
               <>
-                <p className="font-semibold text-[#00A86B]">تم تقديم عرضك</p>
+                <p className="font-semibold text-primary">تم تقديم عرضك</p>
                 <Link
                   href="/dashboard/proposals"
-                  className="mt-3 inline-block text-sm text-[#0B132B] underline"
+                  className="mt-3 inline-block text-sm text-on-surface underline"
                 >
                   عرض تفاصيل عرضي
                 </Link>
@@ -166,7 +186,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="rounded-lg bg-[#00A86B] px-8 py-3 font-semibold text-white"
+                className="rounded-lg bg-primary px-8 py-3 font-semibold text-white"
               >
                 قدّم عرضك
               </button>

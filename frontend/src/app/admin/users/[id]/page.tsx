@@ -68,7 +68,7 @@ export default function AdminUserDetailPage() {
           </button>
         ) : null}
         {user.status !== 'ACTIVE' ? (
-          <button type="button" onClick={() => setPending('reactivate')} className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm text-white">
+          <button type="button" onClick={() => setPending('reactivate')} className="rounded-lg bg-primary px-4 py-2 text-sm text-white">
             إعادة التفعيل
           </button>
         ) : null}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ProjectFiltersSidebar } from '@/components/projects/project-filters-sidebar';
 import { useProjectsApi } from '@/hooks/use-projects';
 import { apiRequest, type Category, type City, type Skill } from '@/lib/api';
+import { formatBudgetRange } from '@/lib/currency';
 import {
   buildSearchParams,
   countActiveFilters,
@@ -105,7 +106,7 @@ export default function ProjectsDirectoryPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#0B132B]">تصفح المشاريع</h1>
+      <h1 className="text-3xl font-bold text-on-surface">تصفح المشاريع</h1>
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row">
         <aside className="hidden lg:block lg:w-72 lg:shrink-0">
@@ -127,7 +128,7 @@ export default function ProjectsDirectoryPage() {
               aria-label="إغلاق الفلاتر"
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto bg-[#F6F8FA] p-4 shadow-xl">
+            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto bg-surface-container-low p-4 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-bold">فلترة المشاريع</h2>
                 <button
@@ -166,7 +167,7 @@ export default function ProjectsDirectoryPage() {
             <button
               type="button"
               onClick={submitSearch}
-              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm text-white"
+              className="rounded-lg bg-on-surface px-4 py-2 text-sm text-white"
             >
               بحث
             </button>
@@ -177,7 +178,7 @@ export default function ProjectsDirectoryPage() {
             >
               فلترة
               {activeFilterCount > 0 ? (
-                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#00A86B] text-xs text-white">
+                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -199,7 +200,7 @@ export default function ProjectsDirectoryPage() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="mt-4 text-sm text-[#00A86B] hover:underline"
+                  className="mt-4 text-sm text-primary hover:underline"
                 >
                   مسح الفلاتر
                 </button>
@@ -212,9 +213,9 @@ export default function ProjectsDirectoryPage() {
               <Link
                 key={project.slug}
                 href={`/projects/${project.slug}`}
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-[#00A86B]"
+                className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-primary"
               >
-                <h2 className="font-bold text-[#0B132B]">{project.title}</h2>
+                <h2 className="font-bold text-on-surface">{project.title}</h2>
                 <p className="mt-2 line-clamp-2 text-sm text-slate-600">
                   {project.description}
                 </p>
@@ -228,8 +229,8 @@ export default function ProjectsDirectoryPage() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-3 text-sm font-medium text-[#00A86B]">
-                  {project.budgetMin}–{project.budgetMax} {project.currency}
+                <p className="mt-3 text-sm font-medium text-primary">
+                  {formatBudgetRange(project.budgetMin, project.budgetMax, project.currency)}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   {EXPERIENCE_LABELS[project.experienceLevel] ??

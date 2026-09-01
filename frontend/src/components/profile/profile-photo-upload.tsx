@@ -105,7 +105,7 @@ export function ProfilePhotoUpload({
 
   return (
     <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-semibold text-[#0B132B]">الصورة الشخصية</h2>
+      <h2 className="text-lg font-semibold text-on-surface">الصورة الشخصية</h2>
 
       <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
@@ -142,7 +142,7 @@ export function ProfilePhotoUpload({
             type="button"
             disabled={isUploading}
             onClick={() => inputRef.current?.click()}
-            className="rounded-lg border border-[#00A86B] px-4 py-2 text-sm font-medium text-[#00A86B] disabled:opacity-50"
+            className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary disabled:opacity-50"
           >
             {isUploading ? 'جاري الرفع...' : 'اختر صورة'}
           </button>
@@ -155,7 +155,7 @@ export function ProfilePhotoUpload({
       {isUploading ? (
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-[#00A86B] transition-all duration-300"
+            className="h-full bg-primary transition-all duration-300"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>

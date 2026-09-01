@@ -71,7 +71,7 @@ export default function AdminUsersPage() {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/users/${user.id}`} className="text-[#00A86B]">
+                    <Link href={`/admin/users/${user.id}`} className="text-primary">
                       عرض
                     </Link>
                   </td>

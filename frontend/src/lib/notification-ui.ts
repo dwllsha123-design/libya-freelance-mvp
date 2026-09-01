@@ -5,7 +5,11 @@ export type AppNotificationType =
   | 'NEW_MESSAGE'
   | 'PROJECT_COMPLETION_REQUESTED'
   | 'PROJECT_COMPLETED'
-  | 'NEW_REVIEW';
+  | 'NEW_REVIEW'
+  | 'ESCROW_FUNDED'
+  | 'ESCROW_RELEASED'
+  | 'ESCROW_DISPUTED'
+  | 'ESCROW_DISPUTE_RESOLVED';
 
 export interface NotificationItem {
   id: string;
@@ -55,6 +59,26 @@ export const NOTIFICATION_UI: Record<
     icon: '⭐',
     label: 'تقييم',
     accent: 'bg-yellow-50 text-yellow-800',
+  },
+  ESCROW_FUNDED: {
+    icon: '🔒',
+    label: 'ضمان مموّل',
+    accent: 'bg-blue-50 text-blue-700',
+  },
+  ESCROW_RELEASED: {
+    icon: '💰',
+    label: 'تحرير ضمان',
+    accent: 'bg-emerald-50 text-emerald-700',
+  },
+  ESCROW_DISPUTED: {
+    icon: '⚠️',
+    label: 'نزاع ضمان',
+    accent: 'bg-red-50 text-red-700',
+  },
+  ESCROW_DISPUTE_RESOLVED: {
+    icon: '✔️',
+    label: 'حل نزاع',
+    accent: 'bg-slate-100 text-slate-700',
   },
 };
 

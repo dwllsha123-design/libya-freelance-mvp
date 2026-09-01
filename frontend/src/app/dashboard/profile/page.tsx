@@ -33,7 +33,7 @@ export default function ProfileEditPage() {
     return (
       <div className="mx-auto max-w-lg p-8 text-center">
         <p className="mb-4">يجب تسجيل الدخول</p>
-        <Link href="/login" className="text-[#00A86B]">تسجيل الدخول</Link>
+        <Link href="/login" className="text-primary">تسجيل الدخول</Link>
       </div>
     );
   }
@@ -68,7 +68,7 @@ export default function ProfileEditPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-[#0B132B]">تعديل الملف الشخصي</h1>
+      <h1 className="text-3xl font-bold text-on-surface">تعديل الملف الشخصي</h1>
 
       {error ? (
         <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -161,7 +161,7 @@ export default function ProfileEditPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-lg bg-[#00A86B] px-6 py-2.5 font-semibold text-white disabled:opacity-60"
+            className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-white disabled:opacity-60"
           >
             {isSaving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
           </button>
@@ -177,7 +177,7 @@ export default function ProfileEditPage() {
                 key={skill.id}
                 type="button"
                 onClick={() => removeSkill(skill.id)}
-                className="rounded-full bg-[#0B132B] px-3 py-1 text-sm text-white"
+                className="rounded-full bg-on-surface px-3 py-1 text-sm text-white"
               >
                 {skill.name} ×
               </button>

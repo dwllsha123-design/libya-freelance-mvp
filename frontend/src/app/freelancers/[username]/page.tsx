@@ -6,6 +6,10 @@ import { useParams } from 'next/navigation';
 import { apiRequest, type PublicPortfolioItem, type PublicProfile } from '@/lib/api';
 import { BackLink } from '@/components/ui/back-link';
 import { ProfileReviewsSection } from '@/components/rating/profile-reviews-section';
+import { VerifiedBadge } from '@/components/trust/verified-badge';
+import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
+import { isFreelancerVerified, VERIFICATION_CRITERIA_AR } from '@/lib/freelancer-trust';
+import { formatCurrency } from '@/lib/currency';
 
 function isSafeUrl(url: string) {
   return url.startsWith('http://') || url.startsWith('https://');
@@ -48,25 +52,69 @@ export default function FreelancerProfilePage() {
   if (error || !profile) return <div className="p-8 text-center text-red-600">{error}</div>;
 
   const portfolioItems = profile.portfolio?.items ?? [];
+  const verified = isFreelancerVerified(profile);
+  const rating = profile.freelancer?.averageRating ?? 0;
+  const completed = profile.freelancer?.completedProjects ?? 0;
+  const hourlyRate = profile.freelancer?.hourlyRate;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <BackLink href="/freelancers">العودة للمستقلين</BackLink>
 
-      <div className="mt-6 rounded-2xl border bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold text-[#0B132B]">
-          {profile.firstName} {profile.lastName}
-        </h1>
-        <p className="mt-2 text-lg text-slate-600">
-          {profile.freelancer?.professionalTitle ?? 'مستقل'}
-        </p>
-        <p className="mt-4 text-sm text-slate-500">
-          {profile.city?.nameAr ?? '—'} · ⭐ {profile.freelancer?.averageRating ?? 0} ·{' '}
-          {profile.freelancer?.completedProjects ?? 0} مشروع مكتمل
-        </p>
+      <div className="mt-6 rounded-2xl border border-outline-variant/40 bg-surface p-8 shadow-sm">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          {profile.profilePhoto ? (
+            <Image
+              src={profile.profilePhoto}
+              alt=""
+              width={96}
+              height={96}
+              className="h-24 w-24 shrink-0 rounded-full object-cover ring-4 ring-surface-container"
+            />
+          ) : (
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-surface-container text-2xl font-bold text-secondary">
+              {profile.firstName.charAt(0)}
+              {profile.lastName.charAt(0)}
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-bold text-on-surface">
+                {profile.firstName} {profile.lastName}
+              </h1>
+              {verified ? <VerifiedBadge className="!text-xs" /> : null}
+            </div>
+            <p className="mt-2 text-lg text-on-surface-variant">
+              {profile.freelancer?.professionalTitle ?? 'مستقل'}
+            </p>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              {profile.city?.nameAr ?? '—'} · عضو منذ{' '}
+              {new Date(profile.joinDate).toLocaleDateString('ar-LY', {
+                year: 'numeric',
+                month: 'long',
+              })}
+            </p>
+
+            <div className="mt-4">
+              <FreelancerTrustStats
+                rating={rating}
+                completedProjects={completed}
+                reviewCount={profile.reviews?.reviewCount}
+                size="md"
+              />
+            </div>
+
+            {hourlyRate ? (
+              <p className="mt-3 text-lg font-semibold text-primary">
+                من {formatCurrency(hourlyRate)}/ساعة
+              </p>
+            ) : null}
+          </div>
+        </div>
 
         {profile.bio ? (
-          <p className="mt-6 leading-relaxed text-slate-700">{profile.bio}</p>
+          <p className="mt-6 leading-relaxed text-on-surface-variant">{profile.bio}</p>
         ) : null}
 
         {profile.freelancer?.skills?.length ? (
@@ -74,11 +122,22 @@ export default function FreelancerProfilePage() {
             {profile.freelancer.skills.map((skill) => (
               <span
                 key={skill.id}
-                className="rounded-full bg-[#F6F8FA] px-3 py-1 text-sm text-[#0B132B]"
+                className="rounded-full bg-surface-container-low px-3 py-1 text-sm text-on-surface"
               >
                 {skill.name}
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {!verified ? (
+          <div className="mt-6 rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-low p-4 text-sm text-on-surface-variant">
+            <p className="font-medium text-on-surface">كيف تحصل على شارة «موثّق»؟</p>
+            <ul className="mt-2 list-disc space-y-1 ps-5">
+              {VERIFICATION_CRITERIA_AR.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </div>
@@ -90,7 +149,7 @@ export default function FreelancerProfilePage() {
       />
 
       <section className="mt-10">
-        <h2 className="text-2xl font-bold text-[#0B132B]">معرض الأعمال</h2>
+        <h2 className="text-2xl font-bold text-on-surface">معرض الأعمال</h2>
         {portfolioItems.length === 0 ? (
           <p className="mt-4 text-slate-500">لا توجد أعمال معروضة بعد</p>
         ) : (
@@ -100,7 +159,7 @@ export default function FreelancerProfilePage() {
                 key={item.id}
                 type="button"
                 onClick={() => setSelectedItem(item)}
-                className="overflow-hidden rounded-xl border bg-white text-right transition hover:shadow-md"
+                className="overflow-hidden rounded-xl border border-outline-variant/40 bg-surface text-right transition hover:shadow-md"
               >
                 {item.coverImage ? (
                   <Image
@@ -111,24 +170,24 @@ export default function FreelancerProfilePage() {
                     className="h-44 w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-44 items-center justify-center bg-slate-100 text-sm text-slate-400">
+                  <div className="flex h-44 items-center justify-center bg-surface-container text-sm text-on-surface-variant">
                     بدون صورة
                   </div>
                 )}
                 <div className="p-4">
-                  <h3 className="font-bold text-[#0B132B]">{item.title}</h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                  <h3 className="font-bold text-on-surface">{item.title}</h3>
+                  <p className="mt-1 line-clamp-2 text-sm text-on-surface-variant">
                     {item.description}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {item.skills.slice(0, 3).map((skill) => (
-                      <span key={skill.id} className="text-xs text-[#00A86B]">
+                      <span key={skill.id} className="text-xs text-primary">
                         {skill.name}
                       </span>
                     ))}
                   </div>
                   {item.completedAt ? (
-                    <p className="mt-2 text-xs text-slate-400">
+                    <p className="mt-2 text-xs text-on-surface-variant">
                       {new Date(item.completedAt).toLocaleDateString('ar-LY')}
                     </p>
                   ) : null}
@@ -141,18 +200,18 @@ export default function FreelancerProfilePage() {
 
       {selectedItem ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-surface p-6">
             <div className="flex items-start justify-between gap-4">
-              <h3 className="text-xl font-bold text-[#0B132B]">{selectedItem.title}</h3>
+              <h3 className="text-xl font-bold text-on-surface">{selectedItem.title}</h3>
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="text-slate-500"
+                className="text-on-surface-variant"
               >
                 إغلاق
               </button>
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-slate-700">
+            <p className="mt-4 whitespace-pre-wrap text-on-surface-variant">
               {selectedItem.description}
             </p>
             {selectedItem.images.length ? (
@@ -174,7 +233,7 @@ export default function FreelancerProfilePage() {
                 href={selectedItem.projectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-block text-sm text-[#00A86B]"
+                className="mt-4 inline-block text-sm text-primary"
               >
                 زيارة المشروع
               </a>

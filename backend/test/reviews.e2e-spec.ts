@@ -121,7 +121,7 @@ describe('Reviews E2E (PostgreSQL)', () => {
       .expect(201);
 
     await authAgent(app)
-      .post(`/api/proposals/${acceptedProposal.body.id}/accept`)
+      .post(`/api/escrow/fund-and-accept/${acceptedProposal.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);

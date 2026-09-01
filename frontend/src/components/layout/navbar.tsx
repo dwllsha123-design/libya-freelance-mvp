@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { useUnreadMessageCount } from '@/hooks/use-unread-messages';
-import { PLATFORM_NAME_AR, PLATFORM_TAGLINE_AR } from '@/lib/branding';
+import { Logo } from '@/components/brand/logo';
+import { NavSearch } from '@/components/layout/nav-search';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 function NavLink({
   href,
@@ -53,42 +55,47 @@ export function Navbar() {
     ) : null;
 
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="border-b border-outline-variant/40 bg-surface">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-        <Link href="/" className="flex min-w-0 flex-col leading-tight">
-          <span className="text-xl font-bold text-[#0B132B]">{PLATFORM_NAME_AR}</span>
-          <span className="max-w-[14rem] truncate text-xs text-slate-500 sm:max-w-none">
-            {PLATFORM_TAGLINE_AR}
-          </span>
-        </Link>
+        <div className="flex min-w-0 items-center">
+          <Logo />
+        </div>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
-          <Link href="/">الرئيسية</Link>
-          <Link href="/projects">تصفح المشاريع</Link>
-          <Link href="/freelancers">المستقلون</Link>
-          <Link href="/#how-it-works">كيف تعمل المنصة</Link>
-          {user ? <Link href="/dashboard/profile">الملف الشخصي</Link> : null}
-          {user?.role === 'FREELANCER' ? (
-            <>
-              <Link href="/dashboard/proposals">عروضي</Link>
-              <Link href="/dashboard/portfolio">معرض الأعمال</Link>
-            </>
-          ) : null}
-          {user ? (
-            <>
-              <NotificationBell />
-              <Link href="/messages" className="relative inline-flex items-center">
-                الرسائل
-                {messageBadge}
-              </Link>
-            </>
-          ) : null}
-          {user?.role === 'CLIENT' ? (
-            <Link href="/dashboard/projects">مشاريعي</Link>
-          ) : null}
-        </nav>
+        <div className="hidden flex-1 items-center justify-center px-4 lg:flex">
+          <NavSearch />
+        </div>
+
+        <div className="hidden items-center gap-5 lg:flex">
+          <nav className="flex items-center gap-5 text-sm font-medium text-slate-700">
+            <Link href="/projects">تصفح المشاريع</Link>
+            <Link href="/freelancers">المستقلون</Link>
+            <Link href="/how-it-works">كيف تعمل</Link>
+            {user ? <Link href="/dashboard/profile">الملف الشخصي</Link> : null}
+            {user?.role === 'FREELANCER' ? (
+              <>
+                <Link href="/dashboard/proposals">عروضي</Link>
+                <Link href="/dashboard/portfolio">معرض الأعمال</Link>
+              </>
+            ) : null}
+            {user ? (
+              <>
+                <NotificationBell />
+                <Link href="/messages" className="relative inline-flex items-center">
+                  الرسائل
+                  {messageBadge}
+                </Link>
+              </>
+            ) : null}
+            {user?.role === 'CLIENT' ? (
+              <Link href="/dashboard/projects">مشاريعي</Link>
+            ) : null}
+          </nav>
+        </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
           <button
             type="button"
             className="rounded-lg border border-slate-200 p-2 text-slate-700 md:hidden"
@@ -108,7 +115,7 @@ export function Navbar() {
               </div>
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-[#00A86B] px-3 py-2 text-sm font-semibold text-white sm:px-4"
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white sm:px-4"
               >
                 لوحة التحكم
               </Link>
@@ -122,14 +129,20 @@ export function Navbar() {
             </>
           ) : (
             <>
+              <Link
+                href="/register?role=CLIENT&next=/dashboard/projects/new"
+                className="hidden rounded-lg border border-secondary px-3 py-2 text-sm font-semibold text-secondary sm:inline-flex"
+              >
+                نشر مشروع
+              </Link>
               <Link href="/login" className="hidden text-sm font-medium text-slate-700 sm:inline">
                 تسجيل الدخول
               </Link>
               <Link
-                href="/register"
-                className="rounded-lg bg-[#00A86B] px-3 py-2 text-sm font-semibold text-white sm:px-4"
+                href="/register?role=FREELANCER"
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white sm:px-4"
               >
-                إنشاء حساب
+                انضم مجاناً
               </Link>
             </>
           )}
@@ -202,11 +215,17 @@ export function Navbar() {
               </>
             ) : (
               <>
+                <NavLink
+                  href="/register?role=CLIENT&next=/dashboard/projects/new"
+                  onNavigate={closeMobile}
+                >
+                  نشر مشروع
+                </NavLink>
                 <NavLink href="/login" onNavigate={closeMobile}>
                   تسجيل الدخول
                 </NavLink>
-                <NavLink href="/register" onNavigate={closeMobile}>
-                  إنشاء حساب
+                <NavLink href="/register?role=FREELANCER" onNavigate={closeMobile}>
+                  انضم مجاناً
                 </NavLink>
               </>
             )}

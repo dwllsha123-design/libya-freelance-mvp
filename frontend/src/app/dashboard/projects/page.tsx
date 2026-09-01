@@ -93,7 +93,7 @@ export default function ClientProjectsPage() {
     return (
       <div className="p-8 text-center">
         <p>هذه الصفحة للعملاء فقط</p>
-        <Link href="/dashboard" className="text-[#00A86B]">
+        <Link href="/dashboard" className="text-primary">
           العودة
         </Link>
       </div>
@@ -103,10 +103,10 @@ export default function ClientProjectsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-[#0B132B]">مشاريعي</h1>
+        <h1 className="text-3xl font-bold text-on-surface">مشاريعي</h1>
         <Link
           href="/dashboard/projects/new"
-          className="rounded-lg bg-[#00A86B] px-5 py-2.5 font-semibold text-white"
+          className="rounded-lg bg-primary px-5 py-2.5 font-semibold text-white"
         >
           انشر مشروع
         </Link>
@@ -119,7 +119,7 @@ export default function ClientProjectsPage() {
             type="button"
             onClick={() => setFilter(tab.key)}
             className={`rounded-full px-4 py-1.5 text-sm ${
-              filter === tab.key ? 'bg-[#0B132B] text-white' : 'border bg-white'
+              filter === tab.key ? 'bg-on-surface text-white' : 'border bg-white'
             }`}
           >
             {tab.label}
@@ -135,7 +135,7 @@ export default function ClientProjectsPage() {
           {filter === 'ALL' || filter === 'DRAFT' ? (
             <Link
               href="/dashboard/projects/new"
-              className="mt-4 inline-block text-[#00A86B] hover:underline"
+              className="mt-4 inline-block text-primary hover:underline"
             >
               أنشئ مشروعك الأول
             </Link>
@@ -160,7 +160,7 @@ export default function ClientProjectsPage() {
                     : ''}
                 </p>
                 {project.proposalCount > 0 ? (
-                  <p className="mt-1 text-xs text-[#00A86B]">
+                  <p className="mt-1 text-xs text-primary">
                     {project.proposalCount} عروض مستلمة
                   </p>
                 ) : null}
@@ -178,7 +178,7 @@ export default function ClientProjectsPage() {
                   {project.status === 'DRAFT' && (
                     <Link
                       href={`/dashboard/projects/${project.id}/edit`}
-                      className="rounded-lg bg-[#00A86B] px-4 py-2 text-sm text-white"
+                      className="rounded-lg bg-primary px-4 py-2 text-sm text-white"
                     >
                       نشر
                     </Link>
@@ -187,7 +187,7 @@ export default function ClientProjectsPage() {
                     <>
                       <Link
                         href={`/projects/${project.slug}`}
-                        className="rounded-lg border px-4 py-2 text-sm text-[#00A86B]"
+                        className="rounded-lg border px-4 py-2 text-sm text-primary"
                       >
                         عرض
                       </Link>

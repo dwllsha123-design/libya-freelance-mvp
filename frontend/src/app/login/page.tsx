@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthCard } from '@/components/auth/auth-card';
 import { useAuth } from '@/contexts/auth-context';
 import { loginSchema } from '@/lib/schemas/auth';
 import { ApiError } from '@/lib/api';
 import { PLATFORM_TAGLINE_AR } from '@/lib/branding';
+import { buildAuthHref, resolvePostAuthPath } from '@/lib/auth-redirect';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next');
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +39,7 @@ export default function LoginPage() {
 
     try {
       await login(parsed.data.email, parsed.data.password);
-      router.push('/dashboard');
+      router.push(resolvePostAuthPath(nextPath));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'فشل تسجيل الدخول');
     } finally {
@@ -45,20 +48,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-12">
-      <AuthCard
-        title="تسجيل الدخول"
-        subtitle={PLATFORM_TAGLINE_AR}
-        footer={
-          <>
-            ليس لديك حساب؟{' '}
-            <Link href="/register" className="font-semibold text-[#00A86B]">
-              إنشاء حساب
-            </Link>
-          </>
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <AuthCard
+      title="تسجيل الدخول"
+      subtitle={PLATFORM_TAGLINE_AR}
+      footer={
+        <>
+          ليس لديك حساب؟{' '}
+          <Link
+            href={buildAuthHref('/register', { next: nextPath ?? undefined })}
+            className="font-semibold text-primary"
+          >
+            إنشاء حساب
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {error ? (
             <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
@@ -74,7 +79,7 @@ export default function LoginPage() {
               name="email"
               type="email"
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-[#00A86B]"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
             />
           </div>
 
@@ -87,12 +92,12 @@ export default function LoginPage() {
               name="password"
               type="password"
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-[#00A86B]"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
             />
           </div>
 
           <div className="text-end">
-            <Link href="/forgot-password" className="text-sm text-[#00A86B]">
+            <Link href="/forgot-password" className="text-sm text-primary">
               نسيت كلمة المرور؟
             </Link>
           </div>
@@ -100,12 +105,21 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-[#00A86B] px-4 py-2.5 font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-white disabled:opacity-60"
           >
             {isSubmitting ? 'جاري الدخول...' : 'تسجيل الدخول'}
           </button>
         </form>
       </AuthCard>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <div className="flex flex-1 items-center justify-center px-4 py-12">
+      <Suspense fallback={<div className="text-slate-500">جاري التحميل...</div>}>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }

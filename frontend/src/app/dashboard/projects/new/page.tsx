@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { ProjectForm, type ProjectFormValues } from '@/components/projects/project-form';
 import { useProjectsApi } from '@/hooks/use-projects';
 import type { Category, City, Skill } from '@/lib/api';
+import { consumeProjectBriefDraft } from '@/lib/project-brief';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -19,6 +20,11 @@ export default function NewProjectPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [prefill] = useState(() => {
+    const draft = consumeProjectBriefDraft();
+    if (!draft) return {};
+    return { title: draft.title, description: draft.description };
+  });
 
   useEffect(() => {
     api.loadFormData().then(([cats, sk, ct]) => {
@@ -87,9 +93,10 @@ export default function NewProjectPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <BackLink href="/dashboard/projects">مشاريعي</BackLink>
-      <h1 className="mt-4 text-3xl font-bold text-[#0B132B]">مشروع جديد</h1>
+      <h1 className="mt-4 text-3xl font-bold text-on-surface">مشروع جديد</h1>
       <div className="mt-8">
         <ProjectForm
+          prefill={prefill}
           categories={categories}
           skills={skills}
           cities={cities}

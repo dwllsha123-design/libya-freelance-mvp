@@ -51,7 +51,7 @@ export function ProfileReviewsSection({
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-bold text-[#0B132B]">التقييمات</h2>
+      <h2 className="text-2xl font-bold text-on-surface">التقييمات</h2>
       {reviewCount > 0 ? (
         <div className="mt-2">
           <RatingSummary average={ratingAverage} count={reviewCount} />
@@ -73,7 +73,7 @@ export function ProfileReviewsSection({
           type="button"
           disabled={isLoading}
           onClick={() => void loadPage(1)}
-          className="mt-4 text-sm text-[#00A86B] disabled:opacity-50"
+          className="mt-4 text-sm text-primary disabled:opacity-50"
         >
           عرض كل التقييمات
         </button>

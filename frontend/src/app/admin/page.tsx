@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useAdminApi } from '@/hooks/use-admin';
@@ -29,13 +30,23 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-[#0B132B]">لوحة التحكم</h1>
+      <h1 className="text-3xl font-bold text-on-surface">لوحة التحكم</h1>
       <p className="mt-2 text-sm text-slate-500">مرحباً {user?.email}</p>
 
       {error ? <p className="mt-6 text-red-600">{error}</p> : null}
 
       {stats ? (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-8 space-y-6">
+          {stats.escrow.openDisputes > 0 ? (
+            <Link
+              href="/admin/disputes"
+              className="block rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 hover:bg-amber-100"
+            >
+              <strong>{stats.escrow.openDisputes}</strong> نزاع ضمان يحتاج مراجعة — اضغط
+              للمعالجة
+            </Link>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: 'إجمالي المستخدمين', value: stats.users.total },
             { label: 'المستقلون', value: stats.users.freelancers },
@@ -47,12 +58,14 @@ export default function AdminDashboardPage() {
             { label: 'المشاريع المكتملة', value: stats.projects.completed },
             { label: 'إجمالي العروض', value: stats.proposals.total },
             { label: 'إجمالي التقييمات', value: stats.reviews.total },
+            { label: 'نزاعات ضمان مفتوحة', value: stats.escrow.openDisputes },
           ].map((card) => (
             <div key={card.label} className="rounded-xl border bg-white p-5">
               <p className="text-sm text-slate-500">{card.label}</p>
-              <p className="mt-2 text-3xl font-bold text-[#0B132B]">{card.value}</p>
+              <p className="mt-2 text-3xl font-bold text-on-surface">{card.value}</p>
             </div>
           ))}
+          </div>
         </div>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

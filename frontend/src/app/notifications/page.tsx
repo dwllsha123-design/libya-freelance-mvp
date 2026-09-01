@@ -130,12 +130,12 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-[#0B132B]">الإشعارات</h1>
+        <h1 className="text-3xl font-bold text-on-surface">الإشعارات</h1>
         <button
           type="button"
           disabled={isMarkingAll}
           onClick={() => void handleMarkAllRead()}
-          className="rounded-lg border px-4 py-2 text-sm text-[#00A86B] disabled:opacity-50"
+          className="rounded-lg border px-4 py-2 text-sm text-primary disabled:opacity-50"
         >
           {isMarkingAll ? 'جاري التنفيذ...' : 'تحديد الكل كمقروء'}
         </button>
@@ -151,7 +151,7 @@ export default function NotificationsPage() {
               setPage(1);
             }}
             className={`rounded-full px-4 py-1.5 text-sm ${
-              tab === item.key ? 'bg-[#0B132B] text-white' : 'border bg-white'
+              tab === item.key ? 'bg-on-surface text-white' : 'border bg-white'
             }`}
           >
             {item.label}

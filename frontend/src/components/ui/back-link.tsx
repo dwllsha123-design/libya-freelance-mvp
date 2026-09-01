@@ -10,7 +10,7 @@ export function BackLink({
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-sm text-[#00A86B] hover:underline"
+      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
     >
       <span aria-hidden>→</span>
       <span>{children}</span>

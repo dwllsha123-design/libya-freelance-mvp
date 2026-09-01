@@ -44,7 +44,7 @@ No staging hosting, DNS, managed PostgreSQL credentials, or object storage keys 
 
 | Step | Staging | CI (PostgreSQL 16) |
 |------|---------|-------------------|
-| `prisma migrate deploy` | **NOT EXECUTED** | **PASS** (9/9) |
+| `prisma migrate deploy` | **NOT EXECUTED** | **PASS** (11/11) |
 | `prisma migrate status` | **NOT EXECUTED** | **PASS** |
 | `npm run prisma:seed` | **NOT EXECUTED** | **PASS** + idempotent |
 | Drift / failed migration | N/A | **None** |

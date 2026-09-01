@@ -277,7 +277,7 @@ describe('Proposals E2E (PostgreSQL)', () => {
       .expect(201);
 
     const accepted = await authAgent(app)
-      .post(`/api/proposals/${p1.body.id}/accept`)
+      .post(`/api/escrow/fund-and-accept/${p1.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);
@@ -364,7 +364,7 @@ describe('Proposals E2E (PostgreSQL)', () => {
       .expect(201);
 
     await authAgent(app)
-      .post(`/api/proposals/${proposal.body.id}/accept`)
+      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);
@@ -441,11 +441,11 @@ describe('Proposals E2E (PostgreSQL)', () => {
 
     const [res1, res2] = await Promise.allSettled([
       authAgent(app)
-        .post(`/api/proposals/${p1.body.id}/accept`)
+        .post(`/api/escrow/fund-and-accept/${p1.body.id}`)
         .set(CLIENT_HEADER)
         .set('Authorization', `Bearer ${client.accessToken}`),
       authAgent(app)
-        .post(`/api/proposals/${p2.body.id}/accept`)
+        .post(`/api/escrow/fund-and-accept/${p2.body.id}`)
         .set(CLIENT_HEADER)
         .set('Authorization', `Bearer ${client.accessToken}`),
     ]);

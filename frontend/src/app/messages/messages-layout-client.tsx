@@ -46,7 +46,7 @@ export default function MessagesLayoutClient({
     <div className="mx-auto flex h-[min(100dvh-7rem,48rem)] min-h-[20rem] w-full max-w-6xl flex-1 overflow-hidden rounded-xl border bg-white shadow-sm sm:h-[min(100dvh-8rem,52rem)]">
       <aside className="hidden w-full max-w-sm shrink-0 border-s border-slate-200 lg:block lg:w-80">
         <div className="border-b p-4">
-          <h1 className="text-xl font-bold text-[#0B132B]">الرسائل</h1>
+          <h1 className="text-xl font-bold text-on-surface">الرسائل</h1>
         </div>
         <ConversationList conversations={conversations} isLoading={isLoading} />
       </aside>

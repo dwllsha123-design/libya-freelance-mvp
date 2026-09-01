@@ -29,6 +29,8 @@ import {
   UpdateSkillDto,
   AdminPaginationQueryDto,
 } from './dto/admin.dto.js';
+import { EscrowService } from '../escrow/escrow.service.js';
+import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
@@ -41,6 +43,7 @@ export class AdminController {
     private readonly reviews: AdminReviewsService,
     private readonly categories: AdminCategoriesService,
     private readonly skills: AdminSkillsService,
+    private readonly escrow: EscrowService,
   ) {}
 
   @Get('dashboard')
@@ -177,5 +180,19 @@ export class AdminController {
   @Post('skills/:id/deactivate')
   deactivateSkill(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.skills.setActive(admin.id, id, false);
+  }
+
+  @Get('escrow/disputes')
+  listEscrowDisputes(@Query('status') status?: 'open' | 'resolved') {
+    return this.escrow.listDisputesForAdmin(status ?? 'open');
+  }
+
+  @Post('escrow/disputes/:id/resolve')
+  resolveEscrowDispute(
+    @CurrentUser() admin: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ResolveDisputeDto,
+  ) {
+    return this.escrow.resolveDispute(admin.id, id, dto.resolution, dto.outcome);
   }
 }
