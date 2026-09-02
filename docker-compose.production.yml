@@ -1,20 +1,23 @@
 # Production reference compose for VPS / self-hosted deploy.
 #
 # Usage:
-#   cp .env.production.example .env.production   # fill secrets — never commit
-#   docker compose -f docker-compose.production.yml --env-file .env.production up -d
+#   cp .env.production.example .env   # or .env.production — fill secrets; never commit
+#   docker compose -f docker-compose.production.yml up -d --build
+#   # or: docker compose -f docker-compose.production.yml --env-file .env.production up -d --build
 #
 # Migrations + reference seed (run once before/upgrading API):
-#   docker compose -f docker-compose.production.yml --env-file .env.production --profile tools run --rm migrate
+#   docker compose -f docker-compose.production.yml --profile tools run --rm migrate
 #
 # Create SUPER_ADMIN owner (after API is up), from a one-off backend shell:
-#   docker compose -f docker-compose.production.yml --env-file .env.production run --rm api \
+#   docker compose -f docker-compose.production.yml run --rm api \
 #     node -e "console.log('prefer: npm run admin:create -- --super true ... on build image')"
 #
 # Domains:
 #   libyanfreelance.ly        → web:3000 (CLIENT + FREELANCER marketplace)
 #   admin.libyanfreelance.ly  → web:3000 (SUPER_ADMIN + authorized ADMIN)
 #   api.libyanfreelance.ly    → api:4000
+#
+# Object storage: bundled MinIO (S3-compatible). Replace S3_* with R2/Spaces/AWS later if desired.
 #
 # Put TLS termination (Caddy / Nginx / Cloudflare) in front of these ports.
 # Never run prisma:seed:demo in production.
@@ -35,6 +38,50 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+    volumes:
+      - prod_minio_data:/data
+    ports:
+      - '${MINIO_API_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      i=0;
+      until mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+        i=$$((i+1));
+        if [ $$i -ge 30 ]; then exit 1; fi;
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/$${S3_BUCKET};
+      mc anonymous set download local/$${S3_BUCKET}/profile-images || true;
+      mc anonymous set download local/$${S3_BUCKET}/portfolio || true;
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+    restart: 'no'
 
   migrate:
     build:
@@ -82,6 +129,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
 
   web:
     build:
@@ -101,3 +150,4 @@ services:
 
 volumes:
   prod_pg_data:
+  prod_minio_data:
