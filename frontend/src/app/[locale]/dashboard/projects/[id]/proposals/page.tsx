@@ -173,6 +173,11 @@ export default function ProjectProposalsPage() {
             <p className="mt-3 text-sm font-medium text-primary">
               {formatCurrency(proposal.proposedPrice, 'LYD', locale)} ·{' '}
               {t('days', { count: proposal.estimatedDurationDays })}
+              {proposal.boostPoints && proposal.boostPoints > 0 ? (
+                <span className="ms-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                  {tProposals('boostBadge', { count: proposal.boostPoints })}
+                </span>
+              ) : null}
             </p>
 
             {proposal.freelancer?.portfolio?.count ? (

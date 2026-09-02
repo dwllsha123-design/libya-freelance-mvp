@@ -14,6 +14,7 @@ const NOTIFICATION_LABELS: Record<AppLocale, Record<AppNotificationType, string>
     ESCROW_RELEASED: 'تحرير ضمان',
     ESCROW_DISPUTED: 'نزاع ضمان',
     ESCROW_DISPUTE_RESOLVED: 'حل نزاع',
+    ADMIN_BROADCAST: 'إشعار المنصة',
   },
   en: {
     NEW_PROPOSAL: 'New proposal',
@@ -27,6 +28,7 @@ const NOTIFICATION_LABELS: Record<AppLocale, Record<AppNotificationType, string>
     ESCROW_RELEASED: 'Escrow released',
     ESCROW_DISPUTED: 'Escrow dispute',
     ESCROW_DISPUTE_RESOLVED: 'Dispute resolved',
+    ADMIN_BROADCAST: 'Platform notice',
   },
 };
 

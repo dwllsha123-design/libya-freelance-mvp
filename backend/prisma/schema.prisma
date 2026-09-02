@@ -11,6 +11,7 @@ enum Role {
   FREELANCER
   CLIENT
   ADMIN
+  SUPER_ADMIN
 }
 
 enum UserStatus {
@@ -70,6 +71,7 @@ enum NotificationType {
   ESCROW_RELEASED
   ESCROW_DISPUTED
   ESCROW_DISPUTE_RESOLVED
+  ADMIN_BROADCAST
 }
 
 enum AdminAuditAction {
@@ -88,6 +90,123 @@ enum AdminAuditAction {
   SKILL_DEACTIVATED
   SKILL_ACTIVATED
   ESCROW_DISPUTE_RESOLVED
+  PLATFORM_COMMISSION_SCHEDULED
+  CATEGORY_COMMISSION_SET
+  CATEGORY_COMMISSION_CLEARED
+  PROJECT_COMMISSION_OVERRIDE_SET
+  PROJECT_COMMISSION_OVERRIDE_ENDED
+  INVESTOR_CREATED
+  INVESTMENT_AGREEMENT_CREATED
+  INVESTMENT_AGREEMENT_TERMINATED
+  FINANCE_PERMISSION_GRANTED
+  FINANCE_PERMISSION_REVOKED
+  SETTING_CHANGED
+  FEATURE_FLAG_CHANGED
+  MAINTENANCE_CHANGED
+  CMS_UPDATED
+  BANNER_CREATED
+  BANNER_UPDATED
+  BANNER_PUBLISHED
+  BROADCAST_SENT
+  ADMIN_CREATED
+  ADMIN_SUSPENDED
+  ADMIN_REACTIVATED
+  PERMISSION_GRANTED
+  PERMISSION_REVOKED
+  PORTFOLIO_HIDDEN
+  PORTFOLIO_RESTORED
+  INVESTOR_PAYOUT_CREATED
+  INVESTOR_PAYOUT_APPROVED
+  INVESTOR_PAYOUT_PAID
+  INVESTOR_PAYOUT_CANCELLED
+  INVESTOR_STATEMENT_FINALIZED
+  FEATURED_UPDATED
+}
+
+enum CommissionPolicyStatus {
+  SCHEDULED
+  ACTIVE
+  SUPERSEDED
+  CANCELLED
+}
+
+enum CommissionSource {
+  PLATFORM_DEFAULT
+  CATEGORY_OVERRIDE
+  PROJECT_OVERRIDE
+}
+
+enum InvestorRevenueBase {
+  PLATFORM_COMMISSION
+}
+
+enum InvestmentAgreementStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  TERMINATED
+}
+
+enum AdminPermission {
+  FINANCE_VIEW
+  FINANCE_WRITE
+  MANAGE_USERS
+  MANAGE_PROJECTS
+  MANAGE_REVIEWS
+  MANAGE_CONTENT
+  MANAGE_FINANCE
+  MANAGE_INVESTORS
+  SEND_NOTIFICATIONS
+  MANAGE_SETTINGS
+  VIEW_AUDIT
+  VIEW_SYSTEM
+  VIEW_FINANCE
+  SEND_BROADCASTS
+}
+
+enum PlatformSettingType {
+  BOOLEAN
+  STRING
+  NUMBER
+  JSON
+}
+
+enum BroadcastAudience {
+  ALL
+  CLIENTS
+  FREELANCERS
+  INVESTORS
+  SPECIFIC_USER
+}
+
+enum InvestorPayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum InvestorStatementStatus {
+  DRAFT
+  FINALIZED
+  PAID
+}
+
+enum FeaturedEntityType {
+  CATEGORY
+  FREELANCER
+  PROJECT
+}
+
+enum CommercialAuditAction {
+  PLATFORM_COMMISSION_CHANGED
+  CATEGORY_COMMISSION_CHANGED
+  PROJECT_COMMISSION_OVERRIDE_CHANGED
+  INVESTOR_SHARE_CHANGED
+  INVESTMENT_AGREEMENT_TERMINATED
+  FINANCE_PERMISSION_CHANGED
+  FUTURE_FEE_SETTING_CHANGED
 }
 
 enum EscrowStatus {
@@ -142,6 +261,7 @@ model User {
   role          Role
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)
+  mustChangePassword Boolean @default(false)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -169,9 +289,39 @@ model User {
   pointsTaskCompletions   PointsTaskCompletion[]
   pointsStreak            PointsStreakState?
   pointsPurchases         PointsPurchase[]
+  adminPermissions        UserAdminPermission[]
+  commercialAuditLogs     CommercialAuditLog[]     @relation("CommercialAuditActor")
+  platformCommissionPolicies PlatformCommissionPolicy[] @relation("PlatformCommissionCreator")
+  categoryCommissionOverrides CategoryCommissionOverride[] @relation("CategoryCommissionCreator")
+  projectCommissionOverrides  ProjectCommissionOverride[]  @relation("ProjectCommissionCreator")
+  investorsCreated        Investor[]               @relation("InvestorCreator")
+  investmentAgreementsCreated InvestmentAgreement[] @relation("InvestmentAgreementCreator")
+  platformSettingsUpdated PlatformSetting[]        @relation("PlatformSettingUpdater")
+  featureFlagsUpdated     FeatureFlag[]            @relation("FeatureFlagUpdater")
+  cmsContentUpdated       CmsContent[]             @relation("CmsContentUpdater")
+  bannersCreated          SiteBanner[]             @relation("BannerCreator")
+  featuredItemsCreated    FeaturedItem[]           @relation("FeaturedItemCreator")
+  broadcastsSent          NotificationBroadcast[]  @relation("BroadcastActor")
+  investorPayoutsCreated  InvestorPayout[]         @relation("InvestorPayoutCreator")
+  investorPayoutsApproved InvestorPayout[]         @relation("InvestorPayoutApprover")
+  investorStatementsCreated InvestorStatement[]    @relation("InvestorStatementCreator")
+  portfolioItemsModerated PortfolioItem[]          @relation("PortfolioModerator")
 
   @@index([role])
   @@index([status])
+}
+
+model UserAdminPermission {
+  id         String          @id @default(uuid())
+  userId     String
+  permission AdminPermission
+  grantedById String?
+  createdAt  DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@index([permission])
 }
 
 model RefreshToken {
@@ -295,7 +445,8 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  projects Project[]
+  projects              Project[]
+  commissionOverrides   CategoryCommissionOverride[]
 
   @@index([isActive, sortOrder])
 }
@@ -360,6 +511,7 @@ model Project {
   reviews          Review[]
   conversations    Conversation[]
   escrow           Escrow?
+  commissionOverrides ProjectCommissionOverride[]
 
   @@index([status])
   @@index([publishedAt])
@@ -391,6 +543,7 @@ model Proposal {
   coverLetter           String
   proposedPrice         Decimal        @db.Decimal(12, 2)
   estimatedDurationDays Int
+  boostPoints           Int            @default(0)
   status                ProposalStatus @default(PENDING)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
@@ -404,6 +557,7 @@ model Proposal {
   @@unique([projectId, freelancerId])
   @@index([freelancerId])
   @@index([projectId, status])
+  @@index([projectId, boostPoints(sort: Desc)])
   @@index([status])
 }
 
@@ -459,15 +613,21 @@ model PortfolioItem {
   projectUrl          String?
   completedAt         DateTime?
   sortOrder           Int       @default(0)
+  isVisible           Boolean   @default(true)
+  moderationReason    String?
+  moderatedById       String?
+  moderatedAt         DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
   freelancerProfile FreelancerProfile @relation(fields: [freelancerProfileId], references: [id], onDelete: Cascade)
+  moderatedBy       User?             @relation("PortfolioModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
   skills            PortfolioSkill[]
   images            PortfolioImage[]
 
   @@index([freelancerProfileId])
   @@index([freelancerProfileId, sortOrder])
+  @@index([isVisible])
 }
 
 model PortfolioImage {
@@ -557,6 +717,15 @@ model Escrow {
   freelancerPayout Decimal      @db.Decimal(12, 2)
   currency         String       @default("LYD")
   status           EscrowStatus @default(PENDING_FUNDING)
+  /// Resolved commission % snapshotted when escrow is prepared/funded
+  commissionPercentage Decimal? @db.Decimal(5, 2)
+  commissionSource     CommissionSource?
+  platformCommissionPolicyId  String?
+  categoryCommissionOverrideId String?
+  projectCommissionOverrideId  String?
+  /// Locked at settlement — never recalculated from live settings
+  settledCommissionPercentage Decimal? @db.Decimal(5, 2)
+  settledPlatformFee          Decimal? @db.Decimal(12, 2)
   fundedAt         DateTime?
   releasedAt       DateTime?
   refundedAt       DateTime?
@@ -567,9 +736,13 @@ model Escrow {
   proposal     Proposal            @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   client       User                @relation("EscrowClient", fields: [clientId], references: [id], onDelete: Cascade)
   freelancer   User                @relation("EscrowFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
+  platformCommissionPolicy PlatformCommissionPolicy? @relation(fields: [platformCommissionPolicyId], references: [id], onDelete: SetNull)
+  categoryCommissionOverride CategoryCommissionOverride? @relation(fields: [categoryCommissionOverrideId], references: [id], onDelete: SetNull)
+  projectCommissionOverride ProjectCommissionOverride? @relation(fields: [projectCommissionOverrideId], references: [id], onDelete: SetNull)
   transactions EscrowTransaction[]
   dispute      EscrowDispute?
   payments     Payment[]
+  investorAccruals InvestorAccrual[]
 
   @@index([clientId])
   @@index([freelancerId])
@@ -712,4 +885,304 @@ model PointsPurchase {
 
   @@index([userId])
   @@index([status])
+}
+
+/// Versioned platform default commission — never edit historical rows in place
+model PlatformCommissionPolicy {
+  id                          String                  @id @default(uuid())
+  defaultCommissionPercentage Decimal                 @db.Decimal(5, 2)
+  minimumCommissionAmount     Decimal?                @db.Decimal(12, 2)
+  maximumCommissionAmount     Decimal?                @db.Decimal(12, 2)
+  effectiveFrom               DateTime
+  effectiveTo                 DateTime?
+  status                      CommissionPolicyStatus  @default(SCHEDULED)
+  reason                      String?
+  createdById                 String?
+  previousPolicyId            String?                 @unique
+  createdAt                   DateTime                @default(now())
+
+  createdBy      User?                     @relation("PlatformCommissionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  previousPolicy PlatformCommissionPolicy? @relation("PlatformCommissionVersions", fields: [previousPolicyId], references: [id], onDelete: SetNull)
+  nextPolicy     PlatformCommissionPolicy? @relation("PlatformCommissionVersions")
+  escrows        Escrow[]
+
+  @@index([status, effectiveFrom])
+  @@index([effectiveFrom])
+}
+
+model CategoryCommissionOverride {
+  id                   String                 @id @default(uuid())
+  categoryId           String
+  /// null means clear override and fall back to platform default for this version window
+  commissionPercentage Decimal?               @db.Decimal(5, 2)
+  effectiveFrom        DateTime
+  effectiveTo          DateTime?
+  status               CommissionPolicyStatus @default(SCHEDULED)
+  reason               String?
+  createdById          String?
+  previousOverrideId   String?                @unique
+  createdAt            DateTime               @default(now())
+
+  category         Category                    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdBy        User?                       @relation("CategoryCommissionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  previousOverride CategoryCommissionOverride? @relation("CategoryCommissionVersions", fields: [previousOverrideId], references: [id], onDelete: SetNull)
+  nextOverride     CategoryCommissionOverride? @relation("CategoryCommissionVersions")
+  escrows          Escrow[]
+
+  @@index([categoryId, status, effectiveFrom])
+  @@index([effectiveFrom])
+}
+
+model ProjectCommissionOverride {
+  id                   String                 @id @default(uuid())
+  projectId            String
+  commissionPercentage Decimal                @db.Decimal(5, 2)
+  effectiveFrom        DateTime
+  effectiveTo          DateTime?
+  status               CommissionPolicyStatus @default(ACTIVE)
+  reason               String
+  createdById          String?
+  createdAt            DateTime               @default(now())
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("ProjectCommissionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  escrows   Escrow[]
+
+  @@index([projectId, status, effectiveFrom])
+}
+
+model Investor {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy   User?                 @relation("InvestorCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  agreements  InvestmentAgreement[]
+  payouts     InvestorPayout[]
+  statements  InvestorStatement[]
+
+  @@index([isActive])
+}
+
+/// Versioned investor revenue share — end previous version, create a new one
+model InvestmentAgreement {
+  id               String                     @id @default(uuid())
+  investorId       String
+  investmentAmount Decimal                    @db.Decimal(14, 2)
+  sharePercentage  Decimal                    @db.Decimal(5, 2)
+  revenueBase      InvestorRevenueBase        @default(PLATFORM_COMMISSION)
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  returnCap        Decimal?                   @db.Decimal(14, 2)
+  status           InvestmentAgreementStatus  @default(SCHEDULED)
+  reason           String?
+  createdById      String?
+  previousAgreementId String?                 @unique
+  createdAt        DateTime                   @default(now())
+
+  investor          Investor              @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  createdBy         User?                 @relation("InvestmentAgreementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  previousAgreement InvestmentAgreement?  @relation("InvestmentAgreementVersions", fields: [previousAgreementId], references: [id], onDelete: SetNull)
+  nextAgreement     InvestmentAgreement?  @relation("InvestmentAgreementVersions")
+  accruals          InvestorAccrual[]
+
+  @@index([investorId, status, effectiveFrom])
+  @@index([status, effectiveFrom])
+}
+
+/// Immutable accrual created at settlement from snapshotted commission + agreement %
+model InvestorAccrual {
+  id                       String   @id @default(uuid())
+  agreementId              String
+  escrowId                 String
+  sharePercentageSnapshot  Decimal  @db.Decimal(5, 2)
+  platformCommissionAmount Decimal  @db.Decimal(12, 2)
+  accrualAmount            Decimal  @db.Decimal(12, 2)
+  currency                 String   @default("LYD")
+  createdAt                DateTime @default(now())
+
+  agreement InvestmentAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  escrow    Escrow              @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementId, escrowId])
+  @@index([escrowId])
+  @@index([createdAt])
+}
+
+/// Immutable commercial settings audit (no deletion)
+model CommercialAuditLog {
+  id            String                 @id @default(uuid())
+  actorId       String
+  action        CommercialAuditAction
+  entityType    String
+  entityId      String
+  oldValue      Json?
+  newValue      Json?
+  effectiveDate DateTime?
+  reason        String?
+  createdAt     DateTime               @default(now())
+
+  actor User @relation("CommercialAuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+/// Placeholder for future platform fee configuration (display + audit only for now)
+model FutureFeeSetting {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  labelAr       String
+  valueJson     Json
+  effectiveFrom DateTime?
+  notes         String?
+  updatedById   String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+}
+
+/// Key/value platform operational settings (registration, marketplace toggles, maintenance)
+model PlatformSetting {
+  id          String              @id @default(uuid())
+  key         String              @unique
+  valueJson   Json
+  type        PlatformSettingType @default(JSON)
+  updatedById String?
+  updatedAt   DateTime            @updatedAt
+  createdAt   DateTime            @default(now())
+
+  updatedBy User? @relation("PlatformSettingUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  updatedBy User? @relation("FeatureFlagUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model CmsContent {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  contentJson Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  updatedBy User? @relation("CmsContentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model SiteBanner {
+  id          String    @id @default(uuid())
+  text        String
+  link        String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User? @relation("BannerCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([isActive, sortOrder])
+  @@index([startsAt, endsAt])
+}
+
+model FeaturedItem {
+  id          String             @id @default(uuid())
+  entityType  FeaturedEntityType
+  entityId    String
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdById String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  createdBy User? @relation("FeaturedItemCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([entityType, entityId])
+  @@index([entityType, isActive, sortOrder])
+}
+
+model NotificationBroadcast {
+  id              String            @id @default(uuid())
+  actorId         String
+  audience        BroadcastAudience
+  title           String
+  message         String
+  targetUrl       String?
+  specificUserId  String?
+  recipientCount  Int               @default(0)
+  idempotencyKey  String?           @unique
+  createdAt       DateTime          @default(now())
+
+  actor User @relation("BroadcastActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([audience])
+}
+
+model InvestorPayout {
+  id               String               @id @default(uuid())
+  investorId       String
+  statementId      String?
+  amount           Decimal              @db.Decimal(14, 2)
+  currency         String               @default("LYD")
+  paymentMethod    String               @default("EXTERNAL")
+  paymentReference String?
+  status           InvestorPayoutStatus @default(PENDING)
+  notes            String?
+  createdById      String?
+  approvedById     String?
+  approvedAt       DateTime?
+  paidAt           DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  investor  Investor           @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  statement InvestorStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+  createdBy User?              @relation("InvestorPayoutCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedBy User?             @relation("InvestorPayoutApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([investorId, status])
+  @@index([status, createdAt])
+}
+
+model InvestorStatement {
+  id             String                  @id @default(uuid())
+  investorId     String
+  periodYear     Int
+  periodMonth    Int
+  openingBalance Decimal                 @db.Decimal(14, 2) @default(0)
+  accrualsTotal  Decimal                 @db.Decimal(14, 2) @default(0)
+  adjustments    Decimal                 @db.Decimal(14, 2) @default(0)
+  paymentsTotal  Decimal                 @db.Decimal(14, 2) @default(0)
+  closingBalance Decimal                 @db.Decimal(14, 2) @default(0)
+  status         InvestorStatementStatus @default(DRAFT)
+  finalizedAt    DateTime?
+  createdById    String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  investor Investor         @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  createdBy User?           @relation("InvestorStatementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  payouts  InvestorPayout[]
+
+  @@unique([investorId, periodYear, periodMonth])
+  @@index([status, periodYear, periodMonth])
 }

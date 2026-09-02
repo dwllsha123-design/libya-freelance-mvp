@@ -54,7 +54,14 @@ export class AdminUsersService {
       role: { in: [Role.FREELANCER, Role.CLIENT] },
     };
 
-    if (query.role) where.role = query.role;
+    if (query.role) {
+      // Explicit staff roles expand beyond marketplace-only default
+      if (query.role === Role.ADMIN || query.role === Role.SUPER_ADMIN) {
+        where.role = query.role;
+      } else {
+        where.role = query.role;
+      }
+    }
     if (query.status) where.status = query.status;
     if (query.cityId) {
       where.profile = { cityId: query.cityId };
@@ -115,6 +122,28 @@ export class AdminUsersService {
     return this.changeStatus(adminId, userId, UserStatus.ACTIVE, AdminAuditAction.USER_REACTIVATED);
   }
 
+  async revokeSessions(adminId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+    assertAdminCanModerateUser(adminId, user);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.USER_SUSPENDED,
+        'User',
+        userId,
+        { action: 'SESSIONS_REVOKED', note: 'إلغاء الجلسات دون تغيير الحالة' },
+        tx,
+      );
+    });
+    await this.realtimeSessions.disconnectUser(userId);
+    return { ok: true };
+  }
+
   private async changeStatus(
     adminId: string,
     userId: string,
@@ -166,6 +195,9 @@ export class AdminUsersService {
   ) {
     const profile = user.profile;
 
+    const freelancer = profile?.freelancerProfile;
+    const clientProfile = profile?.clientProfile;
+
     return {
       id: user.id,
       email: user.email,
@@ -173,13 +205,33 @@ export class AdminUsersService {
       status: user.status,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
       username: profile?.username ?? null,
       displayName: profile
         ? `${profile.firstName} ${profile.lastName}`
         : null,
+      profilePhoto: profile?.profilePhoto ?? null,
       city: profile?.city ?? null,
       proposalCount: user._count.proposals,
       projectsPosted: user._count.projectsAsClient,
+      freelancer:
+        user.role === Role.FREELANCER && freelancer
+          ? {
+              professionalTitle: freelancer.professionalTitle,
+              completedProjects: freelancer.completedProjects,
+              averageRating: freelancer.averageRating,
+              portfolioCount: freelancer._count.portfolio,
+              skillsCount: freelancer._count.skills,
+            }
+          : null,
+      client:
+        user.role === Role.CLIENT && clientProfile
+          ? {
+              displayName: clientProfile.displayName,
+              projectsPosted: clientProfile.projectsPosted,
+              averageRating: clientProfile.averageRating,
+            }
+          : null,
     };
   }
 

@@ -32,6 +32,7 @@ import {
   TYPING_RATE_WINDOW_MS,
 } from './messaging.constants.js';
 import type { ConversationsQueryDto, MessagesQueryDto } from './dto/messaging.dto.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 
 const participantInclude = {
   profile: {
@@ -63,6 +64,7 @@ export class MessagingService {
     private readonly notifications: NotificationsService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async verifySocketToken(token: string): Promise<AuthUser> {
@@ -326,6 +328,11 @@ export class MessagingService {
   }
 
   async sendMessage(userId: string, conversationId: string, content: string) {
+    const userForPolicy = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, status: true },
+    });
+    await this.platformPolicy.assertMessagingAllowed(userForPolicy?.role);
     this.assertRateLimit(userId);
 
     const conversation = await this.findMemberConversation(userId, conversationId);

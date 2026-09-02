@@ -6,7 +6,10 @@ import { SiteFooter } from '@/components/layout/site-footer';
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith('/admin');
+  const isAdmin =
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    /^\/(ar|en)\/admin(\/|$)/.test(pathname);
 
   if (isAdmin) {
     return <>{children}</>;

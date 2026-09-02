@@ -305,22 +305,53 @@ export class NuqatiService {
   }
 
   async chargeProposalSubmit(userId: string, proposalId: string, tx: Tx) {
+    return this.chargeProposalSubmitWithBoost(userId, proposalId, 0, tx);
+  }
+
+  /**
+   * Single balance check for submit + boost, then two ledger charges when boost > 0
+   * (PointsTransaction has no metadata field).
+   */
+  async chargeProposalSubmitWithBoost(
+    userId: string,
+    proposalId: string,
+    boostPoints: number,
+    tx: Tx,
+  ) {
+    const boost = Math.max(0, Math.floor(boostPoints || 0));
+    const submitCost = NUQATI_CONFIG.proposalSubmitCost;
+    const total = submitCost + boost;
+
     const wallet = await this.ensureWallet(userId, tx);
-    if (wallet.balance < NUQATI_CONFIG.proposalSubmitCost) {
+    if (wallet.balance < total) {
       throw new BadRequestException(
-        `رصيد نقاطي غير كافٍ. تحتاج ${NUQATI_CONFIG.proposalSubmitCost} نقاط لتقديم عرض.`,
+        boost > 0
+          ? `رصيد نقاطي غير كافٍ. تحتاج ${total} نقاط (تقديم ${submitCost} + تعزيز ${boost}).`
+          : `رصيد نقاطي غير كافٍ. تحتاج ${submitCost} نقاط لتقديم عرض.`,
       );
     }
 
     await this.debit(
       userId,
-      NUQATI_CONFIG.proposalSubmitCost,
+      submitCost,
       PointsTransactionType.SPEND,
       'PROPOSAL_SUBMIT',
       'تكلفة تقديم عرض على مشروع',
       proposalId,
       tx,
     );
+
+    if (boost > 0) {
+      await this.debit(
+        userId,
+        boost,
+        PointsTransactionType.SPEND,
+        'PROPOSAL_BOOST',
+        `تعزيز ظهور العرض بـ ${boost} نقطة`,
+        proposalId,
+        tx,
+      );
+    }
   }
 
   async onProposalSubmitted(userId: string, proposalId: string, tx?: Tx) {

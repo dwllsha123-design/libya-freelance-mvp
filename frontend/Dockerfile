@@ -7,8 +7,17 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-ARG NEXT_PUBLIC_API_URL
+
+ARG NEXT_PUBLIC_API_URL=https://api.libyafreelance.ly/api
+ARG NEXT_PUBLIC_SITE_URL=https://libyafreelance.ly
+ARG NEXT_PUBLIC_ADMIN_URL=https://admin.libyafreelance.ly
+ARG NEXT_PUBLIC_SOCKET_URL=https://api.libyafreelance.ly
+
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+ENV NEXT_PUBLIC_ADMIN_URL=${NEXT_PUBLIC_ADMIN_URL}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+
 RUN npm run build
 
 FROM node:22-alpine AS runtime

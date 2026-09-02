@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   forwardRef,
@@ -25,6 +26,13 @@ import {
 import { acceptProposalInTransaction } from './proposal-acceptance.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import {
+  PROPOSAL_BOOST_BOARD_LIMIT,
+  PROPOSAL_BOOST_MAX,
+  PROPOSAL_BOOST_MIN,
+} from './proposals.constants.js';
+import { NUQATI_CONFIG } from '../nuqati/nuqati.config.js';
 
 const freelancerPublicSelect = {
   profile: {
@@ -47,6 +55,28 @@ const freelancerPublicSelect = {
   },
 } satisfies Prisma.UserInclude;
 
+function initialsFromName(firstName: string, lastName: string): string {
+  const a = firstName.charAt(0);
+  const b = lastName.charAt(0);
+  const initials = `${a}${b}`.trim();
+  return initials || '?';
+}
+
+function formatRelativeAr(date: Date, now = new Date()): string {
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return 'الآن';
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `منذ ${days} يوم`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `منذ ${months} شهر`;
+  const years = Math.floor(months / 12);
+  return `منذ ${years} سنة`;
+}
+
 @Injectable()
 export class ProposalsService {
   constructor(
@@ -56,11 +86,15 @@ export class ProposalsService {
     @Inject(forwardRef(() => EscrowService))
     private readonly escrowService: EscrowService,
     private readonly nuqatiService: NuqatiService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async submit(freelancerId: string, projectId: string, dto: CreateProposalDto) {
+    await this.platformPolicy.assertProposalsAllowed(Role.FREELANCER);
     await this.assertFreelancer(freelancerId);
     validateProposalInput(dto);
+
+    const boostPoints = this.normalizeBoostPoints(dto.boostPoints);
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -97,6 +131,7 @@ export class ProposalsService {
           coverLetter: dto.coverLetter.trim(),
           proposedPrice: dto.proposedPrice,
           estimatedDurationDays: dto.estimatedDurationDays,
+          boostPoints,
           status: ProposalStatus.PENDING,
         },
         include: {
@@ -116,7 +151,12 @@ export class ProposalsService {
         },
       });
 
-      await this.nuqatiService.chargeProposalSubmit(freelancerId, created.id, tx);
+      await this.nuqatiService.chargeProposalSubmitWithBoost(
+        freelancerId,
+        created.id,
+        boostPoints,
+        tx,
+      );
       await this.nuqatiService.onProposalSubmitted(freelancerId, created.id, tx);
 
       return created;
@@ -196,7 +236,7 @@ export class ProposalsService {
       include: {
         freelancer: { include: freelancerPublicSelect },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ boostPoints: 'desc' }, { createdAt: 'desc' }],
     });
 
     const summaries = await this.portfolio.getSummaryForFreelancerUserIds(
@@ -238,6 +278,55 @@ export class ProposalsService {
     }
 
     return this.formatFreelancerProposal(proposal);
+  }
+
+  /**
+   * Anonymized leaderboard of pending boosted proposals for the boost UI.
+   */
+  async getBoostBoard(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('المشروع غير موجود');
+    }
+
+    const proposals = await this.prisma.proposal.findMany({
+      where: {
+        projectId,
+        status: ProposalStatus.PENDING,
+        boostPoints: { gt: 0 },
+      },
+      include: {
+        freelancer: {
+          select: {
+            profile: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+        },
+      },
+      orderBy: [{ boostPoints: 'desc' }, { createdAt: 'desc' }],
+      take: PROPOSAL_BOOST_BOARD_LIMIT,
+    });
+
+    return {
+      projectId,
+      proposalSubmitCost: NUQATI_CONFIG.proposalSubmitCost,
+      maxBoostPoints: PROPOSAL_BOOST_MAX,
+      items: proposals.map((proposal, index) => {
+        const first = proposal.freelancer.profile?.firstName?.trim() ?? '';
+        const last = proposal.freelancer.profile?.lastName?.trim() ?? '';
+        return {
+          rank: index + 1,
+          boostPoints: proposal.boostPoints,
+          createdAtRelative: formatRelativeAr(proposal.createdAt),
+          initials: initialsFromName(first, last),
+        };
+      }),
+    };
   }
 
   async accept(clientId: string, proposalId: string) {
@@ -389,6 +478,17 @@ export class ProposalsService {
     return this.formatFreelancerProposal(updated);
   }
 
+  private normalizeBoostPoints(value?: number): number {
+    if (value == null || Number.isNaN(value)) return 0;
+    const n = Math.floor(Number(value));
+    if (n < PROPOSAL_BOOST_MIN || n > PROPOSAL_BOOST_MAX) {
+      throw new BadRequestException(
+        `نقاط التعزيز يجب أن تكون بين ${PROPOSAL_BOOST_MIN} و ${PROPOSAL_BOOST_MAX}`,
+      );
+    }
+    return n;
+  }
+
   private async findOwnedProposal(clientId: string, proposalId: string) {
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
@@ -433,6 +533,7 @@ export class ProposalsService {
       coverLetter: proposal.coverLetter,
       proposedPrice: Number(proposal.proposedPrice),
       estimatedDurationDays: proposal.estimatedDurationDays,
+      boostPoints: proposal.boostPoints,
       status: proposal.status,
       createdAt: proposal.createdAt,
       conversationId: proposal.conversations?.[0]?.id ?? null,
@@ -464,6 +565,7 @@ export class ProposalsService {
       coverLetter: proposal.coverLetter,
       proposedPrice: Number(proposal.proposedPrice),
       estimatedDurationDays: proposal.estimatedDurationDays,
+      boostPoints: proposal.boostPoints,
       status: proposal.status,
       createdAt: proposal.createdAt,
       freelancer: profile

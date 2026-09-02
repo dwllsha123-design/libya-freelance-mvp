@@ -21,6 +21,12 @@ interface FreelancerListResponse {
   meta: { total: number };
 }
 
+interface PublicBanner {
+  id: string;
+  text: string;
+  link: string | null;
+}
+
 export function HomeLanding() {
   const t = useTranslations('home');
   const tBrand = useTranslations('brand');
@@ -35,15 +41,19 @@ export function HomeLanding() {
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [freelancerTotal, setFreelancerTotal] = useState(0);
   const [projectTotal, setProjectTotal] = useState(0);
+  const [banners, setBanners] = useState<PublicBanner[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const [freelancerRes, projectRes] = await Promise.all([
+        const [freelancerRes, projectRes, bannersRes] = await Promise.all([
           apiRequest<FreelancerListResponse>('/freelancers?limit=12'),
           apiRequest<PaginatedProjects>('/projects?limit=6'),
+          apiRequest<{ items: PublicBanner[] }>('/platform/banners').catch(() => ({
+            items: [] as PublicBanner[],
+          })),
         ]);
 
         if (!cancelled) {
@@ -51,6 +61,7 @@ export function HomeLanding() {
           setProjects(projectRes.items);
           setFreelancerTotal(freelancerRes.meta.total);
           setProjectTotal(projectRes.total);
+          setBanners(bannersRes.items ?? []);
         }
       } catch {
         /* graceful degrade */
@@ -68,8 +79,21 @@ export function HomeLanding() {
       ? t('freelancerCount', { count: freelancerTotal.toLocaleString(numberLocale) })
       : t('freelancerReady');
 
+  const topBanner = banners[0];
+
   return (
     <>
+      {topBanner ? (
+        <div className="bg-on-surface px-4 py-2.5 text-center text-sm text-white">
+          {topBanner.link ? (
+            <a href={topBanner.link} className="underline-offset-2 hover:underline">
+              {topBanner.text}
+            </a>
+          ) : (
+            <span>{topBanner.text}</span>
+          )}
+        </div>
+      ) : null}
       <section className="relative overflow-hidden bg-gradient-to-b from-surface-container-low to-background px-4 pb-16 pt-10 sm:pt-14">
         <div
           className="pointer-events-none absolute inset-0 bg-[length:min(92%,28rem)] bg-[position:center_42%] bg-no-repeat opacity-[0.14] mix-blend-multiply dark:opacity-[0.42] dark:mix-blend-screen sm:bg-[length:min(78%,34rem)]"

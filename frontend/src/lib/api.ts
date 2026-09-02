@@ -22,7 +22,7 @@ export function getApiErrorMessage(
   return ERROR_MESSAGES[locale][key] ?? ERROR_MESSAGES.ar[key];
 }
 
-export type UserRole = 'FREELANCER' | 'CLIENT' | 'ADMIN';
+export type UserRole = 'FREELANCER' | 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN';
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
 export interface AuthUser {

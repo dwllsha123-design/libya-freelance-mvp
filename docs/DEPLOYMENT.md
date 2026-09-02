@@ -4,11 +4,57 @@
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js (static/SSR) |
-| Backend | NestJS API + Socket.IO |
-| Database | Managed PostgreSQL |
+| Frontend | Next.js (SSR) — shared codebase for marketplace + admin host |
+| Backend | NestJS API + Socket.IO (single backend — no duplicate admin API) |
+| Database | Managed PostgreSQL (or compose `postgres` service) |
 | Storage | S3-compatible (R2, Spaces, S3) — **not local disk in production** |
-| HTTPS | Mandatory |
+| HTTPS | Mandatory (terminate TLS at reverse proxy / Cloudflare) |
+
+## Final domain + access architecture
+
+| Role | URL | Audience |
+|------|-----|----------|
+| Public marketplace | `https://libyafreelance.ly` | CLIENT + FREELANCER |
+| Admin control center | `https://admin.libyafreelance.ly` | SUPER_ADMIN + authorized ADMIN |
+| API + Socket.IO | `https://api.libyafreelance.ly` | Shared backend |
+
+**Do not deploy until DNS/hosting is configured.**
+
+### Public marketplace (`libyafreelance.ly`)
+
+Registration, login, profiles, projects, proposals, messaging, portfolio, reviews, notifications.
+
+The platform-owner control center is **not** linked from public navigation.
+
+Production path `https://libyafreelance.ly/admin` redirects to `https://admin.libyafreelance.ly` (one control center only).
+
+### Admin control center (`admin.libyafreelance.ly`)
+
+Dedicated entry with branding **Libya Freelance — إدارة المنصة** and staff login only.
+
+No client/freelancer registration and no marketplace chrome.
+
+Host routing: `frontend/src/middleware.ts` + `frontend/src/lib/site-urls.ts`.
+
+### Local development (unchanged simplicity)
+
+| Surface | URL |
+|---------|-----|
+| App | `http://localhost:3000` |
+| Admin | `http://localhost:3000/admin` (login: `/admin/login`) |
+| API | `http://localhost:4000/api` |
+
+No local subdomain required.
+
+### Authorization (backend authoritative)
+
+| Actor | Admin endpoints |
+|-------|-----------------|
+| CLIENT / FREELANCER / INVESTOR | 403 |
+| ADMIN | Operational admin APIs; **not** commission / investor agreement / permission grants |
+| SUPER_ADMIN | Full owner control including Finance → Commission and Investors |
+
+Staff permissions (granted only by SUPER_ADMIN): `MANAGE_USERS`, `MANAGE_PROJECTS`, `MANAGE_REVIEWS`, `MANAGE_CONTENT`, `MANAGE_FINANCE`, `MANAGE_INVESTORS`, `SEND_NOTIFICATIONS`, `MANAGE_SETTINGS`, `VIEW_AUDIT` (plus legacy `FINANCE_VIEW` / `FINANCE_WRITE`).
 
 ## Environment variables
 
@@ -19,139 +65,138 @@
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_ACCESS_SECRET` | ≥ 32 random characters |
 | `JWT_REFRESH_SECRET` | ≥ 32 random characters (different from access) |
-| `FRONTEND_URL` | Public frontend origin |
-| `CORS_ORIGINS` | Comma-separated allowed origins (no `*`) |
+| `FRONTEND_URL` | Public marketplace origin (`https://libyafreelance.ly`) |
+| `CORS_ORIGINS` | Must include marketplace **and** admin origins |
 | `NODE_ENV` | `production` |
+| `STORAGE_DRIVER` | Must be `s3` in production |
 
-Generate secrets:
+Templates:
+
+- Root compose: `.env.production.example` → copy to `.env.production`
+- Backend only: `backend/.env.production.example`
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-### Frontend
+### Frontend (build-time `NEXT_PUBLIC_*`)
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | Backend API base (e.g. `https://api.example.com/api`) |
+| Variable | Example |
+|----------|---------|
+| `NEXT_PUBLIC_SITE_URL` | `https://libyafreelance.ly` |
+| `NEXT_PUBLIC_ADMIN_URL` | `https://admin.libyafreelance.ly` |
+| `NEXT_PUBLIC_API_URL` | `https://api.libyafreelance.ly/api` |
+| `NEXT_PUBLIC_SOCKET_URL` | `https://api.libyafreelance.ly` |
 
-### Cookie / CORS topology
+Template: `frontend/.env.production.example`
 
-If frontend and API share a parent domain:
+### Cookie / CORS
 
-- `app.libyafreelance.ly` + `api.libyafreelance.ly`
-- Set `CORS_ORIGINS=https://app.libyafreelance.ly`
-- Refresh cookie: `secure=true`, `sameSite=strict`, `path=/api/auth`
+```env
+FRONTEND_URL=https://libyafreelance.ly
+CORS_ORIGINS=https://libyafreelance.ly,https://admin.libyafreelance.ly
+```
 
-Cross-subdomain cookie issues may require `sameSite=lax` — test login/refresh in staging.
+Refresh cookie: `secure=true`, `sameSite=strict`, `path=/api/auth` on the API host.
+
+Architecture remains ready for future MFA. No public admin registration.
+
+## Production deploy checklist (when DNS/hosting ready)
+
+1. DNS: apex/`libyafreelance.ly`, `admin`, `api` (+ optional `www` → apex)
+2. TLS for all hostnames
+3. `cp .env.production.example .env.production` and fill secrets
+4. Migrations + reference seed (**never** `prisma:seed:demo`):
+   ```bash
+   docker compose -f docker-compose.production.yml --env-file .env.production --profile tools run --rm migrate
+   ```
+5. Start:
+   ```bash
+   docker compose -f docker-compose.production.yml --env-file .env.production up -d --build
+   ```
+6. Create owner:
+   ```bash
+   cd backend
+   npm run admin:create -- --super true --email owner@libyafreelance.ly --password "..." --firstName مالك --lastName المنصة
+   ```
+7. Smoke:
+   - Marketplace loads on `https://libyafreelance.ly`
+   - Admin login on `https://admin.libyafreelance.ly` (no public register)
+   - `https://libyafreelance.ly/admin` redirects to admin host
+   - `GET https://api.libyafreelance.ly/api/health`
+   - `GET https://api.libyafreelance.ly/api/platform/commission-config`
+
+### Do not upload / commit
+
+- Filled `.env.production` / `backend/.env`
+- `node_modules/`, `.next/`, `backend/data/`
+- Demo seed credentials
 
 ## Database migrations (production)
 
 Migrations run in a **separate CI/release job** (Pattern A), not inside the production API runtime.
 
-### Pattern A — CI / release migration job (selected for this project)
+### Pattern A — CI / release migration job
 
-GitHub Actions CI implements this pattern. For non-Docker hosts, use the **runtime packager** (deterministic `.prisma` copy):
-
-1. **Migration job** (full dev + build dependencies):
+1. Migration job:
    ```bash
    cd backend
-   npm ci --legacy-peer-deps          # lockfile-pinned; never npm install
+   npm ci --legacy-peer-deps
    node node_modules/prisma/build/index.js validate
    node node_modules/prisma/build/index.js generate
-   node node_modules/prisma/build/index.js migrate deploy   # staging/production DATABASE_URL
+   node node_modules/prisma/build/index.js migrate deploy
    node node_modules/prisma/build/index.js migrate status
-   npm run prisma:seed                # reference data only; never prisma:seed:demo in production
+   npm run prisma:seed
    npm run build
    ```
-2. **Runtime bundle** (automated — no manual copy):
+2. Runtime bundle:
    ```bash
-   cd backend
-   npm run package:runtime            # creates .runtime-bundle/ with dist + .prisma + prod deps
+   npm run package:runtime
    cd .runtime-bundle && node dist/main.js
    ```
 
-CI reference: `.github/workflows/ci.yml` — migrations, E2E, `verify:prod-boundary`, `package:runtime`.
-
-### Pattern B — multi-stage Docker
-
-Dockerfiles are checked in:
-
-| Image | File |
-|-------|------|
-| Backend runtime | `backend/Dockerfile` (target `runtime`) |
-| Backend build/migrate | `backend/Dockerfile` (target `build`) |
-| Frontend | `frontend/Dockerfile` |
-
-Local staging reference: `docker-compose.staging.yml` (PostgreSQL + API + web; run `migrate` profile for deploy/seed).
+### Pattern B — Docker
 
 ```bash
-# Build backend runtime image (Prisma client copied in Dockerfile — deterministic)
-docker build -f backend/Dockerfile --target runtime -t libya-freelance-api ./backend
-
-# Migrations (separate job / compose profile — NOT in runtime container)
-docker compose -f docker-compose.staging.yml --profile tools run --rm migrate
+docker compose -f docker-compose.production.yml --env-file .env.production --profile tools run --rm migrate
+docker compose -f docker-compose.production.yml --env-file .env.production up -d --build
 ```
 
-## Build & start
+## Build & start (without compose)
 
 ```bash
-# Build stage (CI or release)
 cd backend && npm ci --legacy-peer-deps
 node node_modules/prisma/build/index.js generate
 npm run build
-
-# Runtime (automated bundle — recommended)
 npm run package:runtime
 cd .runtime-bundle && node dist/main.js
 
-# Frontend
+# Frontend — set NEXT_PUBLIC_* for production domains before build
 cd frontend && npm ci && npm run build && npm run start
 ```
 
-**Never** use `prisma migrate dev` or `prisma db push` against production/staging databases.
+**Never** use `prisma migrate dev` / `prisma db push` / `prisma:seed:demo` against production.
 
-**Never** run `prisma:seed:demo` when `NODE_ENV=production`.
-
-Verify: `npm run verify:prod-boundary` and `npm run package:runtime`
-
-Use **`npm ci`** (not `npm install`) in all deploy pipelines to preserve the lockfile.
-
-Do **not** run `npm audit fix --force` during deployment.
+Verify: `npm run verify:prod-boundary`
 
 ## Health checks
 
 - Liveness: `GET /api/health`
-- Readiness: `GET /api/health/ready` (includes DB connectivity)
-
-## Staging URLs (target)
-
-| Service | URL | Status |
-|---------|-----|--------|
-| Frontend | `https://staging.libyafreelance.ly` | **NOT DEPLOYED** — no hosting/DNS/credentials in repo |
-| API | `https://api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
-
-Reference stack: `docker-compose.staging.yml`
+- Readiness: `GET /api/health/ready`
 
 ## Storage
 
-**Implementation:** `StorageService` abstraction with `local` (development) and `s3` (staging/production) drivers.
-
 | Driver | When |
 |--------|------|
-| `STORAGE_DRIVER=local` | Development / E2E with test storage |
-| `STORAGE_DRIVER=s3` | **Required** when `NODE_ENV=production` |
+| `STORAGE_DRIVER=local` | Development |
+| `STORAGE_DRIVER=s3` | **Required** in production |
 
-Full documentation: `backend/docs/STORAGE.md`
-
-Staging checklist: `docs/STAGING_DEPLOY.md`
-
-**Beta requirement:** persistent S3-compatible storage configured and verified on staging (upload → redeploy → image still loads).
+See `backend/docs/STORAGE.md`.
 
 ## Rate limiting
 
-Current limiter is **in-memory** (single instance). Multi-instance deployments need Redis-backed rate limiting.
+In-memory (single instance). Multi-instance needs Redis-backed limiting. Admin login remains rate-limited via auth limiters.
 
 ## CI
 
-GitHub Actions workflow: `.github/workflows/ci.yml` — runs migrations, unit tests, E2E, and builds on PostgreSQL service container.
+`.github/workflows/ci.yml` — migrations, unit tests, E2E, builds.

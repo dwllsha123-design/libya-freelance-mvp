@@ -21,7 +21,8 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { PaymentService } from '../payments/payment.service.js';
 import { ProposalStateService } from '../proposals/proposal-validation.util.js';
 import { acceptProposalInTransaction } from '../proposals/proposal-acceptance.util.js';
-import { calculateEscrowFees, ESCROW_CURRENCY } from './escrow.constants.js';
+import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
+import { ESCROW_CURRENCY } from './escrow.constants.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -31,6 +32,7 @@ export class EscrowService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly paymentService: PaymentService,
+    private readonly commission: CommissionResolutionService,
   ) {}
 
   async getByProposal(proposalId: string, userId: string) {
@@ -73,7 +75,10 @@ export class EscrowService {
   async prepare(clientId: string, proposalId: string) {
     const proposal = await this.loadProposalForClient(clientId, proposalId);
     const amount = Number(proposal.proposedPrice);
-    const { platformFee, freelancerPayout } = calculateEscrowFees(amount);
+    const resolved = await this.commission.resolveForProject(
+      proposal.projectId,
+      amount,
+    );
 
     const existing = await this.prisma.escrow.findUnique({
       where: { proposalId },
@@ -93,8 +98,13 @@ export class EscrowService {
         clientId,
         freelancerId: proposal.freelancerId,
         amount,
-        platformFee,
-        freelancerPayout,
+        platformFee: resolved.platformFee,
+        freelancerPayout: resolved.freelancerPayout,
+        commissionPercentage: resolved.commissionPercent,
+        commissionSource: resolved.source,
+        platformCommissionPolicyId: resolved.platformCommissionPolicyId,
+        categoryCommissionOverrideId: resolved.categoryCommissionOverrideId,
+        projectCommissionOverrideId: resolved.projectCommissionOverrideId,
         currency: ESCROW_CURRENCY,
         status: EscrowStatus.PENDING_FUNDING,
       },
@@ -160,32 +170,36 @@ export class EscrowService {
       include: { escrow: true },
     });
     if (!payment || payment.status !== PaymentStatus.SUCCEEDED) return;
+    if (!payment.escrowId || !payment.escrow) return;
     if (payment.escrow.status === EscrowStatus.FUNDED) return;
+
+    const escrowId = payment.escrowId;
+    const escrow = payment.escrow;
 
     await this.prisma.$transaction(async (tx) => {
       const capture = await this.paymentService.captureEscrowFundingInTx(tx, {
-        escrowId: payment.escrowId,
+        escrowId,
         clientId: payment.clientId,
-        amount: payment.escrow.amount,
-        currency: payment.escrow.currency,
+        amount: escrow.amount,
+        currency: escrow.currency,
       });
 
       const result = await tx.escrow.updateMany({
-        where: { id: payment.escrowId, status: EscrowStatus.PENDING_FUNDING },
+        where: { id: escrowId, status: EscrowStatus.PENDING_FUNDING },
         data: { status: EscrowStatus.FUNDED, fundedAt: new Date() },
       });
       if (result.count === 0) return;
 
       const existingDeposit = await tx.escrowTransaction.findFirst({
-        where: { escrowId: payment.escrowId, type: EscrowTransactionType.DEPOSIT },
+        where: { escrowId, type: EscrowTransactionType.DEPOSIT },
       });
       if (!existingDeposit) {
         await tx.escrowTransaction.create({
           data: {
-            escrowId: payment.escrowId,
+            escrowId,
             type: EscrowTransactionType.DEPOSIT,
-            amount: payment.escrow.amount,
-            currency: payment.escrow.currency,
+            amount: escrow.amount,
+            currency: escrow.currency,
             note: capture.depositNote,
             createdById: payment.clientId,
           },
@@ -193,12 +207,12 @@ export class EscrowService {
       }
     });
 
-    const escrow = await this.prisma.escrow.findUniqueOrThrow({
-      where: { id: payment.escrowId },
+    const fundedEscrow = await this.prisma.escrow.findUniqueOrThrow({
+      where: { id: escrowId },
     });
 
     await this.notifications.create(
-      escrow.freelancerId,
+      fundedEscrow.freelancerId,
       NotificationType.ESCROW_FUNDED,
       'تم تمويل الضمان',
       'قام العميل بتمويل مبلغ المشروع في الضمان.',
@@ -293,11 +307,22 @@ export class EscrowService {
       throw new ConflictException('لا يمكن تحرير الضمان في هذه الحالة');
     }
 
+    const settledPercent =
+      escrow.commissionPercentage != null
+        ? Number(escrow.commissionPercentage)
+        : Number(escrow.platformFee) > 0 && Number(escrow.amount) > 0
+          ? Math.round(
+              (Number(escrow.platformFee) / Number(escrow.amount)) * 10000,
+            ) / 100
+          : null;
+
     const updated = await tx.escrow.update({
       where: { id: escrow.id },
       data: {
         status: EscrowStatus.RELEASED,
         releasedAt: new Date(),
+        settledCommissionPercentage: settledPercent,
+        settledPlatformFee: escrow.platformFee,
       },
     });
 
@@ -319,6 +344,14 @@ export class EscrowService {
         },
       ],
     });
+
+    // Investor accruals from snapshotted platform fee — never from live % settings
+    await this.commission.createInvestorAccrualsInTx(
+      tx,
+      escrow.id,
+      Number(escrow.platformFee),
+      escrow.currency,
+    );
 
     return updated;
   }
@@ -499,9 +532,22 @@ export class EscrowService {
           },
         });
       } else {
+        const settledPercent =
+          escrow.commissionPercentage != null
+            ? Number(escrow.commissionPercentage)
+            : Number(escrow.platformFee) > 0 && Number(escrow.amount) > 0
+              ? Math.round(
+                  (Number(escrow.platformFee) / Number(escrow.amount)) * 10000,
+                ) / 100
+              : null;
         await tx.escrow.update({
           where: { id: escrow.id },
-          data: { status: EscrowStatus.RELEASED, releasedAt: new Date() },
+          data: {
+            status: EscrowStatus.RELEASED,
+            releasedAt: new Date(),
+            settledCommissionPercentage: settledPercent,
+            settledPlatformFee: escrow.platformFee,
+          },
         });
         await tx.escrowTransaction.createMany({
           data: [
@@ -521,6 +567,12 @@ export class EscrowService {
             },
           ],
         });
+        await this.commission.createInvestorAccrualsInTx(
+          tx,
+          escrow.id,
+          Number(escrow.platformFee),
+          escrow.currency,
+        );
       }
 
       await tx.adminAuditLog.create({
@@ -558,7 +610,12 @@ export class EscrowService {
     proposal: Awaited<ReturnType<typeof this.loadProposalForClient>>,
   ) {
     const amount = Number(proposal.proposedPrice);
-    const { platformFee, freelancerPayout } = calculateEscrowFees(amount);
+    const resolved = await this.commission.resolveForProject(
+      proposal.projectId,
+      amount,
+      new Date(),
+      tx,
+    );
 
     let escrow = await tx.escrow.findUnique({ where: { proposalId: proposal.id } });
 
@@ -578,8 +635,13 @@ export class EscrowService {
             clientId,
             freelancerId: proposal.freelancerId,
             amount,
-            platformFee,
-            freelancerPayout,
+            platformFee: resolved.platformFee,
+            freelancerPayout: resolved.freelancerPayout,
+            commissionPercentage: resolved.commissionPercent,
+            commissionSource: resolved.source,
+            platformCommissionPolicyId: resolved.platformCommissionPolicyId,
+            categoryCommissionOverrideId: resolved.categoryCommissionOverrideId,
+            projectCommissionOverrideId: resolved.projectCommissionOverrideId,
             currency: ESCROW_CURRENCY,
             status: EscrowStatus.PENDING_FUNDING,
           },
@@ -665,6 +727,10 @@ export class EscrowService {
       freelancerPayout: Prisma.Decimal;
       currency: string;
       status: EscrowStatus;
+      commissionPercentage?: Prisma.Decimal | null;
+      commissionSource?: string | null;
+      settledCommissionPercentage?: Prisma.Decimal | null;
+      settledPlatformFee?: Prisma.Decimal | null;
       fundedAt: Date | null;
       releasedAt: Date | null;
       refundedAt: Date | null;
@@ -680,6 +746,19 @@ export class EscrowService {
       amount: Number(escrow.amount),
       platformFee: Number(escrow.platformFee),
       freelancerPayout: Number(escrow.freelancerPayout),
+      commissionPercentage:
+        escrow.commissionPercentage != null
+          ? Number(escrow.commissionPercentage)
+          : null,
+      commissionSource: escrow.commissionSource ?? null,
+      settledCommissionPercentage:
+        escrow.settledCommissionPercentage != null
+          ? Number(escrow.settledCommissionPercentage)
+          : null,
+      settledPlatformFee:
+        escrow.settledPlatformFee != null
+          ? Number(escrow.settledPlatformFee)
+          : null,
       currency: escrow.currency,
       status: escrow.status,
       fundedAt: escrow.fundedAt,

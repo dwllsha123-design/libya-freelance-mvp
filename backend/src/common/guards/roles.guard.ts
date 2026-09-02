@@ -40,7 +40,13 @@ export class RolesGuard implements CanActivate {
     }
 
     if (!requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('ليس لديك صلاحية للوصول');
+      // SUPER_ADMIN inherits all ADMIN panel access
+      const adminSatisfied =
+        user.role === Role.SUPER_ADMIN &&
+        requiredRoles.includes(Role.ADMIN);
+      if (!adminSatisfied) {
+        throw new ForbiddenException('ليس لديك صلاحية للوصول');
+      }
     }
 
     return true;

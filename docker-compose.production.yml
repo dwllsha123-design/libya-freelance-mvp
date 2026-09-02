@@ -1,0 +1,103 @@
+# Production reference compose for VPS / self-hosted deploy.
+#
+# Usage:
+#   cp .env.production.example .env.production   # fill secrets — never commit
+#   docker compose -f docker-compose.production.yml --env-file .env.production up -d
+#
+# Migrations + reference seed (run once before/upgrading API):
+#   docker compose -f docker-compose.production.yml --env-file .env.production --profile tools run --rm migrate
+#
+# Create SUPER_ADMIN owner (after API is up), from a one-off backend shell:
+#   docker compose -f docker-compose.production.yml --env-file .env.production run --rm api \
+#     node -e "console.log('prefer: npm run admin:create -- --super true ... on build image')"
+#
+# Domains:
+#   libyafreelance.ly        → web:3000 (CLIENT + FREELANCER marketplace)
+#   admin.libyafreelance.ly  → web:3000 (SUPER_ADMIN + authorized ADMIN)
+#   api.libyafreelance.ly    → api:4000
+#
+# Put TLS termination (Caddy / Nginx / Cloudflare) in front of these ports.
+# Never run prisma:seed:demo in production.
+# Do not deploy until DNS/hosting is configured.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-libya_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-libya_freelance}
+    volumes:
+      - prod_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: ./backend
+      target: build
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-libya_prod}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-libya_freelance}?schema=public
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "node node_modules/prisma/build/index.js migrate deploy
+      && node node_modules/prisma/build/index.js migrate status
+      && npm run prisma:seed"
+    profiles: ['tools']
+
+  api:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-libya_prod}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-libya_freelance}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-https://libyafreelance.ly}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://libyafreelance.ly,https://admin.libyafreelance.ly}
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_BUCKET: ${S3_BUCKET:?set S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:?set S3_PUBLIC_BASE_URL}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      PAYMENT_DRIVER: ${PAYMENT_DRIVER:-simulated}
+      PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-LYD}
+      PAYMENT_SIMULATED_FAILURE: ${PAYMENT_SIMULATED_FAILURE:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@libyafreelance.ly}
+    ports:
+      - '${API_PORT:-4000}:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.libyafreelance.ly/api}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://libyafreelance.ly}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.libyafreelance.ly}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://api.libyafreelance.ly}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      - api
+
+volumes:
+  prod_pg_data:

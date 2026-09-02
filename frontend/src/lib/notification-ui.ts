@@ -9,7 +9,8 @@ export type AppNotificationType =
   | 'ESCROW_FUNDED'
   | 'ESCROW_RELEASED'
   | 'ESCROW_DISPUTED'
-  | 'ESCROW_DISPUTE_RESOLVED';
+  | 'ESCROW_DISPUTE_RESOLVED'
+  | 'ADMIN_BROADCAST';
 
 export interface NotificationItem {
   id: string;
@@ -79,6 +80,11 @@ export const NOTIFICATION_UI: Record<
     icon: '✔️',
     label: 'حل نزاع',
     accent: 'bg-slate-100 text-slate-700',
+  },
+  ADMIN_BROADCAST: {
+    icon: '📢',
+    label: 'إشعار المنصة',
+    accent: 'bg-teal-50 text-teal-800',
   },
 };
 

@@ -40,6 +40,44 @@ export class NotificationsService {
     return notification;
   }
 
+  /**
+   * Batch-create inbox rows and push realtime events (used by admin broadcasts).
+   * Returns the validated target URL that was stored (or null).
+   */
+  async createManyForUsers(
+    userIds: string[],
+    type: NotificationType,
+    title: string,
+    message: string,
+    targetUrl?: string | null,
+    batchSize = 200,
+  ) {
+    const safeTargetUrl = assertInternalTargetUrl(targetUrl) ?? null;
+    if (!userIds.length) {
+      return { count: 0, targetUrl: safeTargetUrl };
+    }
+
+    let count = 0;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const chunk = userIds.slice(i, i + batchSize);
+      const created = await this.prisma.notification.createManyAndReturn({
+        data: chunk.map((userId) => ({
+          userId,
+          type,
+          title,
+          message,
+          targetUrl: safeTargetUrl,
+        })),
+      });
+      count += created.length;
+      for (const notification of created) {
+        this.emitRealtime(notification);
+      }
+    }
+
+    return { count, targetUrl: safeTargetUrl };
+  }
+
   async createOrAggregateMessageNotification(
     userId: string,
     conversationId: string,

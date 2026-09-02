@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
 import { ProposalsService } from './proposals.service.js';
@@ -37,6 +38,12 @@ export class ProposalsController {
     @Query() query: MyProposalsQueryDto,
   ) {
     return this.proposalsService.listMine(user.id, query);
+  }
+
+  @Public()
+  @Get('projects/:projectId/proposals/boost-board')
+  getBoostBoard(@Param('projectId') projectId: string) {
+    return this.proposalsService.getBoostBoard(projectId);
   }
 
   @Get('projects/:projectId/proposals')

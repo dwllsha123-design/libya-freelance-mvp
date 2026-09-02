@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
 import { usePaymentConfig } from '@/hooks/use-payment-config';
-import { calculateEscrowFees, ESCROW_PLATFORM_FEE_PERCENT } from '@/lib/escrow-fees';
+import {
+  calculateEscrowFees,
+  fetchDefaultCommissionPercent,
+} from '@/lib/escrow-fees';
 import { formatCurrency } from '@/lib/currency';
 import { paymentModeLabel } from '@/lib/payment-config';
 import type { AppLocale } from '@/i18n/routing';
@@ -12,6 +16,7 @@ export function EscrowFundDialog({
   open,
   proposedPrice,
   currency = 'LYD',
+  commissionPercentage,
   isLoading,
   onConfirm,
   onCancel,
@@ -19,6 +24,8 @@ export function EscrowFundDialog({
   open: boolean;
   proposedPrice: number;
   currency?: string;
+  /** Resolved % from escrow prepare when available */
+  commissionPercentage?: number | null;
   isLoading: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -26,7 +33,26 @@ export function EscrowFundDialog({
   const t = useTranslations('escrow');
   const locale = useLocale() as AppLocale;
   const { config: paymentConfig } = usePaymentConfig();
-  const { platformFee, freelancerPayout } = calculateEscrowFees(proposedPrice);
+  const [percent, setPercent] = useState(commissionPercentage ?? 10);
+
+  useEffect(() => {
+    if (commissionPercentage != null) {
+      setPercent(commissionPercentage);
+      return;
+    }
+    let cancelled = false;
+    void fetchDefaultCommissionPercent().then((value) => {
+      if (!cancelled) setPercent(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [commissionPercentage]);
+
+  const { platformFee, freelancerPayout } = calculateEscrowFees(
+    proposedPrice,
+    percent,
+  );
 
   return (
     <ConfirmDialog
@@ -41,7 +67,7 @@ export function EscrowFundDialog({
               {formatCurrency(proposedPrice, currency, locale)}
             </p>
             <p className="mt-1 text-on-surface-variant">
-              {t('fundDialogFee', { percent: ESCROW_PLATFORM_FEE_PERCENT })}{' '}
+              {t('fundDialogFee', { percent })}{' '}
               {formatCurrency(platformFee, currency, locale)}
             </p>
             <p className="mt-1 text-on-surface-variant">

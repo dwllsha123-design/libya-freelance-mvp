@@ -7,6 +7,7 @@ export const NUQATI_REASON_LABELS: Record<string, string> = {
   FIRST_PORTFOLIO: 'أول عنصر في معرض الأعمال',
   MONTHLY_APPLY: 'تقديم لطلب هذا الشهر',
   PROPOSAL_SUBMIT: 'تكلفة تقديم عرض',
+  PROPOSAL_BOOST: 'تعزيز ظهور العرض',
   STREAK_7: 'سلسلة تقديمات 7 أيام',
   STREAK_15: 'سلسلة تقديمات 15 يوماً',
   STREAK_30: 'سلسلة تقديمات 30 يوماً',

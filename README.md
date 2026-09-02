@@ -56,6 +56,18 @@ npm run dev
 
 App: `http://localhost:3000`
 
+### Production domains
+
+| Role | URL |
+|------|-----|
+| Marketplace | `https://libyafreelance.ly` |
+| Admin | `https://admin.libyafreelance.ly` |
+| API | `https://api.libyafreelance.ly` |
+
+Local: `http://localhost:3000` · admin `http://localhost:3000/admin` · API `http://localhost:4000/api`
+
+See `docs/DEPLOYMENT.md` and `.env.production.example`. **Do not deploy until DNS/hosting is ready.**
+
 ### 4. Admin user (production-safe)
 
 ```bash

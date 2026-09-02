@@ -15,6 +15,7 @@ import { RealtimeSessionService } from '../realtime/realtime-session.service.js'
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { UsersService } from '../users/users.service.js';
 import { EmailService } from '../common/services/email.service.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { assertUserCanAuthenticate } from '../common/utils/account-status.util.js';
 import {
   generateSecureToken,
@@ -45,6 +46,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly realtimeSessions: RealtimeSessionService,
     private readonly nuqatiService: NuqatiService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
@@ -55,6 +57,8 @@ export class AuthService {
     if (!PUBLIC_ROLES.includes(dto.role)) {
       throw new BadRequestException('نوع الحساب غير صالح');
     }
+
+    await this.platformPolicy.assertRegistrationAllowed(dto.role);
 
     const email = dto.email.toLowerCase().trim();
     const existing = await this.prisma.user.findUnique({ where: { email } });

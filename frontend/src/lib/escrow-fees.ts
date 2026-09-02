@@ -1,8 +1,20 @@
-export const ESCROW_PLATFORM_FEE_PERCENT = 10;
-
-export function calculateEscrowFees(amount: number) {
+export function calculateEscrowFees(amount: number, commissionPercent: number) {
   const platformFee =
-    Math.round(amount * (ESCROW_PLATFORM_FEE_PERCENT / 100) * 100) / 100;
+    Math.round(amount * (commissionPercent / 100) * 100) / 100;
   const freelancerPayout = Math.round((amount - platformFee) * 100) / 100;
-  return { platformFee, freelancerPayout };
+  return { platformFee, freelancerPayout, commissionPercent };
+}
+
+export async function fetchDefaultCommissionPercent(): Promise<number> {
+  try {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+    const res = await fetch(`${base}/platform/commission-config`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return 10;
+    const data = (await res.json()) as { defaultCommissionPercentage?: number };
+    return data.defaultCommissionPercentage ?? 10;
+  } catch {
+    return 10;
+  }
 }

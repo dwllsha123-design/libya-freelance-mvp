@@ -8,6 +8,7 @@ import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import type {
   CreatePortfolioDto,
   ReorderPortfolioDto,
@@ -34,6 +35,7 @@ export class PortfolioService {
     private readonly prisma: PrismaService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly nuqatiService: NuqatiService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async listMine(userId: string) {
@@ -74,6 +76,7 @@ export class PortfolioService {
 
     if (
       !item ||
+      !item.isVisible ||
       item.freelancerProfile.profile.user.role !== Role.FREELANCER ||
       item.freelancerProfile.profile.user.status !== 'ACTIVE'
     ) {
@@ -98,7 +101,7 @@ export class PortfolioService {
     }
 
     const items = await this.prisma.portfolioItem.findMany({
-      where: { freelancerProfileId: profile.freelancerProfile.id },
+      where: { freelancerProfileId: profile.freelancerProfile.id, isVisible: true },
       include: portfolioInclude,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
@@ -120,13 +123,14 @@ export class PortfolioService {
           select: {
             id: true,
             portfolio: {
+              where: { isVisible: true },
               orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
               take: 3,
               include: {
                 images: { orderBy: { sortOrder: 'asc' }, take: 1 },
               },
             },
-            _count: { select: { portfolio: true } },
+            _count: { select: { portfolio: { where: { isVisible: true } } } },
           },
         },
       },
@@ -150,6 +154,7 @@ export class PortfolioService {
   }
 
   async create(userId: string, dto: CreatePortfolioDto) {
+    await this.platformPolicy.assertPortfolioAllowed(Role.FREELANCER);
     const profile = await this.requireFreelancerProfile(userId);
     const skillIds = validateSkillIds(dto.skillIds);
     await this.assertSkillsExist(skillIds);
@@ -180,6 +185,7 @@ export class PortfolioService {
   }
 
   async update(userId: string, itemId: string, dto: UpdatePortfolioDto) {
+    await this.platformPolicy.assertPortfolioAllowed(Role.FREELANCER);
     const profile = await this.requireFreelancerProfile(userId);
     await this.findOwnedItem(profile.id, itemId);
 

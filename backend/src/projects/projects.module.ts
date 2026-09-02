@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { EscrowModule } from '../escrow/escrow.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
+import { PlatformModule } from '../platform/platform.module.js';
 import { ProjectsController } from './projects.controller.js';
 import { ProjectsService } from './projects.service.js';
 
 @Module({
-  imports: [NotificationsModule, EscrowModule, NuqatiModule],
+  imports: [NotificationsModule, EscrowModule, NuqatiModule, PlatformModule],
   controllers: [ProjectsController],
   providers: [ProjectsService],
   exports: [ProjectsService],

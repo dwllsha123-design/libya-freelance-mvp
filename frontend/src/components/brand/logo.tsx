@@ -48,6 +48,14 @@ export function Logo({
   );
 
   if (href) {
+    const isExternal = /^https?:\/\//i.test(href);
+    if (isExternal) {
+      return (
+        <a href={href} className="min-w-0">
+          {content}
+        </a>
+      );
+    }
     return (
       <Link href={href} className="min-w-0">
         {content}

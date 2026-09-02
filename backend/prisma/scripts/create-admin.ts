@@ -70,11 +70,16 @@ async function main() {
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const username = `admin-${Date.now().toString(36)}`;
 
+    const role =
+      args.super === 'true' || args.role === 'SUPER_ADMIN'
+        ? Role.SUPER_ADMIN
+        : Role.ADMIN;
+
     const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
-        role: Role.ADMIN,
+        role,
         status: UserStatus.ACTIVE,
         emailVerified: true,
         profile: {
@@ -88,9 +93,10 @@ async function main() {
       include: { profile: true },
     });
 
-    console.log('Admin user created successfully');
+    console.log(role === Role.SUPER_ADMIN ? 'SUPER_ADMIN created successfully' : 'Admin user created successfully');
     console.log(`ID: ${user.id}`);
     console.log(`Email: ${user.email}`);
+    console.log(`Role: ${user.role}`);
     console.log(`Username: ${user.profile?.username}`);
   } finally {
     rl.close();

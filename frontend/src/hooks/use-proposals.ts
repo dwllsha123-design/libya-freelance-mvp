@@ -34,6 +34,7 @@ export interface ClientProposal {
   estimatedDurationDays: number;
   status: string;
   createdAt: string;
+  boostPoints?: number;
   freelancer: {
     username: string;
     displayName: string;
@@ -69,13 +70,27 @@ export function useProposalsApi() {
           coverLetter: string;
           proposedPrice: number;
           estimatedDurationDays: number;
+          boostPoints?: number;
         },
       ) => {
         if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        const body: {
+          coverLetter: string;
+          proposedPrice: number;
+          estimatedDurationDays: number;
+          boostPoints?: number;
+        } = {
+          coverLetter: payload.coverLetter,
+          proposedPrice: payload.proposedPrice,
+          estimatedDurationDays: payload.estimatedDurationDays,
+        };
+        if (payload.boostPoints != null && payload.boostPoints > 0) {
+          body.boostPoints = payload.boostPoints;
+        }
         return authenticatedRequest<FreelancerProposal>(
           `/projects/${projectId}/proposals`,
           accessToken,
-          { method: 'POST', body: JSON.stringify(payload) },
+          { method: 'POST', body: JSON.stringify(body) },
         );
       },
 

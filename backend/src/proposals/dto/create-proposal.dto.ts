@@ -15,6 +15,8 @@ import {
   COVER_LETTER_MIN,
   ESTIMATED_DURATION_MAX_DAYS,
   ESTIMATED_DURATION_MIN_DAYS,
+  PROPOSAL_BOOST_MAX,
+  PROPOSAL_BOOST_MIN,
 } from '../proposals.constants.js';
 
 export class CreateProposalDto {
@@ -33,6 +35,14 @@ export class CreateProposalDto {
   @Min(ESTIMATED_DURATION_MIN_DAYS)
   @Max(ESTIMATED_DURATION_MAX_DAYS)
   estimatedDurationDays!: number;
+
+  /** Optional Nuqati points spent to boost ranking on the project. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(PROPOSAL_BOOST_MIN)
+  @Max(PROPOSAL_BOOST_MAX)
+  boostPoints?: number;
 }
 
 export class MyProposalsQueryDto {

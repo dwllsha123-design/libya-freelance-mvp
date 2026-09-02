@@ -10,7 +10,8 @@ import {
   PLATFORM_NAME_EN,
   PLATFORM_TAGLINE_AR,
 } from '@/lib/branding';
-import { ESCROW_PLATFORM_FEE_PERCENT } from '@/lib/escrow-fees';
+// Marketing copy uses configured default as display fallback; live fee is DB-driven
+const ESCROW_PLATFORM_FEE_PERCENT = 10;
 
 export interface MarketingValueItem {
   title: string;

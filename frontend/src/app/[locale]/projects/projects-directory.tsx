@@ -116,19 +116,21 @@ export default function ProjectsDirectoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
+    <div className="mx-auto max-w-7xl px-4 py-8 md:py-10">
       <h1 className="text-3xl font-bold text-on-surface">{t('browseTitle')}</h1>
 
-      <div className="mt-6 flex flex-col gap-4 lg:flex-row">
+      <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start">
         <aside className="hidden lg:block lg:w-72 lg:shrink-0">
-          <ProjectFiltersSidebar
-            filters={filters}
-            categories={categories}
-            skills={skills}
-            cities={cities}
-            onChange={updateFilters}
-            onClear={clearFilters}
-          />
+          <div className="sticky top-24 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <ProjectFiltersSidebar
+              filters={filters}
+              categories={categories}
+              skills={skills}
+              cities={cities}
+              onChange={updateFilters}
+              onClear={clearFilters}
+            />
+          </div>
         </aside>
 
         {mobileFiltersOpen ? (
@@ -162,23 +164,28 @@ export default function ProjectsDirectoryPage() {
           </div>
         ) : null}
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <div className="flex gap-3">
-            <input
-              key={filters.q}
-              data-project-search
-              defaultValue={filters.q}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitSearch();
-              }}
-              placeholder={t('searchPlaceholder')}
-              className="flex-1 rounded-lg border bg-white px-4 py-2"
-            />
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-slate-400">
+                ⌕
+              </span>
+              <input
+                key={filters.q}
+                data-project-search
+                defaultValue={filters.q}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSearch();
+                }}
+                placeholder={t('searchJobsPlaceholder')}
+                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pe-4 ps-9 text-sm shadow-sm"
+              />
+            </div>
             <button
               type="button"
               onClick={submitSearch}
-              className="rounded-lg bg-on-surface px-4 py-2 text-sm text-white"
+              className="rounded-xl bg-on-surface px-4 py-2 text-sm text-white"
             >
               {tCommon('search')}
             </button>
@@ -219,51 +226,73 @@ export default function ProjectsDirectoryPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 space-y-4">
             {data?.items.map((project) => (
               <Link
                 key={project.slug}
                 href={`/projects/${project.slug}`}
-                className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-primary"
+                className="block rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md"
               >
-                <h2 className="font-bold text-on-surface">{project.title}</h2>
-                <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h2 className="text-lg font-bold text-primary">{project.title}</h2>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                    {t('unitsToApply', { cost: 10 })}
+                  </span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">
                   {project.description}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {project.skills.slice(0, 3).map((s) => (
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                  <span>
+                    {project.budgetType === 'FIXED'
+                      ? t('budgetTypeFixed')
+                      : t('budgetTypeHourly')}
+                  </span>
+                  <span className="font-medium text-on-surface">
+                    {formatBudgetRange(
+                      project.budgetMin,
+                      project.budgetMax,
+                      project.currency,
+                      locale,
+                    )}
+                  </span>
+                  <span>
+                    {EXPERIENCE_LABELS[project.experienceLevel] ??
+                      project.experienceLevel}
+                  </span>
+                  <span>
+                    {project.workMode === 'REMOTE'
+                      ? t('workModeRemote')
+                      : project.city
+                        ? getLocalizedCityName(project.city, locale)
+                        : '—'}
+                  </span>
+                  {project.publishedAt ? (
+                    <span>
+                      {t('publishedAgo', {
+                        date: new Date(project.publishedAt).toLocaleDateString(
+                          numberLocale,
+                        ),
+                      })}
+                    </span>
+                  ) : null}
+                  {project.proposalCount !== undefined &&
+                  project.proposalCount > 0 ? (
+                    <span>
+                      {t('proposalsCount', { count: project.proposalCount })}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {project.skills.slice(0, 6).map((s) => (
                     <span
                       key={s.slug}
-                      className="rounded bg-slate-100 px-2 py-0.5 text-xs"
+                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700"
                     >
                       {s.name}
                     </span>
                   ))}
                 </div>
-                <p className="mt-3 text-sm font-medium text-primary">
-                  {formatBudgetRange(project.budgetMin, project.budgetMax, project.currency, locale)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {EXPERIENCE_LABELS[project.experienceLevel] ??
-                    project.experienceLevel}
-                  {' · '}
-                  {project.workMode === 'REMOTE'
-                    ? t('workModeRemote')
-                    : (project.city ? getLocalizedCityName(project.city, locale) : '—')}
-                  {project.publishedAt
-                    ? ` · ${new Date(project.publishedAt).toLocaleDateString(numberLocale)}`
-                    : ''}
-                </p>
-                {project.client ? (
-                  <p className="mt-1 text-xs text-slate-400">
-                    {project.client.displayName}
-                  </p>
-                ) : null}
-                {project.proposalCount !== undefined && project.proposalCount > 0 ? (
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {t('proposalsCount', { count: project.proposalCount })}
-                  </p>
-                ) : null}
               </Link>
             ))}
           </div>

@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { ProjectStatus, Role, UserStatus } from '@prisma/client';
+import { CommissionPolicyStatus, ProjectStatus, Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PaymentService } from '../payments/payment.service.js';
+import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
+import { FALLBACK_COMMISSION_PERCENT } from '../commercial/commercial.constants.js';
 
 @Injectable()
 export class PlatformService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly payments: PaymentService,
+    private readonly commission: CommissionResolutionService,
   ) {}
 
   async getPublicStats() {
@@ -72,5 +75,48 @@ export class PlatformService {
 
   getPaymentConfig() {
     return this.payments.getPublicConfig();
+  }
+
+  async getCommissionConfig() {
+    const now = new Date();
+    const policy = await this.prisma.platformCommissionPolicy.findFirst({
+      where: {
+        OR: [
+          {
+            status: CommissionPolicyStatus.ACTIVE,
+            OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+          },
+          {
+            status: CommissionPolicyStatus.SCHEDULED,
+            effectiveFrom: { lte: now },
+            OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+          },
+        ],
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    return {
+      defaultCommissionPercentage: policy
+        ? Number(policy.defaultCommissionPercentage)
+        : FALLBACK_COMMISSION_PERCENT,
+      minimumCommissionAmount: policy?.minimumCommissionAmount
+        ? Number(policy.minimumCommissionAmount)
+        : null,
+      maximumCommissionAmount: policy?.maximumCommissionAmount
+        ? Number(policy.maximumCommissionAmount)
+        : null,
+      currency: 'LYD',
+      effectiveFrom: policy?.effectiveFrom ?? null,
+    };
+  }
+
+  previewCommission(input: {
+    projectId?: string;
+    projectValue: number;
+    commissionPercent?: number;
+    investorSharePercent?: number;
+  }) {
+    return this.commission.preview(input);
   }
 }

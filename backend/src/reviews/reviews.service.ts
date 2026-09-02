@@ -20,6 +20,7 @@ import {
   validateRating,
   validateReviewComment,
 } from './review-validation.util.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 
 const reviewInclude = {
   reviewer: {
@@ -45,9 +46,11 @@ export class ReviewsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly ratingService: ReviewRatingService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async submitReview(userId: string, role: Role, projectId: string, dto: CreateReviewDto) {
+    await this.platformPolicy.assertReviewsAllowed(role);
     const project = await this.getProjectReviewContext(projectId);
     const reviewedUserId = deriveReviewTarget(userId, role, project);
 

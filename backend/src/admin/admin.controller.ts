@@ -47,8 +47,8 @@ export class AdminController {
   ) {}
 
   @Get('dashboard')
-  getDashboard() {
-    return this.dashboard.getOverview();
+  getDashboard(@Query('range') range?: '7d' | '30d' | '3m' | '6m' | '12m') {
+    return this.dashboard.getOverview(range);
   }
 
   @Get('users')
@@ -74,6 +74,11 @@ export class AdminController {
   @Post('users/:id/reactivate')
   reactivateUser(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.reactivate(admin.id, id);
+  }
+
+  @Post('users/:id/revoke-sessions')
+  revokeUserSessions(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
+    return this.users.revokeSessions(admin.id, id);
   }
 
   @Get('projects')

@@ -35,6 +35,7 @@ import {
 } from '../reviews/review-validation.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 
 const projectInclude = {
   category: true,
@@ -80,9 +81,11 @@ export class ProjectsService {
     private readonly notifications: NotificationsService,
     private readonly escrowService: EscrowService,
     private readonly nuqatiService: NuqatiService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async create(clientId: string, dto: CreateProjectDto) {
+    await this.platformPolicy.assertProjectsAllowed(Role.CLIENT);
     await this.assertClient(clientId);
 
     validateProjectForDraft({
@@ -278,6 +281,7 @@ export class ProjectsService {
   }
 
   async publish(clientId: string, projectId: string) {
+    await this.platformPolicy.assertProjectsAllowed(Role.CLIENT);
     const project = await this.findOwnedProject(clientId, projectId);
     ProjectStateService.assertCanPublish(project.status);
 

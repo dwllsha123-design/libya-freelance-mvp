@@ -27,11 +27,11 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'demo-admin@seed.ly' },
-    update: {},
+    update: { role: 'SUPER_ADMIN' },
     create: {
       email: 'demo-admin@seed.ly',
       passwordHash,
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
       status: 'ACTIVE',
       emailVerified: true,
       profile: {
