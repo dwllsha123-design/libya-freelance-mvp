@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { useAdminApi } from '@/hooks/use-admin';
+import { useAdminApi, type AdminPlatformSettingsBundle } from '@/hooks/use-admin';
 import {
   AdminComingSoon,
   AdminPageHeader,
@@ -22,6 +22,45 @@ const MOBILE_FLAGS = [
 ] as const;
 
 type Status = (typeof STATUSES)[number];
+
+type MobileSettingsFormState = {
+  iosAppStatus: Status;
+  androidAppStatus: Status;
+  iosLatestVersion: string;
+  iosMinimumSupportedVersion: string;
+  androidLatestVersion: string;
+  androidMinimumSupportedVersion: string;
+  iosStoreUrl: string;
+  androidStoreUrl: string;
+  mobileMaintenanceMessage: string;
+  privacyPolicyUrl: string;
+  termsUrl: string;
+  supportUrl: string;
+  flags: Record<string, boolean>;
+};
+
+function mapMobileSettings(data: AdminPlatformSettingsBundle): MobileSettingsFormState {
+  const s = data.settings;
+  const flags: Record<string, boolean> = {};
+  for (const key of MOBILE_FLAGS) {
+    flags[key] = Boolean(data.flags?.[key]);
+  }
+  return {
+    iosAppStatus: (s.iosAppStatus as Status) || 'COMING_SOON',
+    androidAppStatus: (s.androidAppStatus as Status) || 'COMING_SOON',
+    iosLatestVersion: String(s.iosLatestVersion ?? ''),
+    iosMinimumSupportedVersion: String(s.iosMinimumSupportedVersion ?? ''),
+    androidLatestVersion: String(s.androidLatestVersion ?? ''),
+    androidMinimumSupportedVersion: String(s.androidMinimumSupportedVersion ?? ''),
+    iosStoreUrl: String(s.iosStoreUrl ?? ''),
+    androidStoreUrl: String(s.androidStoreUrl ?? ''),
+    mobileMaintenanceMessage: String(s.mobileMaintenanceMessage ?? ''),
+    privacyPolicyUrl: String(s.privacyPolicyUrl ?? ''),
+    termsUrl: String(s.termsUrl ?? ''),
+    supportUrl: String(s.supportUrl ?? ''),
+    flags,
+  };
+}
 
 export default function AdminMobileSettingsPage() {
   const t = useTranslations('admin');
@@ -45,43 +84,48 @@ export default function AdminMobileSettingsPage() {
   const [termsUrl, setTermsUrl] = useState('');
   const [supportUrl, setSupportUrl] = useState('');
   const [flags, setFlags] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  function hydrateForm(data: AdminPlatformSettingsBundle) {
+    const mapped = mapMobileSettings(data);
+    setIosAppStatus(mapped.iosAppStatus);
+    setAndroidAppStatus(mapped.androidAppStatus);
+    setIosLatestVersion(mapped.iosLatestVersion);
+    setIosMinimumSupportedVersion(mapped.iosMinimumSupportedVersion);
+    setAndroidLatestVersion(mapped.androidLatestVersion);
+    setAndroidMinimumSupportedVersion(mapped.androidMinimumSupportedVersion);
+    setIosStoreUrl(mapped.iosStoreUrl);
+    setAndroidStoreUrl(mapped.androidStoreUrl);
+    setMobileMaintenanceMessage(mapped.mobileMaintenanceMessage);
+    setPrivacyPolicyUrl(mapped.privacyPolicyUrl);
+    setTermsUrl(mapped.termsUrl);
+    setSupportUrl(mapped.supportUrl);
+    setFlags(mapped.flags);
+  }
 
   async function reload() {
     const data = await api.getSettings();
-    const s = data.settings;
-    setIosAppStatus((s.iosAppStatus as Status) || 'COMING_SOON');
-    setAndroidAppStatus((s.androidAppStatus as Status) || 'COMING_SOON');
-    setIosLatestVersion(String(s.iosLatestVersion ?? ''));
-    setIosMinimumSupportedVersion(String(s.iosMinimumSupportedVersion ?? ''));
-    setAndroidLatestVersion(String(s.androidLatestVersion ?? ''));
-    setAndroidMinimumSupportedVersion(
-      String(s.androidMinimumSupportedVersion ?? ''),
-    );
-    setIosStoreUrl(String(s.iosStoreUrl ?? ''));
-    setAndroidStoreUrl(String(s.androidStoreUrl ?? ''));
-    setMobileMaintenanceMessage(String(s.mobileMaintenanceMessage ?? ''));
-    setPrivacyPolicyUrl(String(s.privacyPolicyUrl ?? ''));
-    setTermsUrl(String(s.termsUrl ?? ''));
-    setSupportUrl(String(s.supportUrl ?? ''));
-    const next: Record<string, boolean> = {};
-    for (const key of MOBILE_FLAGS) {
-      next[key] = Boolean(data.flags?.[key]);
-    }
-    setFlags(next);
+    hydrateForm(data);
   }
 
   useEffect(() => {
     if (!isOwner) return;
     let cancelled = false;
-    reload().catch((e) => {
-      if (!cancelled) {
-        setError(e instanceof Error ? e.message : t('settingsLoadFailed'));
+    void (async () => {
+      try {
+        const data = await api.getSettings();
+        if (!cancelled) hydrateForm(data);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : t('settingsLoadFailed'));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    });
+    })();
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, isOwner, t]);
 
   async function onSave(e: FormEvent) {
@@ -119,6 +163,12 @@ export default function AdminMobileSettingsPage() {
         title={t('superAdminOnlyAction')}
         description={t('mobileSettingsOwnerOnly')}
       />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-slate-500">{t('loading')}</div>
     );
   }
 

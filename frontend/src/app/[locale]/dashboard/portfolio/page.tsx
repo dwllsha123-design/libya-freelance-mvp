@@ -11,7 +11,6 @@ import { ApiError } from '@/lib/api';
 
 export default function PortfolioDashboardPage() {
   const t = useTranslations('portfolio');
-  const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const { user, isLoading: authLoading } = useAuth();
   const api = usePortfolioApi();

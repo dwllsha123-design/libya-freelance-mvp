@@ -1,6 +1,5 @@
 import {
   PLATFORM_CURRENCY_CODE,
-  PLATFORM_NAME_AR,
   PLATFORM_NAME_AR_STYLED,
 } from '@/lib/branding';
 import { LIBYAN_CITIES, MARKETPLACE_CATEGORIES } from '@/lib/marketplace-content';

@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useNuqatiApi } from '@/hooks/use-nuqati';
 import type { NuqatiTransaction } from '@/lib/nuqati';
@@ -31,16 +31,6 @@ export default function NuqatiHistoryPage() {
     [t],
   );
 
-  const load = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await api.listTransactions(filter === 'all' ? undefined : filter);
-      setItems(res.items);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [api, filter]);
-
   useEffect(() => {
     if (!authLoading && user && user.role !== 'FREELANCER') {
       router.replace('/dashboard');
@@ -48,8 +38,25 @@ export default function NuqatiHistoryPage() {
   }, [authLoading, user, router]);
 
   useEffect(() => {
-    if (user?.role === 'FREELANCER') void load();
-  }, [user, load]);
+    if (user?.role !== 'FREELANCER') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await api.listTransactions(filter === 'all' ? undefined : filter);
+        if (!cancelled) setItems(res.items);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, api, filter]);
+
+  function handleFilterChange(next: typeof filter) {
+    setIsLoading(true);
+    setFilter(next);
+  }
 
   if (authLoading || !user) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -72,7 +79,7 @@ export default function NuqatiHistoryPage() {
           <button
             key={f.key}
             type="button"
-            onClick={() => setFilter(f.key)}
+            onClick={() => handleFilterChange(f.key)}
             className={`rounded-full px-3 py-1.5 text-sm font-medium ${
               filter === f.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'
             }`}

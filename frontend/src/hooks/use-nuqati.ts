@@ -60,23 +60,33 @@ export function useNuqatiBalance() {
   const { user, accessToken } = useAuth();
   const api = useNuqatiApi();
   const [balance, setBalance] = useState<number | null>(null);
+  const enabled = Boolean(accessToken && user?.role === 'FREELANCER');
 
   const reload = useCallback(async () => {
-    if (!accessToken || user?.role !== 'FREELANCER') {
-      setBalance(null);
-      return;
-    }
+    if (!enabled) return;
     try {
       const res = await api.getBalance();
       setBalance(res.balance);
     } catch {
       setBalance(null);
     }
-  }, [accessToken, user?.role, api]);
+  }, [enabled, api]);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    if (!enabled) return;
+    let cancelled = false;
+    void api.getBalance().then(
+      (res) => {
+        if (!cancelled) setBalance(res.balance);
+      },
+      () => {
+        if (!cancelled) setBalance(null);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, api]);
 
-  return { balance, reload };
+  return { balance: enabled ? balance : null, reload };
 }

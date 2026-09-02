@@ -200,3 +200,7 @@ In-memory (single instance). Multi-instance needs Redis-backed limiting. Admin l
 ## CI
 
 `.github/workflows/ci.yml` — migrations, unit tests, E2E, builds.
+
+## Production CI/CD
+
+See **`docs/PRODUCTION_DEPLOYMENT.md`** for GitHub Actions → SSH deploy, rollback, and server setup.

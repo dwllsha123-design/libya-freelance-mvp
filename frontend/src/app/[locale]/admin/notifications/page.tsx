@@ -43,9 +43,9 @@ export default function AdminNotificationsPage() {
   const [history, setHistory] = useState<AdminBroadcastItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  const loadHistory = useCallback(() => {
+  const refreshHistory = useCallback(() => {
     setHistoryLoading(true);
-    api
+    return api
       .listBroadcasts(20)
       .then(setHistory)
       .catch(() => setHistory([]))
@@ -53,8 +53,22 @@ export default function AdminNotificationsPage() {
   }, [api]);
 
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    let cancelled = false;
+    api
+      .listBroadcasts(20)
+      .then((items) => {
+        if (!cancelled) setHistory(items);
+      })
+      .catch(() => {
+        if (!cancelled) setHistory([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +128,7 @@ export default function AdminNotificationsPage() {
       setTitle('');
       setMessage('');
       setLink('');
-      loadHistory();
+      refreshHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('broadcastFailed'));
     } finally {

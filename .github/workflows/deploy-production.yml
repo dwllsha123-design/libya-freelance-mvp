@@ -1,0 +1,192 @@
+name: Deploy Production
+
+# Deploy only trusted code that has reached the production branch.
+# Never deploy from pull_request events.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_ci:
+        description: 'Skip CI validation (emergency only — not recommended)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  ci-backend:
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.skip_ci != 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: libya_freelance_test
+          POSTGRES_PASSWORD: libya_freelance_test
+          POSTGRES_DB: libya_freelance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U libya_freelance_test -d libya_freelance_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://libya_freelance_test:libya_freelance_test@localhost:5432/libya_freelance_test?schema=public
+      REQUIRE_E2E: '1'
+      NODE_ENV: test
+      PORT: 4000
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      PAYMENT_DRIVER: simulated
+      PAYMENT_CURRENCY: LYD
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Migrate deploy (fresh DB)
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify production deploy boundary
+        run: npm run verify:prod-boundary
+
+  ci-frontend:
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.skip_ci != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+  deploy:
+    name: Deploy to production server
+    needs: [ci-backend, ci-frontend]
+    if: >-
+      always() &&
+      needs.ci-backend.result != 'failure' &&
+      needs.ci-frontend.result != 'failure' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout (metadata only)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Record deployment commit
+        id: meta
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Deploying commit: $(git rev-parse HEAD)"
+
+      - name: Configure SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}" ]; then
+            echo "${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${{ secrets.PRODUCTION_PORT || '22' }}" "${{ secrets.PRODUCTION_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script_stop: true
+          envs: DEPLOY_BRANCH,GITHUB_SHA
+          script: |
+            set -Eeuo pipefail
+            export DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+            export GITHUB_SHA="${{ steps.meta.outputs.sha }}"
+            cd "${{ secrets.PRODUCTION_PATH }}"
+            chmod +x scripts/deploy-production.sh scripts/production-healthcheck.sh scripts/rollback-production.sh scripts/deploy-lib.sh
+            ./scripts/deploy-production.sh
+            echo "GitHub Actions deployed commit: ${GITHUB_SHA}"
+
+      - name: Deployment result
+        if: success()
+        run: |
+          echo "Production deployment succeeded for commit ${{ steps.meta.outputs.sha }}"
+
+      - name: Deployment failed
+        if: failure()
+        run: |
+          echo "::error::Production deployment failed for commit ${{ steps.meta.outputs.sha }}"
+          exit 1

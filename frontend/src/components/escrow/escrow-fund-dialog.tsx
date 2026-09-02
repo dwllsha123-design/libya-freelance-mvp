@@ -33,16 +33,14 @@ export function EscrowFundDialog({
   const t = useTranslations('escrow');
   const locale = useLocale() as AppLocale;
   const { config: paymentConfig } = usePaymentConfig();
-  const [percent, setPercent] = useState(commissionPercentage ?? 10);
+  const [fetchedPercent, setFetchedPercent] = useState<number | null>(null);
+  const percent = commissionPercentage ?? fetchedPercent ?? 10;
 
   useEffect(() => {
-    if (commissionPercentage != null) {
-      setPercent(commissionPercentage);
-      return;
-    }
+    if (commissionPercentage != null) return;
     let cancelled = false;
     void fetchDefaultCommissionPercent().then((value) => {
-      if (!cancelled) setPercent(value);
+      if (!cancelled) setFetchedPercent(value);
     });
     return () => {
       cancelled = true;

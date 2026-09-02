@@ -7,7 +7,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { Logo } from '@/components/brand/logo';
 import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
-import { apiRequest, type Category } from '@/lib/api';
+import { apiRequest, type Category, type PublicProfile } from '@/lib/api';
 import { getSafeNextPath } from '@/lib/auth-redirect';
 import {
   markClientOnboardingSkipped,
@@ -26,42 +26,29 @@ const ORG_SIZE_KEYS: Record<OrganizationSize, string> = {
   '5000+': 'orgSize5000plus',
 };
 
-function CompleteProfileForm() {
+function CompleteProfileFields({
+  profile,
+  categories,
+  nextPath,
+  updateProfile,
+}: {
+  profile: PublicProfile;
+  categories: Category[];
+  nextPath: string | null;
+  updateProfile: ReturnType<typeof useProfileData>['updateProfile'];
+}) {
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextPath = getSafeNextPath(searchParams.get('next'));
-  const { user, isLoading: authLoading } = useAuth();
-  const { profile, updateProfile, isLoading: profileLoading } = useProfileData();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [companyName, setCompanyName] = useState('');
-  const [companySector, setCompanySector] = useState('');
-  const [organizationSize, setOrganizationSize] = useState<OrganizationSize | ''>('');
+
+  const [companyName, setCompanyName] = useState(profile.client?.displayName ?? '');
+  const [companySector, setCompanySector] = useState(profile.client?.companySector ?? '');
+  const [organizationSize, setOrganizationSize] = useState<OrganizationSize | ''>(
+    (profile.client?.organizationSize as OrganizationSize | undefined) ?? '',
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!authLoading && user && user.role !== 'CLIENT') {
-      router.replace('/dashboard');
-    }
-  }, [authLoading, user, router]);
-
-  useEffect(() => {
-    apiRequest<Category[]>('/categories')
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    if (!profile?.client) return;
-    if (profile.client.displayName) setCompanyName(profile.client.displayName);
-    if (profile.client.companySector) setCompanySector(profile.client.companySector);
-    if (profile.client.organizationSize) {
-      setOrganizationSize(profile.client.organizationSize as OrganizationSize);
-    }
-  }, [profile]);
 
   async function handleContinue(event: React.FormEvent) {
     event.preventDefault();
@@ -91,18 +78,6 @@ function CompleteProfileForm() {
   function handleSkip() {
     markClientOnboardingSkipped();
     router.push(nextPath ?? '/dashboard');
-  }
-
-  if (authLoading || profileLoading) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center text-slate-500">
-        {tCommon('loadingPage')}
-      </div>
-    );
-  }
-
-  if (!user || user.role !== 'CLIENT') {
-    return null;
   }
 
   return (
@@ -223,6 +198,50 @@ function CompleteProfileForm() {
         </div>
       </section>
     </div>
+  );
+}
+
+function CompleteProfileForm() {
+  const tCommon = useTranslations('common');
+  const searchParams = useSearchParams();
+  const nextPath = getSafeNextPath(searchParams.get('next'));
+  const { user, isLoading: authLoading } = useAuth();
+  const { profile, isLoading: profileLoading, updateProfile } = useProfileData();
+  const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (!authLoading && user && user.role !== 'CLIENT') {
+      router.replace('/dashboard');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    apiRequest<Category[]>('/categories')
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
+  if (authLoading || profileLoading) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center text-slate-500">
+        {tCommon('loadingPage')}
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'CLIENT' || !profile) {
+    return null;
+  }
+
+  return (
+    <CompleteProfileFields
+      key={profile.username}
+      profile={profile}
+      categories={categories}
+      nextPath={nextPath}
+      updateProfile={updateProfile}
+    />
   );
 }
 

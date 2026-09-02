@@ -18,7 +18,6 @@ function LoginForm() {
   const t = useTranslations('auth');
   const tBrand = useTranslations('brand');
   const tValidation = useTranslations('validation');
-  const tCommon = useTranslations('common');
   const loginSchema = useMemo(() => createLoginSchema(tValidation), [tValidation]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

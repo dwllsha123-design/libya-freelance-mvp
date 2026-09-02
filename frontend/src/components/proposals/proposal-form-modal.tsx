@@ -66,7 +66,12 @@ function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export function ProposalFormModal({
+export function ProposalFormModal(props: ProposalFormModalProps) {
+  if (!props.open) return null;
+  return <ProposalFormModalBody key={props.project.id} {...props} />;
+}
+
+function ProposalFormModalBody({
   project,
   open,
   isSubmitting,
@@ -102,31 +107,14 @@ export function ProposalFormModal({
   );
 
   useEffect(() => {
-    if (!open) return;
-    setCoverLetter('');
-    setProposedPrice(String(project.budgetMin));
-    setEstimatedDurationDays('14');
-    setBoostDraft(0);
-    setBoostPoints(0);
-    setAttachments([]);
-    setError(null);
-  }, [open, project.budgetMin, project.id]);
-
-  useEffect(() => {
-    if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [open]);
+  }, []);
 
   useEffect(() => {
-    if (!open || !project.id) {
-      setBoostBoard([]);
-      return;
-    }
-
     let cancelled = false;
     void (async () => {
       try {
@@ -144,7 +132,7 @@ export function ProposalFormModal({
     return () => {
       cancelled = true;
     };
-  }, [open, project.id]);
+  }, [project.id]);
 
   if (!open) return null;
 

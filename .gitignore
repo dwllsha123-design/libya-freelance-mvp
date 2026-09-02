@@ -9,6 +9,7 @@ dist/
 backend/.env
 backend/.env.production
 backend/.env.staging
+frontend/.env
 frontend/.env.local
 frontend/.env.production
 frontend/.env.staging
@@ -19,3 +20,18 @@ coverage/
 backend/.prod-verify/
 backend/.runtime-bundle/
 backend/data/
+
+deploy-logs/
+*.pem
+*.key
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+known_hosts.local
+
+# Reverse proxy — managed on server, not by app deploy
+Caddyfile
+Caddyfile.*
+caddy/
+.caddy/

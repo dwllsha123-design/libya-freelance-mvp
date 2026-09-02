@@ -10,7 +10,6 @@ import { usePaymentsApi, type PaymentRecord } from '@/hooks/use-payments';
 function PaymentReturnContent() {
   const t = useTranslations('payments');
   const tDashboard = useTranslations('dashboard');
-  const tCommon = useTranslations('common');
   const tEscrow = useTranslations('escrow');
   const searchParams = useSearchParams();
   const paymentId = searchParams.get('paymentId');
