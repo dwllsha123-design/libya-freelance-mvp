@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { ApiError } from '@/lib/api';
 import type { ProjectListItem } from '@/lib/schemas/project';
@@ -23,6 +24,8 @@ export function ProposalFormModal({
   onClose,
   onSubmit,
 }: ProposalFormModalProps) {
+  const t = useTranslations('proposals');
+  const tCommon = useTranslations('common');
   const [coverLetter, setCoverLetter] = useState('');
   const [proposedPrice, setProposedPrice] = useState(
     String(project.budgetMin),
@@ -40,17 +43,17 @@ export function ProposalFormModal({
     const days = Number(estimatedDurationDays);
 
     if (coverLetter.trim().length < 50) {
-      setError('رسالتك يجب أن تكون 50 حرفاً على الأقل');
+      setError(t('coverLetterMin'));
       return;
     }
 
     if (price <= 0) {
-      setError('السعر المقترح يجب أن يكون أكبر من صفر');
+      setError(t('pricePositive'));
       return;
     }
 
     if (!Number.isInteger(days) || days < 1 || days > 365) {
-      setError('مدة التنفيذ يجب أن تكون بين 1 و 365 يوماً');
+      setError(t('durationRange'));
       return;
     }
 
@@ -62,7 +65,7 @@ export function ProposalFormModal({
       });
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'فشل إرسال العرض',
+        err instanceof ApiError ? err.message : t('submitFailed'),
       );
     }
   }
@@ -72,18 +75,21 @@ export function ProposalFormModal({
       <button
         type="button"
         className="absolute inset-0 bg-black/40"
-        aria-label="إغلاق"
+        aria-label={tCommon('closeDialog')}
         onClick={onClose}
       />
       <form
         onSubmit={(e) => void handleSubmit(e)}
         className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
       >
-        <h2 className="text-xl font-bold text-on-surface">تقديم عرض</h2>
+        <h2 className="text-xl font-bold text-on-surface">{t('submit')}</h2>
         <p className="mt-1 text-sm text-slate-600">{project.title}</p>
         <p className="mt-2 text-sm text-primary">
-          ميزانية المشروع: {project.budgetMin}–{project.budgetMax}{' '}
-          {project.currency}
+          {t('projectBudget', {
+            min: project.budgetMin,
+            max: project.budgetMax,
+            currency: project.currency,
+          })}
         </p>
 
         <div className="mt-4 flex flex-wrap gap-1">
@@ -95,18 +101,18 @@ export function ProposalFormModal({
         </div>
 
         <label className="mt-6 block text-sm font-medium">
-          رسالتك للعميل
+          {t('coverLetterLabel')}
           <textarea
             value={coverLetter}
             onChange={(e) => setCoverLetter(e.target.value)}
             rows={5}
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-            placeholder="اشرح خبرتك وكيف ستنفذ المشروع..."
+            placeholder={t('coverLetterPlaceholder')}
           />
         </label>
 
         <label className="mt-4 block text-sm font-medium">
-          السعر المقترح ({project.currency})
+          {t('proposedPrice', { currency: project.currency })}
           <input
             type="number"
             min={1}
@@ -117,7 +123,7 @@ export function ProposalFormModal({
         </label>
 
         <label className="mt-4 block text-sm font-medium">
-          مدة التنفيذ بالأيام
+          {t('deliveryDaysLabel')}
           <input
             type="number"
             min={1}
@@ -137,14 +143,14 @@ export function ProposalFormModal({
             disabled={isSubmitting}
             className="rounded-lg border px-4 py-2 text-sm"
           >
-            إلغاء
+            {tCommon('cancel')}
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {isSubmitting ? 'جاري الإرسال...' : 'إرسال العرض'}
+            {isSubmitting ? t('submitting') : t('submitProposal')}
           </button>
         </div>
       </form>

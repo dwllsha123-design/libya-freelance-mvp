@@ -1,24 +1,27 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/navigation';
+import { Logo } from '@/components/brand/logo';
+import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { useAuth } from '@/contexts/auth-context';
-import { PLATFORM_NAME_AR } from '@/lib/branding';
 
 const NAV = [
-  { href: '/admin', label: 'لوحة التحكم', exact: true },
-  { href: '/admin/users', label: 'المستخدمون' },
-  { href: '/admin/projects', label: 'المشاريع' },
-  { href: '/admin/proposals', label: 'العروض' },
-  { href: '/admin/reviews', label: 'التقييمات' },
-  { href: '/admin/disputes', label: 'نزاعات الضمان' },
-  { href: '/admin/categories', label: 'التصنيفات' },
-  { href: '/admin/skills', label: 'المهارات' },
-  { href: '/admin/audit', label: 'سجل التدقيق' },
-  { href: '/admin/settings', label: 'الإعدادات' },
-];
+  { href: '/admin', key: 'dashboard', exact: true },
+  { href: '/admin/users', key: 'users' },
+  { href: '/admin/projects', key: 'projects' },
+  { href: '/admin/proposals', key: 'proposals' },
+  { href: '/admin/reviews', key: 'reviews' },
+  { href: '/admin/disputes', key: 'disputes' },
+  { href: '/admin/categories', key: 'categories' },
+  { href: '/admin/skills', key: 'skills' },
+  { href: '/admin/audit', key: 'audit' },
+  { href: '/admin/settings', key: 'settings' },
+] as const;
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('admin');
+  const tNav = useTranslations('nav');
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -26,14 +29,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-surface-container-low">
       <div className="border-b bg-white px-4 py-3">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div>
-            <p className="font-bold text-on-surface">لوحة إدارة {PLATFORM_NAME_AR}</p>
-            <p className="text-xs text-slate-500">{user?.email}</p>
+          <div className="flex items-center gap-3">
+            <Logo href="/" showName={false} />
+            <div>
+              <p className="font-bold text-on-surface">{t('panelTitle')}</p>
+              <p className="text-xs text-slate-500">{user?.email}</p>
+            </div>
           </div>
-          <div className="flex gap-3 text-sm">
-            <Link href="/" className="text-primary">الموقع</Link>
+          <div className="flex items-center gap-3 text-sm">
+            <LanguageSwitcher />
+            <Link href="/" className="text-primary">{t('site')}</Link>
             <button type="button" onClick={() => void logout()} className="text-slate-600">
-              خروج
+              {tNav('logout')}
             </button>
           </div>
         </div>
@@ -43,9 +50,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <aside className="w-full shrink-0 rounded-xl border bg-white p-4 lg:w-56">
           <nav className="flex flex-wrap gap-2 lg:flex-col lg:gap-1">
             {NAV.map((item) => {
-              const active = item.exact
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
+              const active =
+                'exact' in item && item.exact
+                  ? pathname === item.href
+                  : pathname.startsWith(item.href);
 
               return (
                 <Link
@@ -57,7 +65,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               );
             })}

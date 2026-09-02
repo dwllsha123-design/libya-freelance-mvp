@@ -35,3 +35,9 @@ export const brandColors = {
 } as const;
 
 export const LOGO_ICON_PATH = '/logo-icon.png';
+
+/** خلفية خريطة ليبيا في قسم البطل */
+export const HERO_MAP_BG_PATH = '/images/libya-map-hero.jpg';
+
+/** للاستخدام في الروابط العامة (Open Graph، إلخ) */
+export const LOGO_PUBLIC_URL = LOGO_ICON_PATH;

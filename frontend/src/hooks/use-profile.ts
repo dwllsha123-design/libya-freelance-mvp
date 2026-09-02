@@ -1,19 +1,23 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import {
   ApiError,
   authenticatedRequest,
   apiRequest,
+  getApiErrorMessage,
   type Category,
   type City,
   type PublicProfile,
   type Skill,
 } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export function useProfileData() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
@@ -46,11 +50,11 @@ export function useProfileData() {
       setAllSkills(skillsRes);
       setCities(citiesRes);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'فشل تحميل الملف الشخصي');
+      setError(err instanceof ApiError ? err.message : getApiErrorMessage(locale, 'profileLoadFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,7 +89,7 @@ export function useProfileData() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof ApiError ? err.message : 'فشل تحميل الملف الشخصي',
+            err instanceof ApiError ? err.message : getApiErrorMessage(locale, 'profileLoadFailed'),
           );
         }
       } finally {
@@ -98,7 +102,7 @@ export function useProfileData() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   const setProfilePhoto = (photoUrl: string) => {
     setProfile((prev) => (prev ? { ...prev, profilePhoto: photoUrl } : prev));

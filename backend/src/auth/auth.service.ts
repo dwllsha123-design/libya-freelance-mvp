@@ -12,6 +12,7 @@ import { PUBLIC_ROLES } from './constants.js';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
+import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { UsersService } from '../users/users.service.js';
 import { EmailService } from '../common/services/email.service.js';
 import { assertUserCanAuthenticate } from '../common/utils/account-status.util.js';
@@ -43,6 +44,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly realtimeSessions: RealtimeSessionService,
+    private readonly nuqatiService: NuqatiService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
@@ -99,6 +101,7 @@ export class AuthService {
 
       if (dto.role === Role.FREELANCER) {
         await tx.freelancerProfile.create({ data: { profileId } });
+        await this.nuqatiService.onFreelancerRegistered(createdUser.id, tx);
       } else if (dto.role === Role.CLIENT) {
         await tx.clientProfile.create({ data: { profileId } });
       }
@@ -132,6 +135,10 @@ export class AuthService {
     assertUserCanAuthenticate(user.status);
 
     const tokens = await this.issueTokens(user);
+
+    if (user.role === Role.FREELANCER) {
+      void this.nuqatiService.onFreelancerLogin(user.id).catch(() => undefined);
+    }
 
     return {
       user: this.toSafeUser(user),

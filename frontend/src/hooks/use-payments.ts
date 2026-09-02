@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface PaymentRecord {
   id: string;
@@ -29,6 +31,7 @@ export interface InitiatePaymentResult {
 
 export function usePaymentsApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
@@ -36,7 +39,7 @@ export function usePaymentsApi() {
         escrowId: string,
         body: { returnUrl?: string; cancelUrl?: string } = {},
       ) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<InitiatePaymentResult>(
           `/payments/escrow/${escrowId}/initiate`,
           accessToken,
@@ -44,10 +47,10 @@ export function usePaymentsApi() {
         );
       },
       getPayment: (paymentId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<PaymentRecord>(`/payments/${paymentId}`, accessToken);
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

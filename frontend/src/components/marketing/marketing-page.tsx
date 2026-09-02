@@ -1,5 +1,8 @@
-import Link from 'next/link';
+'use client';
+
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 
 export function MarketingPage({
   title,
@@ -10,6 +13,8 @@ export function MarketingPage({
   subtitle?: string;
   children: ReactNode;
 }) {
+  const t = useTranslations('marketing');
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="text-3xl font-bold text-on-surface">{title}</h1>
@@ -19,7 +24,7 @@ export function MarketingPage({
       </div>
       <p className="mt-10">
         <Link href="/" className="text-primary hover:underline">
-          ← العودة للرئيسية
+          ← {t('backToHome')}
         </Link>
       </p>
     </div>

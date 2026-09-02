@@ -1,5 +1,9 @@
 'use client';
 
+import type { AppLocale } from '@/i18n/routing';
+import arAdmin from '../../../messages/ar/admin.json';
+import enAdmin from '../../../messages/en/admin.json';
+
 export function StatusBadge({
   label,
   tone = 'neutral',
@@ -29,14 +33,12 @@ export function userStatusTone(status: string) {
   return 'neutral' as const;
 }
 
-export function projectStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    DRAFT: 'مسودة',
-    OPEN: 'مفتوح',
-    IN_PROGRESS: 'قيد التنفيذ',
-    COMPLETED: 'مكتمل',
-    CANCELLED: 'ملغى',
-    CLOSED: 'مغلق',
-  };
-  return labels[status] ?? status;
+export function projectStatusLabel(status: string, locale: AppLocale = 'ar') {
+  const labels = locale === 'en' ? enAdmin.projectStatus : arAdmin.projectStatus;
+  return labels[status as keyof typeof labels] ?? status;
+}
+
+export function disputeStatusLabel(status: string, locale: AppLocale = 'ar') {
+  const labels = locale === 'en' ? enAdmin.disputeStatus : arAdmin.disputeStatus;
+  return labels[status as keyof typeof labels] ?? status;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import type { Skill } from '@/lib/api';
@@ -25,6 +26,8 @@ export function PortfolioForm({
   onSubmit,
   onCancel,
 }: PortfolioFormProps) {
+  const t = useTranslations('portfolio');
+  const tCommon = useTranslations('common');
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [projectUrl, setProjectUrl] = useState(initial?.projectUrl ?? '');
@@ -52,7 +55,7 @@ export function PortfolioForm({
     setError(null);
 
     if (!title.trim() || !description.trim() || skillIds.length === 0) {
-      setError('يرجى تعبئة الحقول المطلوبة واختيار مهارة واحدة على الأقل');
+      setError(t('validationError'));
       return;
     }
 
@@ -65,7 +68,7 @@ export function PortfolioForm({
         completedAt: completedAt || undefined,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل الحفظ');
+      setError(err instanceof Error ? err.message : t('saveFailed'));
     }
   }
 
@@ -74,7 +77,7 @@ export function PortfolioForm({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div>
-        <label className="mb-1 block text-sm font-medium">عنوان العمل</label>
+        <label className="mb-1 block text-sm font-medium">{t('workTitle')}</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -85,7 +88,7 @@ export function PortfolioForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">وصف العمل</label>
+        <label className="mb-1 block text-sm font-medium">{t('workDescription')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -96,7 +99,7 @@ export function PortfolioForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">المهارات المستخدمة</label>
+        <label className="mb-1 block text-sm font-medium">{t('skillsUsed')}</label>
         <div className="flex flex-wrap gap-2">
           {skills.map((skill) => {
             const selected = skillIds.includes(skill.id);
@@ -119,7 +122,7 @@ export function PortfolioForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">رابط المشروع — اختياري</label>
+        <label className="mb-1 block text-sm font-medium">{t('projectUrlOptional')}</label>
         <input
           value={projectUrl}
           onChange={(e) => setProjectUrl(e.target.value)}
@@ -129,7 +132,7 @@ export function PortfolioForm({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">تاريخ الإنجاز — اختياري</label>
+        <label className="mb-1 block text-sm font-medium">{t('completedAtOptional')}</label>
         <input
           type="date"
           value={completedAt}
@@ -140,7 +143,7 @@ export function PortfolioForm({
 
       {initial?.images?.length ? (
         <div>
-          <p className="mb-2 text-sm font-medium">الصور الحالية</p>
+          <p className="mb-2 text-sm font-medium">{t('currentImages')}</p>
           <div className="flex flex-wrap gap-2">
             {initial.images.map((image) => (
               <Image
@@ -162,14 +165,14 @@ export function PortfolioForm({
           disabled={isSubmitting}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {isSubmitting ? 'جاري الحفظ...' : 'حفظ'}
+          {isSubmitting ? tCommon('saving') : tCommon('save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg border px-4 py-2 text-sm"
         >
-          إلغاء
+          {tCommon('cancel')}
         </button>
       </div>
     </form>

@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Category, City, Skill } from '@/lib/api';
 import type { ManageProject } from '@/lib/schemas/project';
-import { projectDraftSchema, projectFormSchema } from '@/lib/schemas/project';
+import { projectDraftSchema } from '@/lib/schemas/project';
+import { createProjectFormSchema } from '@/lib/schemas/create-schemas';
+import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-content';
+import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 
 export interface ProjectFormValues {
@@ -69,6 +73,16 @@ export function ProjectForm({
   onSaveDraft,
   onPublish,
 }: ProjectFormProps) {
+  const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
+  const tValidation = useTranslations('validation');
+  const locale = useLocale() as AppLocale;
+
+  const projectFormSchema = useMemo(
+    () => createProjectFormSchema((key) => tValidation(key)),
+    [tValidation],
+  );
+
   const [values, setValues] = useState<ProjectFormValues>(() =>
     initial
       ? mapInitialToValues(initial)
@@ -114,7 +128,7 @@ export function ProjectForm({
     try {
       await onSaveDraft(values);
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : 'فشل الحفظ');
+      setFormError(err instanceof ApiError ? err.message : t('saveFailed'));
     }
   }
 
@@ -134,11 +148,12 @@ export function ProjectForm({
     try {
       await onPublish(values);
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : 'فشل النشر');
+      setFormError(err instanceof ApiError ? err.message : t('publishFailed'));
     }
   }
 
   const physicalCities = cities.filter((c) => !c.isRemote);
+  const currencyLabel = tCommon('lyd');
 
   return (
     <div className="space-y-8">
@@ -147,10 +162,10 @@ export function ProjectForm({
       ) : null}
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">1. أساسيات المشروع</h2>
+        <h2 className="font-semibold text-on-surface">{t('projectBasics')}</h2>
         <div className="mt-4 space-y-4">
           <div>
-            <label className="mb-1 block text-sm">عنوان المشروع</label>
+            <label className="mb-1 block text-sm">{t('projectTitle')}</label>
             <input
               value={values.title}
               onChange={(e) => update('title', e.target.value)}
@@ -159,7 +174,7 @@ export function ProjectForm({
             {fieldErrors.title ? <p className="mt-1 text-xs text-red-600">{fieldErrors.title}</p> : null}
           </div>
           <div>
-            <label className="mb-1 block text-sm">وصف المشروع</label>
+            <label className="mb-1 block text-sm">{t('projectDescription')}</label>
             <textarea
               value={values.description}
               onChange={(e) => update('description', e.target.value)}
@@ -174,23 +189,23 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">2. التصنيف والمهارات</h2>
+        <h2 className="font-semibold text-on-surface">{t('categoryAndSkills')}</h2>
         <div className="mt-4 space-y-4">
           <div>
-            <label className="mb-1 block text-sm">التصنيف</label>
+            <label className="mb-1 block text-sm">{t('category')}</label>
             <select
               value={values.categoryId}
               onChange={(e) => update('categoryId', e.target.value)}
               className="w-full rounded-lg border px-3 py-2"
             >
-              <option value="">— اختر —</option>
+              <option value="">{t('choose')}</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.nameAr}</option>
+                <option key={c.id} value={c.id}>{getLocalizedCategoryName(c, locale)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-sm">المهارات المطلوبة</label>
+            <label className="mb-2 block text-sm">{t('requiredSkills')}</label>
             <div className="flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <button
@@ -215,21 +230,21 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">3. الميزانية</h2>
+        <h2 className="font-semibold text-on-surface">{t('budgetSection')}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-sm">نوع الميزانية</label>
+            <label className="mb-1 block text-sm">{t('budgetType')}</label>
             <select
               value={values.budgetType}
               onChange={(e) => update('budgetType', e.target.value as 'FIXED' | 'HOURLY')}
               className="w-full rounded-lg border px-3 py-2"
             >
-              <option value="FIXED">سعر ثابت</option>
-              <option value="HOURLY">بالساعة</option>
+              <option value="FIXED">{t('budgetTypeFixed')}</option>
+              <option value="HOURLY">{t('budgetTypeHourly')}</option>
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm">الحد الأدنى (د.ل)</label>
+            <label className="mb-1 block text-sm">{t('minBudget')} ({currencyLabel})</label>
             <input
               type="number"
               value={values.budgetMin}
@@ -238,7 +253,7 @@ export function ProjectForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm">الحد الأعلى (د.ل)</label>
+            <label className="mb-1 block text-sm">{t('maxBudget')} ({currencyLabel})</label>
             <input
               type="number"
               value={values.budgetMax}
@@ -253,7 +268,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">4. مستوى الخبرة</h2>
+        <h2 className="font-semibold text-on-surface">{t('experienceSection')}</h2>
         <select
           value={values.experienceLevel}
           onChange={(e) =>
@@ -261,38 +276,38 @@ export function ProjectForm({
           }
           className="mt-4 w-full rounded-lg border px-3 py-2"
         >
-          <option value="ENTRY">مبتدئ</option>
-          <option value="INTERMEDIATE">متوسط</option>
-          <option value="EXPERT">خبير</option>
+          <option value="ENTRY">{t('experienceEntry')}</option>
+          <option value="INTERMEDIATE">{t('experienceIntermediate')}</option>
+          <option value="EXPERT">{t('experienceExpert')}</option>
         </select>
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">5. الموقع</h2>
+        <h2 className="font-semibold text-on-surface">{t('locationSection')}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm">نمط العمل</label>
+            <label className="mb-1 block text-sm">{t('workMode')}</label>
             <select
               value={values.workMode}
               onChange={(e) => update('workMode', e.target.value as ProjectFormValues['workMode'])}
               className="w-full rounded-lg border px-3 py-2"
             >
-              <option value="REMOTE">عن بُعد</option>
-              <option value="ON_SITE">في الموقع</option>
-              <option value="HYBRID">هجين</option>
+              <option value="REMOTE">{t('workModeRemote')}</option>
+              <option value="ON_SITE">{t('workModeOnSite')}</option>
+              <option value="HYBRID">{t('workModeHybrid')}</option>
             </select>
           </div>
           {values.workMode !== 'REMOTE' ? (
             <div>
-              <label className="mb-1 block text-sm">المدينة</label>
+              <label className="mb-1 block text-sm">{t('city')}</label>
               <select
                 value={values.cityId ?? ''}
                 onChange={(e) => update('cityId', e.target.value)}
                 className="w-full rounded-lg border px-3 py-2"
               >
-                <option value="">— اختر —</option>
+                <option value="">{t('choose')}</option>
                 {physicalCities.map((city) => (
-                  <option key={city.id} value={city.id}>{city.nameAr}</option>
+                  <option key={city.id} value={city.id}>{getLocalizedCityName(city, locale)}</option>
                 ))}
               </select>
               {fieldErrors.cityId ? (
@@ -304,7 +319,7 @@ export function ProjectForm({
       </section>
 
       <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold text-on-surface">6. موعد التسليم</h2>
+        <h2 className="font-semibold text-on-surface">{t('deadlineSection')}</h2>
         <input
           type="date"
           value={values.deadline ?? ''}
@@ -320,7 +335,7 @@ export function ProjectForm({
           onClick={() => void handleDraft()}
           className="rounded-lg border border-secondary px-6 py-2.5 font-semibold disabled:opacity-60"
         >
-          حفظ كمسودة
+          {t('saveDraft')}
         </button>
         <button
           type="button"
@@ -328,7 +343,7 @@ export function ProjectForm({
           onClick={() => void handlePublish()}
           className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-white disabled:opacity-60"
         >
-          {isSubmitting ? 'جاري الحفظ...' : 'نشر المشروع'}
+          {isSubmitting ? tCommon('saving') : t('publishProject')}
         </button>
       </div>
     </div>

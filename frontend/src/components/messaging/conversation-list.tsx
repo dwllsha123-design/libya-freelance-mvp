@@ -1,8 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/navigation';
 import type { ConversationSummary } from '@/hooks/use-messaging';
+import type { AppLocale } from '@/i18n/routing';
 
 export function ConversationList({
   conversations,
@@ -11,15 +12,19 @@ export function ConversationList({
   conversations: ConversationSummary[];
   isLoading: boolean;
 }) {
+  const t = useTranslations('messaging');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as AppLocale;
   const pathname = usePathname();
+  const dateLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
 
   if (isLoading) {
-    return <p className="p-4 text-sm text-slate-500">جاري التحميل...</p>;
+    return <p className="p-4 text-sm text-slate-500">{tCommon('loadingPage')}</p>;
   }
 
   if (conversations.length === 0) {
     return (
-      <p className="p-4 text-sm text-slate-500">لا توجد محادثات بعد</p>
+      <p className="p-4 text-sm text-slate-500">{t('noConversations')}</p>
     );
   }
 
@@ -40,7 +45,7 @@ export function ConversationList({
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-on-surface">
-                    {c.otherParticipant?.name ?? 'مستخدم'}
+                    {c.otherParticipant?.name ?? t('unknownUser')}
                   </p>
                   <p className="truncate text-xs text-slate-500">
                     {c.project?.title}
@@ -53,7 +58,7 @@ export function ConversationList({
                 </div>
                 <div className="shrink-0 text-end">
                   <p className="text-xs text-slate-400">
-                    {new Date(c.lastMessageAt).toLocaleDateString('ar-LY')}
+                    {new Date(c.lastMessageAt).toLocaleDateString(dateLocale)}
                   </p>
                   {c.unreadCount > 0 ? (
                     <span className="mt-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs text-white">

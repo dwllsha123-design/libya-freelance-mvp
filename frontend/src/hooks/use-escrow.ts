@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export type EscrowStatus =
   | 'PENDING_FUNDING'
@@ -34,39 +36,32 @@ export interface EscrowRecord {
   };
 }
 
-export const ESCROW_STATUS_LABELS: Record<EscrowStatus, string> = {
-  PENDING_FUNDING: 'بانتظار التمويل',
-  FUNDED: 'مموّل — محجوز',
-  RELEASED: 'مُحرَّر للمستقل',
-  REFUNDED: 'مُسترد للعميل',
-  DISPUTED: 'نزاع مفتوح',
-};
-
 export function useEscrowApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
       listMine: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<EscrowRecord[]>('/escrow/me', accessToken);
       },
       getByProposal: (proposalId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<EscrowRecord | null>(
           `/escrow/proposal/${proposalId}`,
           accessToken,
         );
       },
       getByProject: (projectId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<EscrowRecord | null>(
           `/escrow/project/${projectId}`,
           accessToken,
         );
       },
       prepare: (proposalId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<EscrowRecord>(
           `/escrow/prepare/${proposalId}`,
           accessToken,
@@ -74,13 +69,13 @@ export function useEscrowApi() {
         );
       },
       fund: (escrowId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<EscrowRecord>(`/escrow/fund/${escrowId}`, accessToken, {
           method: 'POST',
         });
       },
       fundAndAccept: (proposalId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<unknown>(
           `/escrow/fund-and-accept/${proposalId}`,
           accessToken,
@@ -88,13 +83,13 @@ export function useEscrowApi() {
         );
       },
       openDispute: (escrowId: string, reason: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<unknown>(`/escrow/${escrowId}/dispute`, accessToken, {
           method: 'POST',
           body: JSON.stringify({ reason }),
         });
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

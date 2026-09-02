@@ -1,10 +1,12 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
 import {
   NOTIFICATION_UI,
-  formatRelativeTime,
   type NotificationItem,
 } from '@/lib/notification-ui';
+import { formatRelativeTime } from '@/lib/i18n/notification-ui';
+import type { AppLocale } from '@/i18n/routing';
 
 export function NotificationCard({
   item,
@@ -13,6 +15,8 @@ export function NotificationCard({
   item: NotificationItem;
   onOpen: (item: NotificationItem) => void;
 }) {
+  const t = useTranslations('notifications');
+  const locale = useLocale() as AppLocale;
   const ui = NOTIFICATION_UI[item.type] ?? NOTIFICATION_UI.NEW_MESSAGE;
 
   return (
@@ -34,13 +38,13 @@ export function NotificationCard({
           <span className="font-semibold text-on-surface">{item.title}</span>
           {!item.isRead ? (
             <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-white">
-              جديد
+              {t('new')}
             </span>
           ) : null}
         </span>
         <span className="mt-1 block text-sm text-slate-600">{item.message}</span>
         <span className="mt-2 block text-xs text-slate-400">
-          {formatRelativeTime(item.createdAt)}
+          {formatRelativeTime(item.createdAt, locale)}
         </span>
       </span>
     </button>

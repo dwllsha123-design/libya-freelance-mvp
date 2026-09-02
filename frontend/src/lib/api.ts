@@ -1,8 +1,26 @@
+import type { AppLocale } from '@/i18n/routing';
+import arErrors from '../../messages/ar/errors.json';
+import enErrors from '../../messages/en/errors.json';
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 export const CLIENT_REQUEST_HEADER = 'X-Client-Request';
 export const CLIENT_REQUEST_VALUE = 'libya-freelance';
+
+export type ErrorMessageKey = keyof typeof arErrors;
+
+const ERROR_MESSAGES: Record<AppLocale, typeof arErrors> = {
+  ar: arErrors,
+  en: enErrors,
+};
+
+export function getApiErrorMessage(
+  locale: AppLocale,
+  key: ErrorMessageKey = 'unexpected',
+): string {
+  return ERROR_MESSAGES[locale][key] ?? ERROR_MESSAGES.ar[key];
+}
 
 export type UserRole = 'FREELANCER' | 'CLIENT' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
@@ -83,6 +101,8 @@ export interface PublicProfile {
   } | null;
   client?: {
     displayName?: string | null;
+    companySector?: string | null;
+    organizationSize?: string | null;
     projectsPosted: number;
     averageRating: number;
   } | null;
@@ -119,7 +139,7 @@ export class ApiError extends Error {
   }
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
+async function parseResponse<T>(response: Response, locale: AppLocale = 'ar'): Promise<T> {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -128,7 +148,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
         ? data.message
         : Array.isArray(data.message)
           ? data.message.join(', ')
-          : 'حدث خطأ غير متوقع';
+          : getApiErrorMessage(locale);
 
     throw new ApiError(message, response.status, data);
   }
@@ -139,6 +159,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
+  locale: AppLocale = 'ar',
 ): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set(CLIENT_REQUEST_HEADER, CLIENT_REQUEST_VALUE);
@@ -153,13 +174,14 @@ export async function apiRequest<T>(
     credentials: 'include',
   });
 
-  return parseResponse<T>(response);
+  return parseResponse<T>(response, locale);
 }
 
 export async function authenticatedRequest<T>(
   path: string,
   accessToken: string,
   options: RequestInit = {},
+  locale: AppLocale = 'ar',
 ): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set('Authorization', `Bearer ${accessToken}`);
@@ -167,5 +189,5 @@ export async function authenticatedRequest<T>(
   return apiRequest<T>(path, {
     ...options,
     headers,
-  });
+  }, locale);
 }

@@ -34,6 +34,7 @@ import {
   assertFreelancerCanRequestCompletion,
 } from '../reviews/review-validation.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
+import { NuqatiService } from '../nuqati/nuqati.service.js';
 
 const projectInclude = {
   category: true,
@@ -78,6 +79,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly escrowService: EscrowService,
+    private readonly nuqatiService: NuqatiService,
   ) {}
 
   async create(clientId: string, dto: CreateProjectDto) {
@@ -497,6 +499,16 @@ export class ProjectsService {
           `تم تحرير مبلغ المشروع إلى حسابك بعد إتمام "${updated.title}".`,
           `/dashboard/escrow`,
         );
+      }
+
+      const fp = await this.prisma.freelancerProfile.findFirst({
+        where: { profile: { userId: freelancerId } },
+        select: { completedProjects: true },
+      });
+      if (fp?.completedProjects === 1) {
+        void this.nuqatiService
+          .onFirstJobCompleted(freelancerId, projectId)
+          .catch(() => undefined);
       }
     }
 

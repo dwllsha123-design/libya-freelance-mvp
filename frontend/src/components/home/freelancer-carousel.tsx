@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import type { PublicProfile } from '@/lib/api';
 import { FreelancerCard } from '@/components/freelancers/freelancer-card';
@@ -22,6 +23,7 @@ function usePageSize() {
 }
 
 export function FreelancerCarousel({ freelancers }: { freelancers: PublicProfile[] }) {
+  const t = useTranslations('home');
   const pageSize = usePageSize();
   const [page, setPage] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -69,7 +71,7 @@ export function FreelancerCarousel({ freelancers }: { freelancers: PublicProfile
             type="button"
             onClick={goPrev}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/50 bg-surface text-on-surface transition hover:border-primary hover:text-primary"
-            aria-label="السابق"
+            aria-label={t('carouselPrevious')}
           >
             →
           </button>
@@ -83,7 +85,7 @@ export function FreelancerCarousel({ freelancers }: { freelancers: PublicProfile
                 className={`h-2.5 rounded-full transition ${
                   index === currentPage ? 'w-8 bg-primary' : 'w-2.5 bg-outline-variant/60 hover:bg-primary/50'
                 }`}
-                aria-label={`صفحة ${index + 1}`}
+                aria-label={t('carouselPage', { page: index + 1 })}
               />
             ))}
           </div>
@@ -92,7 +94,7 @@ export function FreelancerCarousel({ freelancers }: { freelancers: PublicProfile
             type="button"
             onClick={goNext}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/50 bg-surface text-on-surface transition hover:border-primary hover:text-primary"
-            aria-label="التالي"
+            aria-label={t('carouselNext')}
           >
             ←
           </button>

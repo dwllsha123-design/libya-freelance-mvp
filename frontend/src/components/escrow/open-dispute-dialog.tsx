@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
 
 export function OpenDisputeDialog({
@@ -14,6 +15,7 @@ export function OpenDisputeDialog({
   onClose: () => void;
   onSubmit: (reason: string) => void | Promise<void>;
 }) {
+  const t = useTranslations('escrow');
   const [reason, setReason] = useState('');
 
   function handleClose() {
@@ -24,20 +26,20 @@ export function OpenDisputeDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="فتح نزاع على الضمان"
+      title={t('disputeDialogTitle')}
       message={
         <div className="space-y-2">
-          <p>صف المشكلة بوضوح. سيتم تجميد المبلغ حتى مراجعة الإدارة.</p>
+          <p>{t('disputeDialogBody')}</p>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             className="w-full rounded-lg border px-3 py-2 text-sm"
-            placeholder="سبب النزاع..."
+            placeholder={t('disputeReasonPlaceholder')}
           />
         </div>
       }
-      confirmLabel="إرسال النزاع"
+      confirmLabel={t('submitDispute')}
       variant="danger"
       isLoading={isLoading}
       onConfirm={() => {

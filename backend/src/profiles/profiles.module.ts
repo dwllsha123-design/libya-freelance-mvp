@@ -4,9 +4,10 @@ import { ProfilesService } from './profiles.service.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { PortfolioModule } from '../portfolio/portfolio.module.js';
 import { ReviewsModule } from '../reviews/reviews.module.js';
+import { NuqatiModule } from '../nuqati/nuqati.module.js';
 
 @Module({
-  imports: [StorageModule, PortfolioModule, ReviewsModule],
+  imports: [StorageModule, PortfolioModule, ReviewsModule, NuqatiModule],
   controllers: [ProfilesController],
   providers: [ProfilesService],
   exports: [ProfilesService],

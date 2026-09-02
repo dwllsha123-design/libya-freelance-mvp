@@ -1,8 +1,14 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+
 export function VerifiedBadge({ className = '' }: { className?: string }) {
+  const t = useTranslations('ui');
+
   return (
     <span
       className={`inline-flex items-center gap-0.5 rounded-full bg-tertiary/15 px-2 py-0.5 text-[10px] font-semibold text-tertiary ${className}`}
-      title="مستقل موثّق — أكمل الملف وأنجز مشروعاً بتقييم جيد"
+      title={t('verifiedTitle')}
     >
       <svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor" aria-hidden>
         <path
@@ -11,7 +17,7 @@ export function VerifiedBadge({ className = '' }: { className?: string }) {
           clipRule="evenodd"
         />
       </svg>
-      موثّق
+      {t('verified')}
     </span>
   );
 }

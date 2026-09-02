@@ -7,6 +7,7 @@ import {
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
+import { NuqatiService } from '../nuqati/nuqati.service.js';
 import type {
   CreatePortfolioDto,
   ReorderPortfolioDto,
@@ -32,6 +33,7 @@ export class PortfolioService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    private readonly nuqatiService: NuqatiService,
   ) {}
 
   async listMine(userId: string) {
@@ -171,6 +173,8 @@ export class PortfolioService {
       },
       include: portfolioInclude,
     });
+
+    void this.nuqatiService.onPortfolioItemCreated(userId, item.id).catch(() => undefined);
 
     return this.formatItem(item);
   }

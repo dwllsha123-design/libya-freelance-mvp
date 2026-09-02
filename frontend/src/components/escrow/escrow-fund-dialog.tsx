@@ -1,10 +1,12 @@
 'use client';
 
+import { useTranslations, useLocale } from 'next-intl';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
 import { usePaymentConfig } from '@/hooks/use-payment-config';
 import { calculateEscrowFees, ESCROW_PLATFORM_FEE_PERCENT } from '@/lib/escrow-fees';
 import { formatCurrency } from '@/lib/currency';
 import { paymentModeLabel } from '@/lib/payment-config';
+import type { AppLocale } from '@/i18n/routing';
 
 export function EscrowFundDialog({
   open,
@@ -21,35 +23,35 @@ export function EscrowFundDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('escrow');
+  const locale = useLocale() as AppLocale;
   const { config: paymentConfig } = usePaymentConfig();
   const { platformFee, freelancerPayout } = calculateEscrowFees(proposedPrice);
 
   return (
     <ConfirmDialog
       open={open}
-      title="تمويل الضمان وقبول العرض"
+      title={t('fundDialogTitle')}
       message={
         <div className="space-y-3 text-right text-sm">
-          <p>
-            سيتم حجز مبلغ العرض في الضمان قبل بدء العمل. عند إتمام المشروع يُحرَّر المبلغ
-            للمستقل.
-          </p>
+          <p>{t('fundDialogBody')}</p>
           <div className="rounded-lg bg-surface-container-low p-3 text-on-surface">
             <p>
-              <strong>المبلغ المحجوز:</strong> {formatCurrency(proposedPrice, currency)}
+              <strong>{t('fundDialogHeld')}</strong>{' '}
+              {formatCurrency(proposedPrice, currency, locale)}
             </p>
             <p className="mt-1 text-on-surface-variant">
-              عمولة المنصة ({ESCROW_PLATFORM_FEE_PERCENT}%):{' '}
-              {formatCurrency(platformFee, currency)}
+              {t('fundDialogFee', { percent: ESCROW_PLATFORM_FEE_PERCENT })}{' '}
+              {formatCurrency(platformFee, currency, locale)}
             </p>
             <p className="mt-1 text-on-surface-variant">
-              صافي المستقل: {formatCurrency(freelancerPayout, currency)}
+              {t('fundDialogPayout')} {formatCurrency(freelancerPayout, currency, locale)}
             </p>
           </div>
           <p className="text-xs text-amber-700">{paymentModeLabel(paymentConfig)}</p>
         </div>
       }
-      confirmLabel="تمويل وقبول"
+      confirmLabel={t('fundAndAccept')}
       isLoading={isLoading}
       onConfirm={onConfirm}
       onCancel={onCancel}

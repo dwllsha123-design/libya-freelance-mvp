@@ -24,6 +24,7 @@ import {
 } from './proposal-validation.util.js';
 import { acceptProposalInTransaction } from './proposal-acceptance.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
+import { NuqatiService } from '../nuqati/nuqati.service.js';
 
 const freelancerPublicSelect = {
   profile: {
@@ -54,6 +55,7 @@ export class ProposalsService {
     private readonly portfolio: PortfolioService,
     @Inject(forwardRef(() => EscrowService))
     private readonly escrowService: EscrowService,
+    private readonly nuqatiService: NuqatiService,
   ) {}
 
   async submit(freelancerId: string, projectId: string, dto: CreateProposalDto) {
@@ -87,30 +89,37 @@ export class ProposalsService {
       throw new ConflictException('لقد قدمت عرضاً على هذا المشروع مسبقاً');
     }
 
-    const proposal = await this.prisma.proposal.create({
-      data: {
-        projectId,
-        freelancerId,
-        coverLetter: dto.coverLetter.trim(),
-        proposedPrice: dto.proposedPrice,
-        estimatedDurationDays: dto.estimatedDurationDays,
-        status: ProposalStatus.PENDING,
-      },
-      include: {
-        project: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            status: true,
-            budgetMin: true,
-            budgetMax: true,
-            currency: true,
-            completionRequestedAt: true,
-            completedAt: true,
+    const proposal = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.proposal.create({
+        data: {
+          projectId,
+          freelancerId,
+          coverLetter: dto.coverLetter.trim(),
+          proposedPrice: dto.proposedPrice,
+          estimatedDurationDays: dto.estimatedDurationDays,
+          status: ProposalStatus.PENDING,
+        },
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              status: true,
+              budgetMin: true,
+              budgetMax: true,
+              currency: true,
+              completionRequestedAt: true,
+              completedAt: true,
+            },
           },
         },
-      },
+      });
+
+      await this.nuqatiService.chargeProposalSubmit(freelancerId, created.id, tx);
+      await this.nuqatiService.onProposalSubmitted(freelancerId, created.id, tx);
+
+      return created;
     });
 
     await this.notifications.create(

@@ -66,4 +66,14 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(100)
   displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  companySector?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  organizationSize?: string;
 }

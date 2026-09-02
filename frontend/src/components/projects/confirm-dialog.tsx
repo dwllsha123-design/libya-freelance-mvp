@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
 interface ConfirmDialogProps {
@@ -19,12 +20,15 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
-  cancelLabel = 'إلغاء',
+  cancelLabel,
   isLoading = false,
   variant = 'default',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const t = useTranslations('common');
+  const resolvedCancelLabel = cancelLabel ?? t('cancel');
+
   if (!open) return null;
 
   return (
@@ -32,7 +36,7 @@ export function ConfirmDialog({
       <button
         type="button"
         className="absolute inset-0 bg-black/40"
-        aria-label="إغلاق"
+        aria-label={t('closeDialog')}
         onClick={onCancel}
       />
       <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
@@ -45,7 +49,7 @@ export function ConfirmDialog({
             disabled={isLoading}
             className="rounded-lg border px-4 py-2 text-sm disabled:opacity-50"
           >
-            {cancelLabel}
+            {resolvedCancelLabel}
           </button>
           <button
             type="button"
@@ -55,7 +59,7 @@ export function ConfirmDialog({
               variant === 'danger' ? 'bg-red-600' : 'bg-primary'
             }`}
           >
-            {isLoading ? 'جاري التنفيذ...' : confirmLabel}
+            {isLoading ? t('executing') : confirmLabel}
           </button>
         </div>
       </div>

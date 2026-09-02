@@ -1,7 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { RatingStars } from '@/components/rating/rating-stars';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface ReviewItem {
   id: string;
@@ -16,7 +18,15 @@ export interface ReviewItem {
   project?: { title: string; slug?: string };
 }
 
-export function ReviewCard({ review }: { review: ReviewItem }) {
+export function ReviewCard({
+  review,
+  locale = 'ar',
+}: {
+  review: ReviewItem;
+  locale?: AppLocale;
+}) {
+  const dateLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
+
   return (
     <div className="rounded-xl border bg-white p-4">
       <div className="flex items-center gap-3">
@@ -45,7 +55,7 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
         <p className="mt-2 text-sm text-slate-700">{review.comment}</p>
       ) : null}
       <p className="mt-2 text-xs text-slate-400">
-        {new Date(review.createdAt).toLocaleDateString('ar-LY')}
+        {new Date(review.createdAt).toLocaleDateString(dateLocale)}
       </p>
     </div>
   );
@@ -58,9 +68,11 @@ export function RatingSummary({
   average: number;
   count: number;
 }) {
+  const t = useTranslations('ui');
+
   return (
     <p className="text-sm text-slate-600">
-      ⭐ {average.toFixed(1)} · {count} تقييم
+      ⭐ {average.toFixed(1)} · {t('reviewCount', { count })}
     </p>
   );
 }

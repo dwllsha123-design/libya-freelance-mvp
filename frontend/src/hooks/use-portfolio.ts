@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { API_BASE_URL, CLIENT_REQUEST_HEADER, CLIENT_REQUEST_VALUE, authenticatedRequest } from '@/lib/api';
+import { API_BASE_URL, CLIENT_REQUEST_HEADER, CLIENT_REQUEST_VALUE, authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface PortfolioImage {
   id: string;
@@ -37,11 +39,12 @@ export interface PublicPortfolioItem {
 
 export function usePortfolioApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
       listMine: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<PortfolioItem[]>('/portfolio/me', accessToken);
       },
 
@@ -52,7 +55,7 @@ export function usePortfolioApi() {
         skillIds: string[];
         completedAt?: string;
       }) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<PortfolioItem>('/portfolio', accessToken, {
           method: 'POST',
           body: JSON.stringify(payload),
@@ -69,7 +72,7 @@ export function usePortfolioApi() {
           completedAt: string | null;
         }>,
       ) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<PortfolioItem>(`/portfolio/${id}`, accessToken, {
           method: 'PATCH',
           body: JSON.stringify(payload),
@@ -77,14 +80,14 @@ export function usePortfolioApi() {
       },
 
       remove: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ ok: boolean }>(`/portfolio/${id}`, accessToken, {
           method: 'DELETE',
         });
       },
 
       reorder: (itemIds: string[]) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<PortfolioItem[]>('/portfolio/reorder', accessToken, {
           method: 'PATCH',
           body: JSON.stringify({ itemIds }),
@@ -92,7 +95,7 @@ export function usePortfolioApi() {
       },
 
       uploadImage: async (itemId: string, file: File) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         const form = new FormData();
         form.append('file', file);
 
@@ -109,7 +112,7 @@ export function usePortfolioApi() {
         const data = await response.json();
         if (!response.ok) {
           throw new Error(
-            typeof data.message === 'string' ? data.message : 'فشل رفع الصورة',
+            typeof data.message === 'string' ? data.message : getApiErrorMessage(locale, 'photoUploadFailed'),
           );
         }
 
@@ -117,7 +120,7 @@ export function usePortfolioApi() {
       },
 
       deleteImage: (itemId: string, imageId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ ok: boolean }>(
           `/portfolio/${itemId}/images/${imageId}`,
           accessToken,
@@ -125,6 +128,6 @@ export function usePortfolioApi() {
         );
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

@@ -1,0 +1,11 @@
+{
+  "unexpected": "حدث خطأ غير متوقع",
+  "network": "تعذر الاتصال بالخادم",
+  "unauthorized": "يجب تسجيل الدخول",
+  "forbidden": "غير مصرح",
+  "notFound": "غير موجود",
+  "loadFailed": "فشل التحميل",
+  "profileLoadFailed": "فشل تحميل الملف الشخصي",
+  "sendMessageFailed": "فشل إرسال الرسالة",
+  "photoUploadFailed": "فشل رفع الصورة"
+}

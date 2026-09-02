@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { ReviewCard, RatingSummary, type ReviewItem } from '@/components/rating/review-card';
 import { apiRequest } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export function ProfileReviewsSection({
   username,
@@ -17,6 +19,9 @@ export function ProfileReviewsSection({
     latestReviews?: ReviewItem[];
   };
 }) {
+  const t = useTranslations('ui');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as AppLocale;
   const initialReviews = summary?.latestReviews ?? [];
   const [reviews, setReviews] = useState<ReviewItem[]>(initialReviews);
   const [page, setPage] = useState(1);
@@ -51,19 +56,19 @@ export function ProfileReviewsSection({
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-bold text-on-surface">التقييمات</h2>
+      <h2 className="text-2xl font-bold text-on-surface">{t('reviewsTitle')}</h2>
       {reviewCount > 0 ? (
         <div className="mt-2">
           <RatingSummary average={ratingAverage} count={reviewCount} />
         </div>
       ) : (
-        <p className="mt-4 text-slate-500">لا توجد تقييمات بعد</p>
+        <p className="mt-4 text-slate-500">{t('noReviews')}</p>
       )}
 
       {displayedReviews.length > 0 ? (
         <div className="mt-6 grid gap-4">
           {displayedReviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <ReviewCard key={review.id} review={review} locale={locale} />
           ))}
         </div>
       ) : null}
@@ -75,7 +80,7 @@ export function ProfileReviewsSection({
           onClick={() => void loadPage(1)}
           className="mt-4 text-sm text-primary disabled:opacity-50"
         >
-          عرض كل التقييمات
+          {t('viewAllReviews')}
         </button>
       ) : null}
 
@@ -87,7 +92,7 @@ export function ProfileReviewsSection({
             onClick={() => void loadPage(page - 1)}
             className="rounded border px-3 py-1 text-sm disabled:opacity-50"
           >
-            السابق
+            {tCommon('previous')}
           </button>
           <span className="text-sm text-slate-500">
             {page} / {totalPages}
@@ -98,7 +103,7 @@ export function ProfileReviewsSection({
             onClick={() => void loadPage(page + 1)}
             className="rounded border px-3 py-1 text-sm disabled:opacity-50"
           >
-            التالي
+            {tCommon('next')}
           </button>
         </div>
       ) : null}

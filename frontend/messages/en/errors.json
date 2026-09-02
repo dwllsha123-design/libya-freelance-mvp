@@ -1,0 +1,11 @@
+{
+  "unexpected": "An unexpected error occurred",
+  "network": "Could not connect to server",
+  "unauthorized": "You must be logged in",
+  "forbidden": "Not authorized",
+  "notFound": "Not found",
+  "loadFailed": "Failed to load",
+  "profileLoadFailed": "Failed to load profile",
+  "sendMessageFailed": "Failed to send message",
+  "photoUploadFailed": "Failed to upload photo"
+}

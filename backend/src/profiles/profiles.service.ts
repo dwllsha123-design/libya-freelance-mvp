@@ -15,6 +15,7 @@ import {
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 import { PortfolioService } from '../portfolio/portfolio.service.js';
 import { ReviewsService } from '../reviews/reviews.service.js';
+import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { isFreelancerVerified } from './freelancer-verification.util.js';
 
 const profileInclude = {
@@ -46,6 +47,7 @@ export class ProfilesService {
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly portfolio: PortfolioService,
     private readonly reviews: ReviewsService,
+    private readonly nuqatiService: NuqatiService,
   ) {}
 
   async getMyProfile(userId: string) {
@@ -145,6 +147,12 @@ export class ProfilesService {
             ...(dto.displayName !== undefined && {
               displayName: dto.displayName,
             }),
+            ...(dto.companySector !== undefined && {
+              companySector: dto.companySector,
+            }),
+            ...(dto.organizationSize !== undefined && {
+              organizationSize: dto.organizationSize,
+            }),
           },
         });
       }
@@ -154,6 +162,8 @@ export class ProfilesService {
         include: profileInclude,
       });
     });
+
+    void this.nuqatiService.checkProfileComplete(userId).catch(() => undefined);
 
     return this.formatProfile(updated!, true);
   }
@@ -340,6 +350,8 @@ export class ProfilesService {
         client: profile.clientProfile
           ? {
               displayName: profile.clientProfile.displayName,
+              companySector: profile.clientProfile.companySector,
+              organizationSize: profile.clientProfile.organizationSize,
               projectsPosted: profile.clientProfile.projectsPosted,
               averageRating: profile.clientProfile.averageRating,
             }
@@ -355,6 +367,8 @@ export class ProfilesService {
       client: profile.clientProfile
         ? {
             displayName: profile.clientProfile.displayName,
+            companySector: profile.clientProfile.companySector,
+            organizationSize: profile.clientProfile.organizationSize,
             projectsPosted: profile.clientProfile.projectsPosted,
             averageRating: profile.clientProfile.averageRating,
           }

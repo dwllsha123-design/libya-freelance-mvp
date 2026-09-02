@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   useNotificationsApi,
@@ -9,17 +9,20 @@ import {
 } from '@/hooks/use-notifications';
 import {
   NOTIFICATION_UI,
-  formatRelativeTime,
   formatUnreadBadge,
   type NotificationItem,
 } from '@/lib/notification-ui';
+import { formatRelativeTime } from '@/lib/i18n/notification-ui';
 import { ApiError } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 function NotificationRow({
   item,
+  locale,
   onRead,
 }: {
   item: NotificationItem;
+  locale: AppLocale;
   onRead: (item: NotificationItem) => void;
 }) {
   const ui = NOTIFICATION_UI[item.type] ?? NOTIFICATION_UI.NEW_MESSAGE;
@@ -46,7 +49,7 @@ function NotificationRow({
           {item.message}
         </span>
         <span className="mt-1 block text-[11px] text-slate-400">
-          {formatRelativeTime(item.createdAt)}
+          {formatRelativeTime(item.createdAt, locale)}
         </span>
       </span>
       {!item.isRead ? (
@@ -57,6 +60,9 @@ function NotificationRow({
 }
 
 export function NotificationBell() {
+  const t = useTranslations('notifications');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const api = useNotificationsApi();
   const { count, decrement } = useUnreadNotificationCount();
@@ -79,7 +85,7 @@ export function NotificationBell() {
         const data = await api.latest();
         if (!cancelled) setLatest(data);
       } catch {
-        if (!cancelled) setError('فشل تحميل الإشعارات');
+        if (!cancelled) setError(t('loadFailed'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -88,7 +94,7 @@ export function NotificationBell() {
     return () => {
       cancelled = true;
     };
-  }, [api, open]);
+  }, [api, open, t]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -116,7 +122,7 @@ export function NotificationBell() {
         );
       } catch (err) {
         setError(
-          err instanceof ApiError ? err.message : 'فشل تحديث الإشعار',
+          err instanceof ApiError ? err.message : t('updateFailed'),
         );
       }
     }
@@ -132,11 +138,15 @@ export function NotificationBell() {
     router.push('/notifications');
   }
 
+  const ariaLabel = badge
+    ? t('ariaLabelUnread', { count: badge })
+    : t('ariaLabel');
+
   return (
     <div className="relative" ref={panelRef}>
       <button
         type="button"
-        aria-label={`الإشعارات${badge ? `، ${badge} غير مقروء` : ''}`}
+        aria-label={ariaLabel}
         onClick={() => {
           if (window.innerWidth < 768) {
             handleMobileNavigate();
@@ -158,22 +168,22 @@ export function NotificationBell() {
         <div
           className="absolute end-0 top-full z-50 mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-xl border bg-white p-3 shadow-xl md:block"
           role="menu"
-          aria-label="أحدث الإشعارات"
+          aria-label={t('latest')}
         >
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-bold text-on-surface">الإشعارات</p>
+            <p className="text-sm font-bold text-on-surface">{t('title')}</p>
             {badge ? (
-              <span className="text-xs text-slate-500">{badge} غير مقروء</span>
+              <span className="text-xs text-slate-500">{t('unreadCount', { count: badge })}</span>
             ) : null}
           </div>
 
           {isLoading ? (
-            <p className="py-6 text-center text-sm text-slate-500">جاري التحميل...</p>
+            <p className="py-6 text-center text-sm text-slate-500">{tCommon('loadingPage')}</p>
           ) : error ? (
             <p className="py-4 text-center text-sm text-red-600">{error}</p>
           ) : latest.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-500">
-              لا توجد إشعارات حتى الآن
+              {t('noNotifications')}
             </p>
           ) : (
             <div className="max-h-80 space-y-1 overflow-y-auto">
@@ -181,6 +191,7 @@ export function NotificationBell() {
                 <NotificationRow
                   key={item.id}
                   item={item}
+                  locale={locale}
                   onRead={(n) => void handleNotificationClick(n)}
                 />
               ))}
@@ -192,7 +203,7 @@ export function NotificationBell() {
             className="mt-3 block rounded-lg border-t pt-3 text-center text-sm font-medium text-primary"
             onClick={() => setOpen(false)}
           >
-            عرض كل الإشعارات
+            {t('viewAll')}
           </Link>
         </div>
       ) : null}

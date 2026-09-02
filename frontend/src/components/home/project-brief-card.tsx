@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useState } from 'react';
 import { expandProjectBrief } from '@/lib/expand-brief';
-import { EXAMPLE_PROJECT_BRIEFS, TRUST_BADGES } from '@/lib/marketplace-content';
+import { getExampleProjectBriefs, getTrustBadges } from '@/lib/marketplace-content';
 import { saveProjectBriefDraft } from '@/lib/project-brief';
-import { PLATFORM_NAME_AR } from '@/lib/branding';
+import type { AppLocale } from '@/i18n/routing';
 
 type ProjectBriefCardProps = {
   projectCount?: number;
@@ -14,16 +14,21 @@ type ProjectBriefCardProps = {
 };
 
 export function ProjectBriefCard({ projectCount, variant = 'hero' }: ProjectBriefCardProps) {
+  const t = useTranslations('home');
+  const tBrand = useTranslations('brand');
+  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const [brief, setBrief] = useState('');
   const [isExpanding, setIsExpanding] = useState(false);
+  const examples = getExampleProjectBriefs(locale);
+  const trustBadges = getTrustBadges(locale);
 
   function startPosting(expand: boolean) {
     const text = brief.trim();
     if (!text) return;
 
     setIsExpanding(true);
-    const draft = expand ? expandProjectBrief(text) : { title: text.slice(0, 100), description: text };
+    const draft = expand ? expandProjectBrief(text, locale) : { title: text.slice(0, 100), description: text };
     saveProjectBriefDraft(draft);
     router.push('/register?role=CLIENT&next=/dashboard/projects/new');
   }
@@ -36,31 +41,27 @@ export function ProjectBriefCard({ projectCount, variant = 'hero' }: ProjectBrie
     >
       {variant === 'hero' ? (
         <div className="text-center">
-          <p className="text-sm font-semibold text-on-surface">انشر مشروعاً في ~3 دقائق</p>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            صِف ما تحتاجه — نُحضّر لك مسودة إعلان منظّمة للمراجعة والنشر
-          </p>
+          <p className="text-sm font-semibold text-on-surface">{t('briefTitle')}</p>
+          <p className="mt-1 text-sm text-on-surface-variant">{t('briefSubtitle')}</p>
         </div>
       ) : null}
 
       <label className={`block text-sm font-medium text-on-surface ${variant === 'hero' ? 'mt-5' : 'mt-0'}`} htmlFor={`project-brief-${variant}`}>
-        ما المطلوب تنفيذه؟
+        {t('briefLabel')}
       </label>
       <textarea
         id={`project-brief-${variant}`}
         value={brief}
         onChange={(e) => setBrief(e.target.value)}
         rows={variant === 'footer' ? 3 : 4}
-        placeholder="مثال: أحتاج مصمم شعار وهوية بصرية في بنغازي، الميزانية 500–1000 د.ل"
+        placeholder={t('briefPlaceholder')}
         className="mt-2 w-full resize-none rounded-xl border border-outline-variant/60 bg-surface-container-low px-4 py-3 text-on-surface outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
       />
-      <p className="mt-2 text-xs text-on-surface-variant">
-        نصيحة: اذكر المخرجات أو المدة أو الميزانية بالدينار الليبي (د.ل)
-      </p>
+      <p className="mt-2 text-xs text-on-surface-variant">{t('briefTip')}</p>
 
       {variant === 'hero' ? (
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {EXAMPLE_PROJECT_BRIEFS.map((example) => (
+          {examples.map((example) => (
             <button
               key={example}
               type="button"
@@ -75,7 +76,7 @@ export function ProjectBriefCard({ projectCount, variant = 'hero' }: ProjectBrie
 
       {projectCount ? (
         <p className="mt-4 text-center text-xs text-on-surface-variant">
-          {projectCount}+ مشروع منشور على {PLATFORM_NAME_AR}
+          {t('briefPublishedCount', { count: projectCount, brand: tBrand('name') })}
         </p>
       ) : null}
 
@@ -86,18 +87,18 @@ export function ProjectBriefCard({ projectCount, variant = 'hero' }: ProjectBrie
           onClick={() => startPosting(true)}
           className="rounded-lg bg-primary px-8 py-3 font-semibold text-white hover:opacity-90 disabled:opacity-50"
         >
-          {isExpanding ? 'جاري التحضير...' : 'إنشاء إعلاني'}
+          {isExpanding ? t('briefCreating') : t('briefCreate')}
         </button>
         <Link
           href="/register?role=CLIENT&next=/dashboard/projects/new"
           className="rounded-lg border border-secondary px-8 py-3 text-center font-semibold text-secondary hover:bg-secondary/5"
         >
-          النموذج الكامل
+          {t('briefFullForm')}
         </Link>
       </div>
 
       <div className="mt-6 flex flex-wrap justify-center gap-2">
-        {TRUST_BADGES.map((point) => (
+        {trustBadges.map((point) => (
           <span
             key={point}
             className="rounded-full bg-tertiary/10 px-3 py-1 text-xs font-medium text-tertiary"

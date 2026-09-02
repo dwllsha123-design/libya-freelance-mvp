@@ -1,10 +1,12 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useSocketEvent } from '@/contexts/socket-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
 import type { NotificationItem } from '@/lib/notification-ui';
+import type { AppLocale } from '@/i18n/routing';
 
 interface PaginatedNotifications {
   items: NotificationItem[];
@@ -17,11 +19,12 @@ interface PaginatedNotifications {
 
 export function useNotificationsApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
       list: (params: Record<string, string> = {}) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         const qs = new URLSearchParams(params).toString();
         const suffix = qs ? `?${qs}` : '';
         return authenticatedRequest<PaginatedNotifications>(
@@ -31,7 +34,7 @@ export function useNotificationsApi() {
       },
 
       latest: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<NotificationItem[]>(
           '/notifications/latest',
           accessToken,
@@ -39,7 +42,7 @@ export function useNotificationsApi() {
       },
 
       unreadCount: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ count: number }>(
           '/notifications/unread-count',
           accessToken,
@@ -47,7 +50,7 @@ export function useNotificationsApi() {
       },
 
       markRead: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<NotificationItem>(
           `/notifications/${id}/read`,
           accessToken,
@@ -56,7 +59,7 @@ export function useNotificationsApi() {
       },
 
       markAllRead: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ affected: number }>(
           '/notifications/read-all',
           accessToken,
@@ -64,7 +67,7 @@ export function useNotificationsApi() {
         );
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }
 

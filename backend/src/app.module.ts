@@ -26,6 +26,7 @@ import { RealtimeModule } from './realtime/realtime.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { EscrowModule } from './escrow/escrow.module.js';
 import { PaymentsModule } from './payments/payment.module.js';
+import { NuqatiModule } from './nuqati/nuqati.module.js';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PaymentsModule } from './payments/payment.module.js';
     PlatformModule,
     PaymentsModule,
     EscrowModule,
+    NuqatiModule,
   ],
   controllers: [HealthController],
   providers: [

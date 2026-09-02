@@ -397,7 +397,7 @@ export class PaymentService {
 
   private formatPayment(payment: {
     id: string;
-    escrowId: string;
+    escrowId: string | null;
     amount: Prisma.Decimal;
     currency: string;
     status: PaymentStatus;

@@ -1,0 +1,18 @@
+{
+  "title": "بحث متقدم",
+  "subtitle": "ابحث في المشاريع والمستقلين",
+  "projectsTab": "المشاريع",
+  "freelancersTab": "المستقلون",
+  "placeholder": "ماذا تبحث عنه؟",
+  "search": "بحث",
+  "closeSearch": "إغلاق البحث",
+  "searchProjects": "بحث في المشاريع",
+  "searchFreelancers": "بحث في المستقلين",
+  "advancedSearch": "بحث متقدم",
+  "searchPlaceholder": "ابحث عن مشروع أو مستقل...",
+  "enterQuery": "أدخل كلمة بحث من الشريط العلوي أو جرّب",
+  "browseProjects": "تصفح المشاريع",
+  "searching": "جاري البحث...",
+  "noProjects": "لا توجد مشاريع مطابقة",
+  "noFreelancers": "لا يوجد مستقلون مطابقون"
+}

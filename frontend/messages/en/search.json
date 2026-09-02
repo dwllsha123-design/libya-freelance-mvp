@@ -1,0 +1,18 @@
+{
+  "title": "Advanced search",
+  "subtitle": "Search projects and freelancers",
+  "projectsTab": "Projects",
+  "freelancersTab": "Freelancers",
+  "placeholder": "What are you looking for?",
+  "search": "Search",
+  "closeSearch": "Close search",
+  "searchProjects": "Search projects",
+  "searchFreelancers": "Search freelancers",
+  "advancedSearch": "Advanced search",
+  "searchPlaceholder": "Search projects or freelancers...",
+  "enterQuery": "Enter a search term from the top bar or try",
+  "browseProjects": "browsing projects",
+  "searching": "Searching...",
+  "noProjects": "No matching projects",
+  "noFreelancers": "No matching freelancers"
+}

@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useState } from 'react';
 
 export function NavSearch() {
+  const t = useTranslations('search');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -27,7 +28,7 @@ export function NavSearch() {
         className="flex items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface-variant"
       >
         <span>🔍</span>
-        <span>بحث</span>
+        <span>{t('search')}</span>
       </button>
 
       {open ? (
@@ -35,7 +36,7 @@ export function NavSearch() {
           <button
             type="button"
             className="fixed inset-0 z-40"
-            aria-label="إغلاق البحث"
+            aria-label={t('closeSearch')}
             onClick={() => setOpen(false)}
           />
           <div className="absolute start-0 top-full z-50 mt-2 w-80 rounded-xl border border-outline-variant/40 bg-surface p-4 shadow-xl">
@@ -45,7 +46,7 @@ export function NavSearch() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submit('projects');
               }}
-              placeholder="ابحث عن مشروع أو مستقل..."
+              placeholder={t('searchPlaceholder')}
               className="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-3 py-2 text-sm outline-none focus:border-primary"
               autoFocus
             />
@@ -55,21 +56,21 @@ export function NavSearch() {
                 onClick={() => submit('projects')}
                 className="rounded-lg bg-surface-container-low px-3 py-2 text-start hover:bg-surface-container"
               >
-                بحث في المشاريع
+                {t('searchProjects')}
               </button>
               <button
                 type="button"
                 onClick={() => submit('freelancers')}
                 className="rounded-lg bg-surface-container-low px-3 py-2 text-start hover:bg-surface-container"
               >
-                بحث في المستقلين
+                {t('searchFreelancers')}
               </button>
               <Link
                 href="/search"
                 onClick={() => setOpen(false)}
                 className="text-center text-xs text-primary hover:underline"
               >
-                بحث متقدم
+                {t('advancedSearch')}
               </Link>
             </div>
           </div>

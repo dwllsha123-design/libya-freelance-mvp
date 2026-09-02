@@ -1,0 +1,21 @@
+{
+  "title": "الرسائل",
+  "noConversations": "لا توجد محادثات بعد",
+  "typeMessage": "اكتب رسالتك...",
+  "send": "إرسال",
+  "unread": "غير مقروء",
+  "startConversation": "ابدأ محادثة من صفحة المشروع",
+  "attachFile": "إرفاق ملف",
+  "online": "متصل",
+  "offline": "غير متصل",
+  "loading": "جاري التحميل...",
+  "loadFailed": "فشل تحميل المحادثة",
+  "sendFailed": "فشل الإرسال",
+  "noMessages": "لا توجد رسائل بعد — ابدأ المحادثة",
+  "readOnly": "هذه المحادثة للقراءة فقط",
+  "selectConversation": "اختر محادثة من القائمة",
+  "browseProjects": "تصفح المشاريع",
+  "loginRequired": "يجب تسجيل الدخول",
+  "proposalLabel": "العرض: {price} · {status}",
+  "unknownUser": "مستخدم"
+}

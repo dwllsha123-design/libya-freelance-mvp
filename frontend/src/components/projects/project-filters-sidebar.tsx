@@ -1,7 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Category, City, Skill } from '@/lib/api';
 import type { ProjectFilters } from '@/lib/project-filters';
+import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-content';
+import type { AppLocale } from '@/i18n/routing';
 
 interface ProjectFiltersSidebarProps {
   filters: ProjectFilters;
@@ -11,33 +15,6 @@ interface ProjectFiltersSidebarProps {
   onChange: (patch: Partial<ProjectFilters>) => void;
   onClear: () => void;
 }
-
-const WORK_MODE_OPTIONS = [
-  { value: '', label: 'الكل' },
-  { value: 'REMOTE', label: 'عن بُعد' },
-  { value: 'ON_SITE', label: 'في الموقع' },
-  { value: 'HYBRID', label: 'هجين' },
-];
-
-const BUDGET_TYPE_OPTIONS = [
-  { value: '', label: 'الكل' },
-  { value: 'FIXED', label: 'سعر ثابت' },
-  { value: 'HOURLY', label: 'بالساعة' },
-];
-
-const EXPERIENCE_OPTIONS = [
-  { value: '', label: 'الكل' },
-  { value: 'ENTRY', label: 'مبتدئ' },
-  { value: 'INTERMEDIATE', label: 'متوسط' },
-  { value: 'EXPERT', label: 'خبير' },
-];
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'الأحدث' },
-  { value: 'oldest', label: 'الأقدم' },
-  { value: 'budget_high', label: 'الأعلى ميزانية' },
-  { value: 'budget_low', label: 'الأقل ميزانية' },
-];
 
 function SelectField({
   label,
@@ -76,81 +53,130 @@ export function ProjectFiltersSidebar({
   onChange,
   onClear,
 }: ProjectFiltersSidebarProps) {
+  const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as AppLocale;
+
+  const workModeOptions = useMemo(
+    () => [
+      { value: '', label: tCommon('all') },
+      { value: 'REMOTE', label: t('workModeRemote') },
+      { value: 'ON_SITE', label: t('workModeOnSite') },
+      { value: 'HYBRID', label: t('workModeHybrid') },
+    ],
+    [t, tCommon],
+  );
+
+  const budgetTypeOptions = useMemo(
+    () => [
+      { value: '', label: tCommon('all') },
+      { value: 'FIXED', label: t('budgetTypeFixed') },
+      { value: 'HOURLY', label: t('budgetTypeHourly') },
+    ],
+    [t, tCommon],
+  );
+
+  const experienceOptions = useMemo(
+    () => [
+      { value: '', label: tCommon('all') },
+      { value: 'ENTRY', label: t('experienceEntry') },
+      { value: 'INTERMEDIATE', label: t('experienceIntermediate') },
+      { value: 'EXPERT', label: t('experienceExpert') },
+    ],
+    [t, tCommon],
+  );
+
+  const sortOptions = useMemo(
+    () => [
+      { value: 'newest', label: t('sortNewest') },
+      { value: 'oldest', label: t('sortOldest') },
+      { value: 'budget_high', label: t('sortBudgetHigh') },
+      { value: 'budget_low', label: t('sortBudgetLow') },
+    ],
+    [t],
+  );
+
   const locationCities = cities.filter((c) => !c.isRemote);
 
   return (
     <div className="space-y-4 rounded-xl border bg-white p-4">
       <div className="flex items-center justify-between">
-        <p className="font-semibold text-on-surface">الفلاتر</p>
+        <p className="font-semibold text-on-surface">{t('filters')}</p>
         <button
           type="button"
           onClick={onClear}
           className="text-sm text-primary hover:underline"
         >
-          مسح الفلاتر
+          {tCommon('clearFilters')}
         </button>
       </div>
 
       <SelectField
-        label="الترتيب"
+        label={t('sort')}
         value={filters.sort}
-        options={SORT_OPTIONS}
+        options={sortOptions}
         onChange={(sort) => onChange({ sort, page: '1' })}
       />
 
       <SelectField
-        label="التصنيف"
+        label={t('category')}
         value={filters.category}
         options={[
-          { value: '', label: 'الكل' },
-          ...categories.map((c) => ({ value: c.slug, label: c.nameAr })),
+          { value: '', label: tCommon('all') },
+          ...categories.map((c) => ({
+            value: c.slug,
+            label: getLocalizedCategoryName(c, locale),
+          })),
         ]}
         onChange={(category) => onChange({ category, page: '1' })}
       />
 
       <SelectField
-        label="المهارة"
+        label={t('skill')}
         value={filters.skill}
         options={[
-          { value: '', label: 'الكل' },
+          { value: '', label: tCommon('all') },
           ...skills.map((s) => ({ value: s.slug, label: s.name })),
         ]}
         onChange={(skill) => onChange({ skill, page: '1' })}
       />
 
       <SelectField
-        label="المدينة"
+        label={t('city')}
         value={filters.city}
         options={[
-          { value: '', label: 'الكل' },
-          ...locationCities.map((c) => ({ value: c.slug, label: c.nameAr })),
+          { value: '', label: tCommon('all') },
+          ...locationCities.map((c) => ({
+            value: c.slug,
+            label: getLocalizedCityName(c, locale),
+          })),
         ]}
         onChange={(city) => onChange({ city, page: '1' })}
       />
 
       <SelectField
-        label="نمط العمل"
+        label={t('workMode')}
         value={filters.workMode}
-        options={WORK_MODE_OPTIONS}
+        options={workModeOptions}
         onChange={(workMode) => onChange({ workMode, page: '1' })}
       />
 
       <SelectField
-        label="نوع الميزانية"
+        label={t('budgetType')}
         value={filters.budgetType}
-        options={BUDGET_TYPE_OPTIONS}
+        options={budgetTypeOptions}
         onChange={(budgetType) => onChange({ budgetType, page: '1' })}
       />
 
       <SelectField
-        label="مستوى الخبرة"
+        label={t('experience')}
         value={filters.experienceLevel}
-        options={EXPERIENCE_OPTIONS}
+        options={experienceOptions}
         onChange={(experienceLevel) => onChange({ experienceLevel, page: '1' })}
       />
 
       <div>
-        <label className="text-sm font-medium text-slate-700">الحد الأدنى للميزانية</label>
+        <label className="text-sm font-medium text-slate-700">{t('minBudgetLabel')}</label>
         <input
           type="number"
           min={0}
@@ -162,7 +188,7 @@ export function ProjectFiltersSidebar({
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700">الحد الأقصى للميزانية</label>
+        <label className="text-sm font-medium text-slate-700">{t('maxBudgetLabel')}</label>
         <input
           type="number"
           min={0}

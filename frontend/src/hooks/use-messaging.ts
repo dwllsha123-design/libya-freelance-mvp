@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface ConversationSummary {
   conversationId: string;
@@ -35,11 +37,12 @@ export interface MessageItem {
 
 export function useMessagingApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
       openForProposal: (proposalId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<ConversationSummary>(
           `/proposals/${proposalId}/conversation`,
           accessToken,
@@ -48,7 +51,7 @@ export function useMessagingApi() {
       },
 
       listConversations: (page = 1) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{
           items: ConversationSummary[];
           page: number;
@@ -57,7 +60,7 @@ export function useMessagingApi() {
       },
 
       getConversation: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<ConversationSummary>(
           `/conversations/${id}`,
           accessToken,
@@ -65,7 +68,7 @@ export function useMessagingApi() {
       },
 
       listMessages: (id: string, cursor?: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         const qs = cursor ? `?cursor=${cursor}&limit=30` : '?limit=30';
         return authenticatedRequest<{
           items: MessageItem[];
@@ -75,7 +78,7 @@ export function useMessagingApi() {
       },
 
       sendMessage: (id: string, content: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<MessageItem>(
           `/conversations/${id}/messages`,
           accessToken,
@@ -84,7 +87,7 @@ export function useMessagingApi() {
       },
 
       markRead: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ markedCount: number }>(
           `/conversations/${id}/read`,
           accessToken,
@@ -93,13 +96,13 @@ export function useMessagingApi() {
       },
 
       unreadCount: () => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ unreadCount: number }>(
           '/messages/unread-count',
           accessToken,
         );
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

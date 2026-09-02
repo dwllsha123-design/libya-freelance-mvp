@@ -1,4 +1,7 @@
+import type { AppLocale } from '@/i18n/routing';
 import { apiRequest } from '@/lib/api';
+import arPayments from '../../messages/ar/payments.json';
+import enPayments from '../../messages/en/payments.json';
 
 export type PaymentCaptureMode = 'sync' | 'redirect';
 
@@ -28,12 +31,19 @@ export async function fetchPaymentConfig(): Promise<PaymentConfig> {
   }
 }
 
-export function paymentModeLabel(config: PaymentConfig): string {
+const PAYMENT_MODE_LABELS: Record<AppLocale, typeof arPayments> = {
+  ar: arPayments,
+  en: enPayments,
+};
+
+export function paymentModeLabel(config: PaymentConfig, locale: AppLocale = 'ar'): string {
+  const labels = PAYMENT_MODE_LABELS[locale];
+
   if (config.provider === 'simulated') {
-    return 'التمويل الحالي تجريبي (محاكاة) إلى حين ربط بوابة دفع ليبية.';
+    return labels.modeSimulated;
   }
   if (config.requiresRedirect) {
-    return 'سيتم تحويلك إلى بوابة الدفع لإتمام العملية بأمان.';
+    return labels.modeRedirect;
   }
-  return 'سيتم خصم المبلغ عبر بوابة الدفع المفعّلة.';
+  return labels.modeDefault;
 }

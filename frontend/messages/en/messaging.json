@@ -1,0 +1,21 @@
+{
+  "title": "Messages",
+  "noConversations": "No conversations yet",
+  "typeMessage": "Type your message...",
+  "send": "Send",
+  "unread": "Unread",
+  "startConversation": "Start a conversation from the project page",
+  "attachFile": "Attach file",
+  "online": "Online",
+  "offline": "Offline",
+  "loading": "Loading...",
+  "loadFailed": "Failed to load conversation",
+  "sendFailed": "Failed to send message",
+  "noMessages": "No messages yet — start the conversation",
+  "readOnly": "This conversation is read-only",
+  "selectConversation": "Select a conversation from the list",
+  "browseProjects": "Browse projects",
+  "loginRequired": "You must be logged in",
+  "proposalLabel": "Proposal: {price} · {status}",
+  "unknownUser": "User"
+}

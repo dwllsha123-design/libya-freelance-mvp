@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ApiError } from '@/lib/api';
 import type { ManageProject } from '@/lib/schemas/project';
 import { ConfirmDialog } from './confirm-dialog';
@@ -24,6 +25,8 @@ export function ProjectStatusActions({
   onUpdated,
   compact = false,
 }: ProjectStatusActionsProps) {
+  const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export function ProjectStatusActions({
       const message =
         err instanceof ApiError
           ? err.message
-          : 'حدث خطأ أثناء تنفيذ العملية';
+          : t('actionFailed');
       setError(message);
     } finally {
       setIsLoading(false);
@@ -65,7 +68,7 @@ export function ProjectStatusActions({
   ) {
     if (project.status === 'CLOSED' || project.status === 'CANCELLED') {
       return compact ? null : (
-        <p className="text-sm text-slate-500">لا توجد إجراءات متاحة</p>
+        <p className="text-sm text-slate-500">{t('noActionsAvailable')}</p>
       );
     }
     return null;
@@ -84,7 +87,7 @@ export function ProjectStatusActions({
             className={btnClass}
             onClick={() => setPendingAction('close')}
           >
-            إغلاق
+            {t('close')}
           </button>
         ) : null}
         {canCancel ? (
@@ -93,7 +96,7 @@ export function ProjectStatusActions({
             className={`${btnClass} text-red-600`}
             onClick={() => setPendingAction('cancel')}
           >
-            إلغاء
+            {tCommon('cancel')}
           </button>
         ) : null}
         {canDelete ? (
@@ -102,11 +105,11 @@ export function ProjectStatusActions({
             className={`${btnClass} text-red-600`}
             onClick={() => setPendingAction('delete')}
           >
-            حذف
+            {tCommon('delete')}
           </button>
         ) : null}
         {!canEdit && !canDelete && !canClose && !canCancel ? (
-          <span className="text-sm text-slate-500">للقراءة فقط</span>
+          <span className="text-sm text-slate-500">{t('readOnly')}</span>
         ) : null}
       </div>
 
@@ -114,9 +117,9 @@ export function ProjectStatusActions({
 
       <ConfirmDialog
         open={pendingAction === 'close'}
-        title="إغلاق المشروع"
-        message="هل أنت متأكد من إغلاق المشروع؟ لن يقبل المشروع عروضاً جديدة بعد الإغلاق."
-        confirmLabel="إغلاق المشروع"
+        title={t('closeProject')}
+        message={t('closeProjectConfirm')}
+        confirmLabel={t('closeProjectAction')}
         variant="danger"
         isLoading={isLoading}
         onConfirm={() => void executeAction()}
@@ -125,9 +128,9 @@ export function ProjectStatusActions({
 
       <ConfirmDialog
         open={pendingAction === 'cancel'}
-        title="إلغاء المشروع"
-        message="هل أنت متأكد من إلغاء المشروع؟ لا يمكن التراجع عن هذا الإجراء."
-        confirmLabel="إلغاء المشروع"
+        title={t('cancelProject')}
+        message={t('cancelProjectConfirm')}
+        confirmLabel={t('cancelProjectAction')}
         variant="danger"
         isLoading={isLoading}
         onConfirm={() => void executeAction()}
@@ -136,9 +139,9 @@ export function ProjectStatusActions({
 
       <ConfirmDialog
         open={pendingAction === 'delete'}
-        title="حذف المسودة"
-        message="هل أنت متأكد من حذف هذه المسودة؟ لا يمكن استعادتها."
-        confirmLabel="حذف"
+        title={t('deleteDraft')}
+        message={t('deleteDraftConfirm')}
+        confirmLabel={tCommon('delete')}
         variant="danger"
         isLoading={isLoading}
         onConfirm={() => void executeAction()}

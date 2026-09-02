@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import {
@@ -9,8 +10,12 @@ import {
 } from '@/hooks/use-messaging';
 import { useMessagingSocket } from '@/hooks/use-messaging-socket';
 import { ApiError } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export function ChatPanel({ conversationId }: { conversationId: string }) {
+  const t = useTranslations('messaging');
+  const tCommon = useTranslations('common');
+  const locale = useLocale() as AppLocale;
   const { user, accessToken } = useAuth();
   const api = useMessagingApi();
   const [conversation, setConversation] = useState<ConversationSummary | null>(
@@ -22,6 +27,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const timeLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
 
   const { joinConversation, sendMessage: sendSocket } = useMessagingSocket(
     accessToken,
@@ -49,7 +55,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
           await api.markRead(conversationId);
         }
       } catch {
-        if (!cancelled) setError('فشل تحميل المحادثة');
+        if (!cancelled) setError(t('loadFailed'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -58,7 +64,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [api, conversationId]);
+  }, [api, conversationId, t]);
 
   useEffect(() => {
     joinConversation(conversationId);
@@ -92,7 +98,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
             ? fallbackErr.message
             : err instanceof Error
               ? err.message
-              : 'فشل الإرسال',
+              : t('sendFailed'),
         );
       }
     } finally {
@@ -101,7 +107,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
   }
 
   if (isLoading) {
-    return <div className="flex flex-1 items-center justify-center p-8">جاري التحميل...</div>;
+    return <div className="flex flex-1 items-center justify-center p-8">{tCommon('loadingPage')}</div>;
   }
 
   if (error && !conversation) {
@@ -117,14 +123,17 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
         <p className="text-sm text-slate-500">{conversation?.project?.title}</p>
         {conversation?.proposal ? (
           <p className="mt-1 text-xs text-primary">
-            العرض: {conversation.proposal.proposedPrice} · {conversation.proposal.status}
+            {t('proposalLabel', {
+              price: conversation.proposal.proposedPrice,
+              status: conversation.proposal.status,
+            })}
           </p>
         ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-surface-container-low p-4">
         {messages.length === 0 ? (
-          <p className="text-center text-sm text-slate-500">لا توجد رسائل بعد — ابدأ المحادثة</p>
+          <p className="text-center text-sm text-slate-500">{t('noMessages')}</p>
         ) : null}
         <div className="space-y-3">
           {messages.map((m) => {
@@ -143,7 +152,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
                 >
                   {m.content}
                   <p className={`mt-1 text-[10px] ${isMine ? 'text-slate-300' : 'text-slate-400'}`}>
-                    {new Date(m.createdAt).toLocaleTimeString('ar-LY', {
+                    {new Date(m.createdAt).toLocaleTimeString(timeLocale, {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -163,7 +172,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="اكتب رسالتك..."
+              placeholder={t('typeMessage')}
               className="flex-1 rounded-lg border px-4 py-2 text-sm"
               maxLength={5000}
             />
@@ -172,13 +181,13 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
               disabled={isSending || !draft.trim()}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              إرسال
+              {t('send')}
             </button>
           </div>
         </form>
       ) : (
         <p className="shrink-0 border-t bg-amber-50 p-4 text-center text-sm text-amber-800">
-          هذه المحادثة للقراءة فقط
+          {t('readOnly')}
         </p>
       )}
     </div>

@@ -1,0 +1,19 @@
+{
+  "invalidData": "Invalid data",
+  "invalidEmail": "Invalid email address",
+  "passwordMin": "Password must be at least 8 characters",
+  "passwordComplexity": "Must include uppercase, lowercase, and a number",
+  "confirmPasswordRequired": "Password confirmation is required",
+  "passwordMismatch": "Passwords do not match",
+  "firstNameRequired": "First name is required",
+  "lastNameRequired": "Last name is required",
+  "chooseRole": "Choose account type",
+  "titleMin": "Title must be at least 10 characters",
+  "descriptionMin": "Description must be at least 50 characters",
+  "chooseCategory": "Choose a category",
+  "chooseSkill": "Choose at least one skill",
+  "budgetMaxMin": "Maximum must be greater than or equal to minimum",
+  "chooseCity": "Choose a city",
+  "proposalMin": "Proposal must be at least 20 characters",
+  "coverLetterMin": "Cover letter must be at least 50 characters"
+}

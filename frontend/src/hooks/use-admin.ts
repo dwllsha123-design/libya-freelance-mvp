@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface Paginated<T> {
   items: T[];
@@ -14,10 +16,11 @@ export interface Paginated<T> {
 
 export function useAdminApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(() => {
     function requireToken() {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return accessToken;
     }
 
@@ -164,7 +167,7 @@ export function useAdminApi() {
           body: JSON.stringify(body),
         }),
     };
-  }, [accessToken]);
+  }, [accessToken, locale]);
 }
 
 export interface AdminEscrowDispute {

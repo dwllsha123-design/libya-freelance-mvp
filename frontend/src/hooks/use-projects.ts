@@ -1,10 +1,12 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import {
   apiRequest,
   authenticatedRequest,
+  getApiErrorMessage,
   type Category,
   type City,
   type Skill,
@@ -14,9 +16,11 @@ import type {
   PaginatedProjects,
   ProjectListItem,
 } from '@/lib/schemas/project';
+import type { AppLocale } from '@/i18n/routing';
 
 export function useProjectsApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
@@ -29,7 +33,7 @@ export function useProjectsApi() {
       apiRequest<ProjectListItem>(`/projects/slug/${slug}`),
 
     listMine: (status?: string, page = '1', limit = '50') => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       const params = new URLSearchParams({ page, limit });
       if (status) params.set('status', status);
       return authenticatedRequest<{ items: ManageProject[]; total: number }>(
@@ -39,7 +43,7 @@ export function useProjectsApi() {
     },
 
     getManage: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/manage`,
         accessToken,
@@ -47,7 +51,7 @@ export function useProjectsApi() {
     },
 
     create: (payload: Record<string, unknown>) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>('/projects', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -55,7 +59,7 @@ export function useProjectsApi() {
     },
 
     update: (id: string, payload: Record<string, unknown>) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}`,
         accessToken,
@@ -64,7 +68,7 @@ export function useProjectsApi() {
     },
 
     publish: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/publish`,
         accessToken,
@@ -73,7 +77,7 @@ export function useProjectsApi() {
     },
 
     close: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/close`,
         accessToken,
@@ -82,7 +86,7 @@ export function useProjectsApi() {
     },
 
     cancel: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/cancel`,
         accessToken,
@@ -91,7 +95,7 @@ export function useProjectsApi() {
     },
 
     complete: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/complete`,
         accessToken,
@@ -100,7 +104,7 @@ export function useProjectsApi() {
     },
 
     requestCompletion: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<ManageProject>(
         `/projects/${id}/request-completion`,
         accessToken,
@@ -109,7 +113,7 @@ export function useProjectsApi() {
     },
 
     delete: (id: string) => {
-      if (!accessToken) throw new Error('غير مصرح');
+      if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
       return authenticatedRequest<{ message: string }>(
         `/projects/${id}`,
         accessToken,
@@ -124,6 +128,6 @@ export function useProjectsApi() {
         apiRequest<City[]>('/cities'),
       ]),
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

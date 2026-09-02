@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { ApiError } from '@/lib/api';
@@ -18,6 +19,7 @@ export function ProfilePhotoUpload({
   accessToken,
   onUploaded,
 }: ProfilePhotoUploadProps) {
+  const t = useTranslations('profile');
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentPhoto ?? null);
   const [isUploading, setIsUploading] = useState(false);
@@ -27,10 +29,10 @@ export function ProfilePhotoUpload({
 
   function validateFile(file: File): string | null {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP أو GIF';
+      return t('invalidFileType');
     }
     if (file.size > MAX_SIZE) {
-      return 'حجم الملف يتجاوز 2 ميجابايت';
+      return t('fileTooLarge');
     }
     return null;
   }
@@ -81,7 +83,7 @@ export function ProfilePhotoUpload({
         const message =
           typeof data.message === 'string'
             ? data.message
-            : 'فشل رفع الصورة';
+            : t('uploadFailed');
         throw new ApiError(message, response.status, data);
       }
 
@@ -94,7 +96,7 @@ export function ProfilePhotoUpload({
       URL.revokeObjectURL(objectUrl);
     } catch (err) {
       setPreview(currentPhoto ?? null);
-      setError(err instanceof ApiError ? err.message : 'فشل رفع الصورة');
+      setError(err instanceof ApiError ? err.message : t('uploadFailed'));
       URL.revokeObjectURL(objectUrl);
     } finally {
       setIsUploading(false);
@@ -105,14 +107,14 @@ export function ProfilePhotoUpload({
 
   return (
     <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-semibold text-on-surface">الصورة الشخصية</h2>
+      <h2 className="text-lg font-semibold text-on-surface">{t('photo')}</h2>
 
       <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
           {preview ? (
             <Image
               src={preview}
-              alt="صورة الملف الشخصي"
+              alt={t('photoAlt')}
               fill
               className="object-cover"
               unoptimized={preview.startsWith('blob:')}
@@ -144,10 +146,10 @@ export function ProfilePhotoUpload({
             onClick={() => inputRef.current?.click()}
             className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary disabled:opacity-50"
           >
-            {isUploading ? 'جاري الرفع...' : 'اختر صورة'}
+            {isUploading ? t('uploading') : t('uploadPhoto')}
           </button>
           <p className="mt-2 text-xs text-slate-500">
-            JPG, PNG, WebP أو GIF — حتى 2 ميجابايت
+            {t('photoHint')}
           </p>
         </div>
       </div>

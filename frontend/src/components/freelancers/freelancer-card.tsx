@@ -1,7 +1,12 @@
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import type { PublicProfile } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
+import { getLocalizedCityName } from '@/lib/locale-content';
+import type { AppLocale } from '@/i18n/routing';
 import { isFreelancerVerified } from '@/lib/freelancer-trust';
 import { VerifiedBadge } from '@/components/trust/verified-badge';
 import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
@@ -17,6 +22,8 @@ export function FreelancerCard({
   freelancer: PublicProfile;
   variant?: 'default' | 'carousel';
 }) {
+  const t = useTranslations('freelancers');
+  const locale = useLocale() as AppLocale;
   const rating = freelancer.freelancer?.averageRating ?? 0;
   const completed = freelancer.freelancer?.completedProjects ?? 0;
   const skills = freelancer.freelancer?.skills?.slice(0, 3) ?? [];
@@ -53,10 +60,12 @@ export function FreelancerCard({
             {verified ? <VerifiedBadge /> : null}
           </div>
           <p className="truncate text-sm text-on-surface-variant">
-            {freelancer.freelancer?.professionalTitle ?? 'مستقل'}
+            {freelancer.freelancer?.professionalTitle ?? t('defaultTitle')}
           </p>
           {freelancer.city ? (
-            <p className="mt-1 text-xs text-on-surface-variant">📍 {freelancer.city.nameAr}</p>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              📍 {getLocalizedCityName(freelancer.city, locale)}
+            </p>
           ) : null}
         </div>
       </div>
@@ -72,7 +81,7 @@ export function FreelancerCard({
 
       {hourlyRate ? (
         <p className="mt-3 text-sm font-semibold text-primary">
-          من {formatCurrency(hourlyRate)}/ساعة
+          {t('hourlyFrom', { rate: formatCurrency(hourlyRate, 'LYD', locale) })}
         </p>
       ) : null}
 

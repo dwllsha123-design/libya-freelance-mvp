@@ -1,8 +1,10 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest } from '@/lib/api';
+import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export interface FreelancerProposal {
   id: string;
@@ -57,6 +59,7 @@ export interface PaginatedProposals {
 
 export function useProposalsApi() {
   const { accessToken } = useAuth();
+  const locale = useLocale() as AppLocale;
 
   return useMemo(
     () => ({
@@ -68,7 +71,7 @@ export function useProposalsApi() {
           estimatedDurationDays: number;
         },
       ) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<FreelancerProposal>(
           `/projects/${projectId}/proposals`,
           accessToken,
@@ -77,7 +80,7 @@ export function useProposalsApi() {
       },
 
       listMine: (status?: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         const qs = status ? `?status=${status}` : '';
         return authenticatedRequest<PaginatedProposals>(
           `/proposals/me${qs}`,
@@ -86,7 +89,7 @@ export function useProposalsApi() {
       },
 
       getMyForProject: (projectId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<FreelancerProposal>(
           `/projects/${projectId}/proposals/me`,
           accessToken,
@@ -94,7 +97,7 @@ export function useProposalsApi() {
       },
 
       listForProject: (projectId: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<ClientProposal[]>(
           `/projects/${projectId}/proposals`,
           accessToken,
@@ -102,7 +105,7 @@ export function useProposalsApi() {
       },
 
       accept: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<ClientProposal>(
           `/proposals/${id}/accept`,
           accessToken,
@@ -111,7 +114,7 @@ export function useProposalsApi() {
       },
 
       reject: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<ClientProposal>(
           `/proposals/${id}/reject`,
           accessToken,
@@ -120,7 +123,7 @@ export function useProposalsApi() {
       },
 
       withdraw: (id: string) => {
-        if (!accessToken) throw new Error('غير مصرح');
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<FreelancerProposal>(
           `/proposals/${id}/withdraw`,
           accessToken,
@@ -128,6 +131,6 @@ export function useProposalsApi() {
         );
       },
     }),
-    [accessToken],
+    [accessToken, locale],
   );
 }

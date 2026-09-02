@@ -1,11 +1,17 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { LOGO_ICON_PATH, PLATFORM_NAME_AR, PLATFORM_NAME_AR_STYLED } from '@/lib/branding';
+'use client';
+
+import Image, { type StaticImageData } from 'next/image';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import logoIcon from '@/assets/brand/logo-icon.png';
+
+const LOGO_IMAGE: StaticImageData = logoIcon;
 
 type LogoProps = {
   showName?: boolean;
   className?: string;
   nameClassName?: string;
+  iconClassName?: string;
   href?: string;
 };
 
@@ -13,23 +19,29 @@ export function Logo({
   showName = true,
   className = '',
   nameClassName = '',
+  iconClassName = '',
   href = '/',
 }: LogoProps) {
+  const t = useTranslations('brand');
+  const brandName = t('nameStyled');
+
   const content = (
-    <span className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
+    <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
       <Image
-        src={LOGO_ICON_PATH}
-        alt={PLATFORM_NAME_AR}
-        width={36}
-        height={36}
-        className="h-9 w-9 shrink-0 rounded-full object-cover"
+        src={LOGO_IMAGE}
+        alt={t('name')}
+        width={LOGO_IMAGE.width}
+        height={LOGO_IMAGE.height}
+        sizes="40px"
+        className={`h-10 w-10 shrink-0 object-contain ${iconClassName}`}
         priority
+        unoptimized
       />
       {showName ? (
         <span
           className={`text-xl font-bold leading-tight text-primary ${nameClassName}`}
         >
-          {PLATFORM_NAME_AR_STYLED}
+          {brandName}
         </span>
       ) : null}
     </span>

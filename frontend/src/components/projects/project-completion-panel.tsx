@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
 import { EscrowStatusCard } from '@/components/escrow/escrow-status-card';
 import { OpenDisputeDialog } from '@/components/escrow/open-dispute-dialog';
@@ -10,7 +11,8 @@ import { useReviewsApi } from '@/hooks/use-reviews';
 import { useProjectsApi } from '@/hooks/use-projects';
 import { useEscrowApi, type EscrowRecord } from '@/hooks/use-escrow';
 import type { ManageProject } from '@/lib/schemas/project';
-import { PLATFORM_NAME_AR } from '@/lib/branding';
+import { formatCurrency } from '@/lib/currency';
+import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 
 export function ProjectCompletionPanel({
@@ -20,6 +22,9 @@ export function ProjectCompletionPanel({
   project: ManageProject;
   onUpdated: (project: ManageProject) => void;
 }) {
+  const t = useTranslations('projects');
+  const tBrand = useTranslations('brand');
+  const locale = useLocale() as AppLocale;
   const projectsApi = useProjectsApi();
   const reviewsApi = useReviewsApi();
   const escrowApi = useEscrowApi();
@@ -33,6 +38,8 @@ export function ProjectCompletionPanel({
     hasReviewed: boolean;
     myReview: { rating: number; comment?: string | null } | null;
   } | null>(null);
+
+  const numberLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
 
   useEffect(() => {
     if (project.status !== 'IN_PROGRESS' && project.status !== 'COMPLETED') return;
@@ -81,7 +88,7 @@ export function ProjectCompletionPanel({
       const refreshed = await escrowApi.getByProject(project.id);
       setEscrow(refreshed);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'فشل إتمام المشروع');
+      setError(err instanceof ApiError ? err.message : t('completeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +104,7 @@ export function ProjectCompletionPanel({
       setEscrow(refreshed);
       setShowDispute(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'فشل فتح النزاع');
+      setError(err instanceof ApiError ? err.message : t('openDisputeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -111,12 +118,12 @@ export function ProjectCompletionPanel({
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           {project.completionRequestedAt ? (
             <p className="mb-3 text-sm text-amber-900">
-              طلب المستقل تأكيد إتمام المشروع.
+              {t('freelancerRequestedCompletion')}
             </p>
           ) : null}
           {project.acceptedFreelancer ? (
             <p className="mb-3 text-sm text-slate-700">
-              المستقل المقبول: {project.acceptedFreelancer.displayName}
+              {t('acceptedFreelancer', { name: project.acceptedFreelancer.displayName })}
             </p>
           ) : null}
           {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
@@ -127,7 +134,7 @@ export function ProjectCompletionPanel({
               disabled={escrow?.status === 'DISPUTED'}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              تأكيد الإتمام وتحرير الضمان
+              {t('confirmCompleteAndRelease')}
             </button>
             {escrow?.status === 'FUNDED' ? (
               <button
@@ -135,7 +142,7 @@ export function ProjectCompletionPanel({
                 onClick={() => setShowDispute(true)}
                 className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700"
               >
-                فتح نزاع
+                {t('openDispute')}
               </button>
             ) : null}
           </div>
@@ -143,13 +150,15 @@ export function ProjectCompletionPanel({
 
         <ConfirmDialog
           open={showConfirm}
-          title="تأكيد إتمام المشروع"
+          title={t('confirmCompleteTitle')}
           message={
             escrow
-              ? `هل أنجز المستقل العمل كما اتفقتم؟ سيتم تحرير ${escrow.freelancerPayout} د.ل للمستقل من الضمان.`
-              : `هل أنت متأكد من إتمام المشروع على ${PLATFORM_NAME_AR}؟`
+              ? t('confirmCompleteWithEscrow', {
+                  amount: formatCurrency(escrow.freelancerPayout, escrow.currency, locale),
+                })
+              : t('confirmCompleteNoEscrow', { brand: tBrand('name') })
           }
-          confirmLabel="تأكيد الإتمام"
+          confirmLabel={t('markComplete')}
           isLoading={isLoading}
           onConfirm={() => void handleComplete()}
           onCancel={() => setShowConfirm(false)}
@@ -171,14 +180,14 @@ export function ProjectCompletionPanel({
       <div className="mb-6 space-y-4 rounded-xl border bg-white p-4">
         {escrow ? <EscrowStatusCard escrow={escrow} /> : null}
         <p className="text-sm text-primary">
-          مكتمل
+          {t('completedOn')}
           {project.completedAt
-            ? ` · ${new Date(project.completedAt).toLocaleDateString('ar-LY')}`
+            ? ` · ${new Date(project.completedAt).toLocaleDateString(numberLocale)}`
             : ''}
         </p>
         {reviewState?.hasReviewed && reviewState.myReview ? (
           <div>
-            <p className="mb-2 text-sm font-medium">تقييمك</p>
+            <p className="mb-2 text-sm font-medium">{t('yourRating')}</p>
             <RatingStars value={reviewState.myReview.rating} readOnly />
             {reviewState.myReview.comment ? (
               <p className="mt-2 text-sm text-slate-600">{reviewState.myReview.comment}</p>
@@ -186,7 +195,7 @@ export function ProjectCompletionPanel({
           </div>
         ) : reviewState?.canReview ? (
           <div>
-            <p className="mb-2 text-sm font-medium">قيّم المستقل</p>
+            <p className="mb-2 text-sm font-medium">{t('rateFreelancer')}</p>
             <ReviewForm
               isSubmitting={isLoading}
               onSubmit={async (payload) => {

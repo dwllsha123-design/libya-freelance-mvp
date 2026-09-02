@@ -2,11 +2,17 @@ import { Module, forwardRef } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PortfolioModule } from '../portfolio/portfolio.module.js';
 import { EscrowModule } from '../escrow/escrow.module.js';
+import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { ProposalsController } from './proposals.controller.js';
 import { ProposalsService } from './proposals.service.js';
 
 @Module({
-  imports: [NotificationsModule, PortfolioModule, forwardRef(() => EscrowModule)],
+  imports: [
+    NotificationsModule,
+    PortfolioModule,
+    forwardRef(() => EscrowModule),
+    NuqatiModule,
+  ],
   controllers: [ProposalsController],
   providers: [ProposalsService],
   exports: [ProposalsService],

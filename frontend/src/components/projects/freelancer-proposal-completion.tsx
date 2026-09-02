@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { EscrowStatusCard } from '@/components/escrow/escrow-status-card';
 import { OpenDisputeDialog } from '@/components/escrow/open-dispute-dialog';
 import { ReviewForm } from '@/components/rating/review-form';
@@ -9,6 +10,7 @@ import { useProjectsApi } from '@/hooks/use-projects';
 import { useReviewsApi } from '@/hooks/use-reviews';
 import { useEscrowApi, type EscrowRecord } from '@/hooks/use-escrow';
 import type { FreelancerProposal } from '@/hooks/use-proposals';
+import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 
 export function FreelancerProposalCompletion({
@@ -18,6 +20,9 @@ export function FreelancerProposalCompletion({
   proposal: FreelancerProposal;
   onUpdated: () => void;
 }) {
+  const t = useTranslations('projects');
+  const tProposals = useTranslations('proposals');
+  const locale = useLocale() as AppLocale;
   const projectsApi = useProjectsApi();
   const reviewsApi = useReviewsApi();
   const escrowApi = useEscrowApi();
@@ -33,6 +38,8 @@ export function FreelancerProposalCompletion({
     hasReviewed: boolean;
     myReview: { rating: number; comment?: string | null } | null;
   } | null>(null);
+
+  const numberLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
 
   const completionRequestedAt =
     requestedAt ?? proposal.project.completionRequestedAt ?? null;
@@ -86,7 +93,7 @@ export function FreelancerProposalCompletion({
       );
       onUpdated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'فشل إرسال طلب الإتمام');
+      setError(err instanceof ApiError ? err.message : t('requestCompletionFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +109,7 @@ export function FreelancerProposalCompletion({
       setEscrow(refreshed);
       setShowDispute(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'فشل فتح النزاع');
+      setError(err instanceof ApiError ? err.message : t('openDisputeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -119,8 +126,8 @@ export function FreelancerProposalCompletion({
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
           {completionRequestedAt ? (
             <p className="text-sm text-primary">
-              تم إرسال طلب الإتمام
-              {` · ${new Date(completionRequestedAt).toLocaleDateString('ar-LY')}`}
+              {t('completionRequested')}
+              {` · ${new Date(completionRequestedAt).toLocaleDateString(numberLocale)}`}
             </p>
           ) : (
             <>
@@ -132,7 +139,7 @@ export function FreelancerProposalCompletion({
                   onClick={() => void handleRequestCompletion()}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  {isLoading ? 'جاري الإرسال...' : 'طلب تأكيد إتمام المشروع'}
+                  {isLoading ? tProposals('submitting') : t('requestCompletion')}
                 </button>
                 {escrow?.status === 'FUNDED' ? (
                   <button
@@ -140,7 +147,7 @@ export function FreelancerProposalCompletion({
                     onClick={() => setShowDispute(true)}
                     className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700"
                   >
-                    فتح نزاع
+                    {t('openDispute')}
                   </button>
                 ) : null}
               </div>
@@ -167,14 +174,14 @@ export function FreelancerProposalCompletion({
       <div className="mt-4 space-y-3 rounded-lg border bg-slate-50 p-3">
         {escrow ? <EscrowStatusCard escrow={escrow} /> : null}
         <p className="text-sm text-primary">
-          مكتمل
+          {t('completedOn')}
           {proposal.project.completedAt
-            ? ` · ${new Date(proposal.project.completedAt).toLocaleDateString('ar-LY')}`
+            ? ` · ${new Date(proposal.project.completedAt).toLocaleDateString(numberLocale)}`
             : ''}
         </p>
         {reviewState?.hasReviewed && reviewState.myReview ? (
           <div>
-            <p className="mb-1 text-sm font-medium">تقييمك للعميل</p>
+            <p className="mb-1 text-sm font-medium">{t('yourClientRating')}</p>
             <RatingStars value={reviewState.myReview.rating} readOnly />
             {reviewState.myReview.comment ? (
               <p className="mt-1 text-sm text-slate-600">
@@ -184,7 +191,7 @@ export function FreelancerProposalCompletion({
           </div>
         ) : reviewState?.canReview ? (
           <div>
-            <p className="mb-2 text-sm font-medium">قيّم العميل</p>
+            <p className="mb-2 text-sm font-medium">{t('rateClient')}</p>
             <ReviewForm
               isSubmitting={isLoading}
               onSubmit={async (payload) => {

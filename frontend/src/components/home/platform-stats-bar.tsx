@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchPlatformStats, formatStatValue, type PlatformStats } from '@/lib/platform-stats';
 
 export function PlatformStatsBar({ fallback }: { fallback?: PlatformStats }) {
+  const t = useTranslations('home');
   const [stats, setStats] = useState<PlatformStats | null>(fallback ?? null);
 
   useEffect(() => {
@@ -16,24 +18,31 @@ export function PlatformStatsBar({ fallback }: { fallback?: PlatformStats }) {
     };
   }, []);
 
-  const items = [
-    {
-      label: 'مستقلون نشطون',
-      value: stats ? `${formatStatValue(stats.freelancers)}+` : '—',
-    },
-    {
-      label: 'مشاريع منشورة',
-      value: stats ? `${formatStatValue(stats.projects)}+` : '—',
-    },
-    {
-      label: 'مشاريع مكتملة',
-      value: stats ? `${formatStatValue(stats.completedProjects)}+` : '—',
-    },
-    {
-      label: 'رضا العملاء',
-      value: stats?.satisfactionPercent ? `${stats.satisfactionPercent}%` : stats?.averageRating ? `${stats.averageRating}★` : '—',
-    },
-  ];
+  const items = useMemo(
+    () => [
+      {
+        label: t('statsActiveFreelancers'),
+        value: stats ? `${formatStatValue(stats.freelancers)}+` : '—',
+      },
+      {
+        label: t('statsPublishedProjects'),
+        value: stats ? `${formatStatValue(stats.projects)}+` : '—',
+      },
+      {
+        label: t('statsCompletedProjects'),
+        value: stats ? `${formatStatValue(stats.completedProjects)}+` : '—',
+      },
+      {
+        label: t('statsSatisfaction'),
+        value: stats?.satisfactionPercent
+          ? `${stats.satisfactionPercent}%`
+          : stats?.averageRating
+            ? `${stats.averageRating}★`
+            : '—',
+      },
+    ],
+    [stats, t],
+  );
 
   return (
     <section className="border-y border-outline-variant/30 bg-surface">
@@ -47,7 +56,7 @@ export function PlatformStatsBar({ fallback }: { fallback?: PlatformStats }) {
       </div>
       {stats && stats.verifiedFreelancers > 0 ? (
         <p className="pb-6 text-center text-xs text-on-surface-variant">
-          {stats.verifiedFreelancers}+ مستقل موثّق على المنصة
+          {t('statsVerified', { count: stats.verifiedFreelancers })}
         </p>
       ) : null}
     </section>
