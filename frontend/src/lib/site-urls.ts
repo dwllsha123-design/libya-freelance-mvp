@@ -2,9 +2,9 @@
  * Domain helpers for public marketplace vs admin control center.
  *
  * Production:
- *   https://libyafreelance.ly          — CLIENT + FREELANCER
- *   https://admin.libyafreelance.ly    — SUPER_ADMIN + authorized ADMIN
- *   https://api.libyafreelance.ly      — NestJS + Socket.IO
+ *   https://libyanfreelance.ly          — CLIENT + FREELANCER
+ *   https://admin.libyanfreelance.ly    — SUPER_ADMIN + authorized ADMIN
+ *   https://api.libyanfreelance.ly      — NestJS + Socket.IO
  *
  * Local development (no subdomain required):
  *   http://localhost:3000
@@ -52,7 +52,7 @@ function configuredAdminHosts(): Set<string> {
   }
 
   hosts.add('admin.localhost');
-  hosts.add('admin.libyafreelance.ly');
+  hosts.add('admin.libyanfreelance.ly');
 
   return hosts;
 }

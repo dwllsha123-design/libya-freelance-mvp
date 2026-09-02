@@ -9,8 +9,8 @@
 
 | Service | Target URL | Actual status |
 |---------|------------|---------------|
-| Frontend | `https://staging.libyafreelance.ly` | **NOT DEPLOYED** |
-| API | `https://api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
+| Frontend | `https://staging.libyanfreelance.ly` | **NOT DEPLOYED** |
+| API | `https://api-staging.libyanfreelance.ly` | **NOT DEPLOYED** |
 
 No staging hosting, DNS, managed PostgreSQL credentials, or object storage keys exist in this repository. Deployment automation added (`backend/Dockerfile`, `docker-compose.staging.yml`, `npm run package:runtime`) but **not executed against live staging hosts**.
 

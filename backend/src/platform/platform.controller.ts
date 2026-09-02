@@ -3,6 +3,7 @@ import { Public } from '../common/decorators/public.decorator.js';
 import { PlatformService } from './platform.service.js';
 import { PlatformPolicyService } from './platform-policy.service.js';
 import { PlatformCmsService } from './platform-cms.service.js';
+import { PlatformAppConfigService } from './platform-app-config.service.js';
 
 @Controller('platform')
 export class PlatformController {
@@ -10,12 +11,19 @@ export class PlatformController {
     private readonly platformService: PlatformService,
     private readonly policy: PlatformPolicyService,
     private readonly cms: PlatformCmsService,
+    private readonly appConfig: PlatformAppConfigService,
   ) {}
 
   @Public()
   @Get('site-config')
   getSiteConfig() {
     return this.policy.getPublicSnapshot();
+  }
+
+  @Public()
+  @Get('app-config')
+  getAppConfig() {
+    return this.appConfig.getPublicAppConfig();
   }
 
   @Public()

@@ -15,6 +15,20 @@ export const PLATFORM_SETTING_KEYS = [
   'platformName',
   'supportEmail',
   'currency',
+  // Legal / support (safe public URLs)
+  'privacyPolicyUrl',
+  'termsUrl',
+  'supportUrl',
+  // Mobile release configuration (no secrets / certs)
+  'iosAppStatus',
+  'androidAppStatus',
+  'iosLatestVersion',
+  'iosMinimumSupportedVersion',
+  'androidLatestVersion',
+  'androidMinimumSupportedVersion',
+  'iosStoreUrl',
+  'androidStoreUrl',
+  'mobileMaintenanceMessage',
 ] as const;
 
 export type PlatformSettingKey = (typeof PLATFORM_SETTING_KEYS)[number];
@@ -26,6 +40,18 @@ export const CRITICAL_SETTING_KEYS = new Set<PlatformSettingKey>([
   'maintenanceEndsAt',
   'investorPortalEnabled',
   'currency',
+  'iosAppStatus',
+  'androidAppStatus',
+  'iosLatestVersion',
+  'iosMinimumSupportedVersion',
+  'androidLatestVersion',
+  'androidMinimumSupportedVersion',
+  'iosStoreUrl',
+  'androidStoreUrl',
+  'mobileMaintenanceMessage',
+  'privacyPolicyUrl',
+  'termsUrl',
+  'supportUrl',
 ]);
 
 export const STABLE_FEATURE_FLAGS = [
@@ -42,9 +68,20 @@ export const FUTURE_FEATURE_FLAGS = [
   'AI_MATCHING',
 ] as const;
 
+/** Mobile client gates — default OFF until native apps ship */
+export const MOBILE_FEATURE_FLAGS = [
+  'MOBILE_ENABLED',
+  'MOBILE_MESSAGING',
+  'MOBILE_PORTFOLIO',
+  'MOBILE_REVIEWS',
+  'MOBILE_PAYMENTS',
+  'MOBILE_AI_MATCHING',
+] as const;
+
 export const ALL_FEATURE_FLAGS = [
   ...STABLE_FEATURE_FLAGS,
   ...FUTURE_FEATURE_FLAGS,
+  ...MOBILE_FEATURE_FLAGS,
 ] as const;
 
 export type FeatureFlagKey = (typeof ALL_FEATURE_FLAGS)[number];
@@ -73,8 +110,20 @@ export const DEFAULT_SETTINGS: Record<PlatformSettingKey, unknown> = {
   maintenanceStartsAt: null,
   maintenanceEndsAt: null,
   platformName: 'Libya Freelance',
-  supportEmail: 'support@libyafreelance.ly',
+  supportEmail: 'support@libyanfreelance.ly',
   currency: 'LYD',
+  privacyPolicyUrl: 'https://libyanfreelance.ly/privacy',
+  termsUrl: 'https://libyanfreelance.ly/terms',
+  supportUrl: 'https://libyanfreelance.ly/help',
+  iosAppStatus: 'COMING_SOON',
+  androidAppStatus: 'COMING_SOON',
+  iosLatestVersion: '',
+  iosMinimumSupportedVersion: '',
+  androidLatestVersion: '',
+  androidMinimumSupportedVersion: '',
+  iosStoreUrl: '',
+  androidStoreUrl: '',
+  mobileMaintenanceMessage: '',
 };
 
 export function settingTypeFor(key: PlatformSettingKey): 'BOOLEAN' | 'STRING' | 'NUMBER' | 'JSON' {

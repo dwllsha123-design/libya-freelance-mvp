@@ -7,6 +7,7 @@ import { apiRequest, type PublicProfile } from '@/lib/api';
 import { FreelancerCarousel } from '@/components/home/freelancer-carousel';
 import { HomeAudienceTabs } from '@/components/home/home-audience-tabs';
 import { HomeFaq } from '@/components/home/home-faq';
+import { HomeMobileAppsSection } from '@/components/home/home-mobile-apps-section';
 import { PlatformStatsBar } from '@/components/home/platform-stats-bar';
 import { ProjectBriefCard } from '@/components/home/project-brief-card';
 import { getHomeCategories, getHomeCities, getHomeContent } from '@/lib/home-content-i18n';
@@ -300,6 +301,8 @@ export function HomeLanding() {
       </section>
 
       <HomeFaq />
+
+      <HomeMobileAppsSection />
 
       <section className="border-t border-outline-variant/30 bg-surface px-4 py-14">
         <div className="mx-auto max-w-3xl text-center">

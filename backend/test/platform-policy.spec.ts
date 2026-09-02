@@ -11,11 +11,14 @@ describe('platform settings validation helpers', () => {
     expect(PLATFORM_SETTING_KEYS).toContain('allowClientRegistration');
     expect(PLATFORM_SETTING_KEYS).toContain('maintenanceEnabled');
     expect(PLATFORM_SETTING_KEYS).toContain('allowNewProjects');
+    expect(PLATFORM_SETTING_KEYS).toContain('iosAppStatus');
+    expect(PLATFORM_SETTING_KEYS).toContain('androidAppStatus');
   });
 
   it('marks maintenance and currency as critical', () => {
     expect(CRITICAL_SETTING_KEYS.has('maintenanceEnabled')).toBe(true);
     expect(CRITICAL_SETTING_KEYS.has('currency')).toBe(true);
+    expect(CRITICAL_SETTING_KEYS.has('iosStoreUrl')).toBe(true);
     expect(CRITICAL_SETTING_KEYS.has('allowNewProjects')).toBe(false);
   });
 
@@ -23,6 +26,8 @@ describe('platform settings validation helpers', () => {
     expect(DEFAULT_SETTINGS.allowClientRegistration).toBe(true);
     expect(DEFAULT_SETTINGS.allowFreelancerRegistration).toBe(true);
     expect(DEFAULT_SETTINGS.maintenanceEnabled).toBe(false);
+    expect(DEFAULT_SETTINGS.iosAppStatus).toBe('COMING_SOON');
+    expect(DEFAULT_SETTINGS.androidAppStatus).toBe('COMING_SOON');
   });
 
   it('types boolean vs string settings', () => {

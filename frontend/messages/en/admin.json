@@ -462,5 +462,25 @@
     "RESOLVED_REFUND_CLIENT": "Refunded to client",
     "RESOLVED_RELEASE_FREELANCER": "Released to freelancer",
     "CLOSED": "Closed"
-  }
+  },
+  "mobileSettingsTitle": "Mobile settings",
+  "mobileSettingsSubtitle": "iOS/Android store status and public URLs — no signing secrets",
+  "mobileSettingsOwnerOnly": "Mobile settings are owner-only.",
+  "mobileStoreStatus": "Store status & versions",
+  "mobileNoSecretsHint": "Do not store signing certificates or Apple/Google API secrets here. Public URLs only.",
+  "iosAppStatus": "iOS app status",
+  "androidAppStatus": "Android app status",
+  "iosLatestVersion": "Latest iOS version",
+  "iosMinimumVersion": "Minimum supported iOS version",
+  "androidLatestVersion": "Latest Android version",
+  "androidMinimumVersion": "Minimum supported Android version",
+  "iosStoreUrl": "App Store URL (https)",
+  "androidStoreUrl": "Google Play URL (https)",
+  "mobileMaintenanceMessage": "Mobile maintenance message",
+  "mobileLegalUrls": "Privacy & support URLs",
+  "privacyPolicyUrl": "Privacy policy URL",
+  "termsUrl": "Terms URL",
+  "supportUrl": "Support URL",
+  "mobileFeatureFlags": "Mobile feature flags",
+  "saveMobileSettings": "Save mobile settings"
 }

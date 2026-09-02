@@ -8,10 +8,10 @@ RUN npm ci
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=https://api.libyafreelance.ly/api
-ARG NEXT_PUBLIC_SITE_URL=https://libyafreelance.ly
-ARG NEXT_PUBLIC_ADMIN_URL=https://admin.libyafreelance.ly
-ARG NEXT_PUBLIC_SOCKET_URL=https://api.libyafreelance.ly
+ARG NEXT_PUBLIC_API_URL=https://api.libyanfreelance.ly/api
+ARG NEXT_PUBLIC_SITE_URL=https://libyanfreelance.ly
+ARG NEXT_PUBLIC_ADMIN_URL=https://admin.libyanfreelance.ly
+ARG NEXT_PUBLIC_SOCKET_URL=https://api.libyanfreelance.ly
 
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}

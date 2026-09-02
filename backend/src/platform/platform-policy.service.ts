@@ -3,6 +3,7 @@ import {
   Injectable,
   OnModuleInit,
   ServiceUnavailableException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AdminAuditAction, PlatformSettingType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -16,6 +17,10 @@ import {
   type FeatureFlagKey,
   type PlatformSettingKey,
 } from './platform-settings.constants.js';
+import {
+  assertSafeHttpsUrl,
+  isAppStoreStatus,
+} from './mobile-app.constants.js';
 
 @Injectable()
 export class PlatformPolicyService implements OnModuleInit {
@@ -230,6 +235,28 @@ export class PlatformPolicyService implements OnModuleInit {
     }
     if (key === 'currency' && typeof value === 'string' && value !== 'LYD') {
       throw new ForbiddenException('العملة المدعومة حاليًا: LYD');
+    }
+    if (key === 'iosAppStatus' || key === 'androidAppStatus') {
+      if (!isAppStoreStatus(value)) {
+        throw new BadRequestException(
+          `${key} يجب أن يكون أحد: COMING_SOON | BETA | AVAILABLE | MAINTENANCE`,
+        );
+      }
+    }
+    if (
+      key === 'iosStoreUrl' ||
+      key === 'androidStoreUrl' ||
+      key === 'privacyPolicyUrl' ||
+      key === 'termsUrl' ||
+      key === 'supportUrl'
+    ) {
+      try {
+        assertSafeHttpsUrl(value, key);
+      } catch (err) {
+        throw new BadRequestException(
+          err instanceof Error ? err.message : `رابط ${key} غير صالح`,
+        );
+      }
     }
   }
 

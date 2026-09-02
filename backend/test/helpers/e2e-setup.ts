@@ -84,6 +84,9 @@ export async function resetDatabase(prisma: PrismaClient) {
     TRUNCATE TABLE
       "AdminAuditLog",
       "CommercialAuditLog",
+      "ContentReport",
+      "UserBlock",
+      "UserDevice",
       "NotificationBroadcast",
       "Notification",
       "InvestorPayout",

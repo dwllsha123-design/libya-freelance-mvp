@@ -306,6 +306,11 @@ model User {
   investorPayoutsApproved InvestorPayout[]         @relation("InvestorPayoutApprover")
   investorStatementsCreated InvestorStatement[]    @relation("InvestorStatementCreator")
   portfolioItemsModerated PortfolioItem[]          @relation("PortfolioModerator")
+  devices                 UserDevice[]
+  contentReportsFiled     ContentReport[]          @relation("ContentReportReporter")
+  contentReportsResolved  ContentReport[]          @relation("ContentReportResolver")
+  blocksCreated           UserBlock[]              @relation("UserBlocker")
+  blocksReceived          UserBlock[]              @relation("UserBlocked")
 
   @@index([role])
   @@index([status])
@@ -330,11 +335,15 @@ model RefreshToken {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+  /// Optional link to a registered device (future mobile/web session tracking)
+  deviceId  String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device UserDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([deviceId])
 }
 
 model PasswordResetToken {
@@ -1185,4 +1194,78 @@ model InvestorStatement {
 
   @@unique([investorId, periodYear, periodMonth])
   @@index([status, periodYear, periodMonth])
+}
+
+/// Registered client devices for future multi-device session + push delivery
+enum DevicePlatform {
+  WEB
+  IOS
+  ANDROID
+}
+
+model UserDevice {
+  id           String         @id @default(uuid())
+  userId       String
+  platform     DevicePlatform
+  pushToken    String?
+  appVersion   String?
+  lastActiveAt DateTime       @default(now())
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId, isActive])
+  @@index([platform])
+  @@index([pushToken])
+}
+
+/// Marketplace UGC moderation — architecture ready; APIs can ship with mobile
+enum ContentReportTarget {
+  USER
+  PROJECT
+  PORTFOLIO
+  REVIEW
+}
+
+enum ContentReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model ContentReport {
+  id           String              @id @default(uuid())
+  reporterId   String
+  targetType   ContentReportTarget
+  targetId     String
+  reason       String
+  details      String?
+  status       ContentReportStatus @default(OPEN)
+  createdAt    DateTime            @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  reporter   User  @relation("ContentReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy User? @relation("ContentReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterId])
+}
+
+model UserBlock {
+  id            String   @id @default(uuid())
+  blockerId     String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  blocker     User @relation("UserBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUser User @relation("UserBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockedUserId])
 }

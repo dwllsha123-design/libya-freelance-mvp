@@ -13,7 +13,7 @@ export default () => ({
     .map((origin) => origin.trim())
     .filter(Boolean),
   email: {
-    from: process.env.EMAIL_FROM ?? 'noreply@libyafreelance.ly',
+    from: process.env.EMAIL_FROM ?? 'noreply@libyanfreelance.ly',
     smtpHost: process.env.SMTP_HOST,
     smtpPort: process.env.SMTP_PORT,
     smtpUser: process.env.SMTP_USER,

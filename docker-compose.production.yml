@@ -12,9 +12,9 @@
 #     node -e "console.log('prefer: npm run admin:create -- --super true ... on build image')"
 #
 # Domains:
-#   libyafreelance.ly        → web:3000 (CLIENT + FREELANCER marketplace)
-#   admin.libyafreelance.ly  → web:3000 (SUPER_ADMIN + authorized ADMIN)
-#   api.libyafreelance.ly    → api:4000
+#   libyanfreelance.ly        → web:3000 (CLIENT + FREELANCER marketplace)
+#   admin.libyanfreelance.ly  → web:3000 (SUPER_ADMIN + authorized ADMIN)
+#   api.libyanfreelance.ly    → api:4000
 #
 # Put TLS termination (Caddy / Nginx / Cloudflare) in front of these ports.
 # Never run prisma:seed:demo in production.
@@ -63,8 +63,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-libya_prod}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-libya_freelance}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
-      FRONTEND_URL: ${FRONTEND_URL:-https://libyafreelance.ly}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://libyafreelance.ly,https://admin.libyafreelance.ly}
+      FRONTEND_URL: ${FRONTEND_URL:-https://libyanfreelance.ly}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://libyanfreelance.ly,https://admin.libyanfreelance.ly}
       STORAGE_DRIVER: s3
       S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
       S3_REGION: ${S3_REGION:-auto}
@@ -76,7 +76,7 @@ services:
       PAYMENT_DRIVER: ${PAYMENT_DRIVER:-simulated}
       PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-LYD}
       PAYMENT_SIMULATED_FAILURE: ${PAYMENT_SIMULATED_FAILURE:-false}
-      EMAIL_FROM: ${EMAIL_FROM:-noreply@libyafreelance.ly}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@libyanfreelance.ly}
     ports:
       - '${API_PORT:-4000}:4000'
     depends_on:
@@ -87,10 +87,10 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.libyafreelance.ly/api}
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://libyafreelance.ly}
-        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.libyafreelance.ly}
-        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://api.libyafreelance.ly}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.libyanfreelance.ly/api}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://libyanfreelance.ly}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.libyanfreelance.ly}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://api.libyanfreelance.ly}
     restart: unless-stopped
     environment:
       NODE_ENV: production

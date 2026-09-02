@@ -60,9 +60,9 @@ App: `http://localhost:3000`
 
 | Role | URL |
 |------|-----|
-| Marketplace | `https://libyafreelance.ly` |
-| Admin | `https://admin.libyafreelance.ly` |
-| API | `https://api.libyafreelance.ly` |
+| Marketplace | `https://libyanfreelance.ly` |
+| Admin | `https://admin.libyanfreelance.ly` |
+| API | `https://api.libyanfreelance.ly` |
 
 Local: `http://localhost:3000` · admin `http://localhost:3000/admin` · API `http://localhost:4000/api`
 

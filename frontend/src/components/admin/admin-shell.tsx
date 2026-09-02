@@ -70,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
     titleKey: 'navSystem',
     items: [
       { href: '/admin/settings', labelKey: 'settings' },
+      { href: '/admin/settings/mobile', labelKey: 'mobileSettingsTitle' },
       { href: '/admin/admins', labelKey: 'adminsPermissions' },
       { href: '/admin/security', labelKey: 'securityCenter' },
       { href: '/admin/audit', labelKey: 'audit' },

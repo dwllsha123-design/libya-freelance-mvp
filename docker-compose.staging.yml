@@ -48,8 +48,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-libya_staging}:${POSTGRES_PASSWORD}@postgres-staging:5432/${POSTGRES_DB:-libya_freelance_staging}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
-      FRONTEND_URL: ${FRONTEND_URL:-https://staging.libyafreelance.ly}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://staging.libyafreelance.ly}
+      FRONTEND_URL: ${FRONTEND_URL:-https://staging.libyanfreelance.ly}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://staging.libyanfreelance.ly}
       STORAGE_DRIVER: s3
       S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT}
       S3_REGION: ${S3_REGION:-auto}
@@ -71,7 +71,7 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-staging.libyafreelance.ly/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-staging.libyanfreelance.ly/api}
     environment:
       NODE_ENV: production
     ports:

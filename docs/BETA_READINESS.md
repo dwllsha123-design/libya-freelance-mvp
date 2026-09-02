@@ -47,8 +47,8 @@
 
 | Check | Status |
 |-------|--------|
-| `staging.libyafreelance.ly` | **NOT DEPLOYED** |
-| `api-staging.libyafreelance.ly` | **NOT DEPLOYED** |
+| `staging.libyanfreelance.ly` | **NOT DEPLOYED** |
+| `api-staging.libyanfreelance.ly` | **NOT DEPLOYED** |
 | HTTPS cookies / CORS / Socket.IO on real hosts | **NOT TESTED** |
 | Manual marketplace flow | **NOT TESTED** |
 | Responsive browser QA 390–1920 | **NOT TESTED** |

@@ -41,3 +41,6 @@ export const HERO_MAP_BG_PATH = '/images/libya-map-hero.jpg';
 
 /** للاستخدام في الروابط العامة (Open Graph، إلخ) */
 export const LOGO_PUBLIC_URL = LOGO_ICON_PATH;
+
+/** الصفحة الرسمية على فيسبوك */
+export const FACEBOOK_PAGE_URL = 'https://www.facebook.com/libyanfreelance';

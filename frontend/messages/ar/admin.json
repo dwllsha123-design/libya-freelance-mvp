@@ -462,5 +462,25 @@
     "RESOLVED_REFUND_CLIENT": "استرداد للعميل",
     "RESOLVED_RELEASE_FREELANCER": "تحرير للمستقل",
     "CLOSED": "مغلق"
-  }
+  },
+  "mobileSettingsTitle": "إعدادات الموبايل",
+  "mobileSettingsSubtitle": "حالة تطبيقات iOS وAndroid وروابط المتاجر — بدون أسرار التوقيع",
+  "mobileSettingsOwnerOnly": "إعدادات الموبايل متاحة لمالك المنصة فقط.",
+  "mobileStoreStatus": "حالة المتاجر والإصدارات",
+  "mobileNoSecretsHint": "لا تخزّن شهادات التوقيع أو مفاتيح Apple/Google هنا. الروابط العامة فقط.",
+  "iosAppStatus": "حالة تطبيق iOS",
+  "androidAppStatus": "حالة تطبيق Android",
+  "iosLatestVersion": "أحدث إصدار iOS",
+  "iosMinimumVersion": "الحد الأدنى المدعوم لـ iOS",
+  "androidLatestVersion": "أحدث إصدار Android",
+  "androidMinimumVersion": "الحد الأدنى المدعوم لـ Android",
+  "iosStoreUrl": "رابط App Store (https)",
+  "androidStoreUrl": "رابط Google Play (https)",
+  "mobileMaintenanceMessage": "رسالة صيانة الموبايل",
+  "mobileLegalUrls": "روابط الخصوصية والدعم",
+  "privacyPolicyUrl": "رابط سياسة الخصوصية",
+  "termsUrl": "رابط الشروط",
+  "supportUrl": "رابط الدعم",
+  "mobileFeatureFlags": "أعلام ميزات الموبايل",
+  "saveMobileSettings": "حفظ إعدادات الموبايل"
 }

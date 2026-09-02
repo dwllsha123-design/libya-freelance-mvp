@@ -6,8 +6,8 @@ Target URLs:
 
 | Service | URL |
 |---------|-----|
-| Frontend | `https://staging.libyafreelance.ly` |
-| API | `https://api-staging.libyafreelance.ly` |
+| Frontend | `https://staging.libyanfreelance.ly` |
+| API | `https://api-staging.libyanfreelance.ly` |
 
 Use actual assigned URLs if different.
 
@@ -52,8 +52,8 @@ PORT=4000
 DATABASE_URL=postgresql://...
 JWT_ACCESS_SECRET=<48+ random hex>
 JWT_REFRESH_SECRET=<48+ random hex>
-FRONTEND_URL=https://staging.libyafreelance.ly
-CORS_ORIGINS=https://staging.libyafreelance.ly
+FRONTEND_URL=https://staging.libyanfreelance.ly
+CORS_ORIGINS=https://staging.libyanfreelance.ly
 
 STORAGE_DRIVER=s3
 S3_ENDPOINT=...
@@ -122,8 +122,8 @@ Start: `node dist/main.js` with env from step 3.
 ## 7. Verify backend health
 
 ```bash
-curl https://api-staging.libyafreelance.ly/api/health
-curl https://api-staging.libyafreelance.ly/api/health/ready
+curl https://api-staging.libyanfreelance.ly/api/health
+curl https://api-staging.libyanfreelance.ly/api/health/ready
 ```
 
 Both must return **200** with healthy database.
@@ -133,7 +133,7 @@ Both must return **200** with healthy database.
 ## 8. Configure frontend
 
 ```env
-NEXT_PUBLIC_API_URL=https://api-staging.libyafreelance.ly/api
+NEXT_PUBLIC_API_URL=https://api-staging.libyanfreelance.ly/api
 ```
 
 Build and deploy:

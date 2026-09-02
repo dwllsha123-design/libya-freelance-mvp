@@ -14,21 +14,21 @@
 
 | Role | URL | Audience |
 |------|-----|----------|
-| Public marketplace | `https://libyafreelance.ly` | CLIENT + FREELANCER |
-| Admin control center | `https://admin.libyafreelance.ly` | SUPER_ADMIN + authorized ADMIN |
-| API + Socket.IO | `https://api.libyafreelance.ly` | Shared backend |
+| Public marketplace | `https://libyanfreelance.ly` | CLIENT + FREELANCER |
+| Admin control center | `https://admin.libyanfreelance.ly` | SUPER_ADMIN + authorized ADMIN |
+| API + Socket.IO | `https://api.libyanfreelance.ly` | Shared backend |
 
 **Do not deploy until DNS/hosting is configured.**
 
-### Public marketplace (`libyafreelance.ly`)
+### Public marketplace (`libyanfreelance.ly`)
 
 Registration, login, profiles, projects, proposals, messaging, portfolio, reviews, notifications.
 
 The platform-owner control center is **not** linked from public navigation.
 
-Production path `https://libyafreelance.ly/admin` redirects to `https://admin.libyafreelance.ly` (one control center only).
+Production path `https://libyanfreelance.ly/admin` redirects to `https://admin.libyanfreelance.ly` (one control center only).
 
-### Admin control center (`admin.libyafreelance.ly`)
+### Admin control center (`admin.libyanfreelance.ly`)
 
 Dedicated entry with branding **Libya Freelance — إدارة المنصة** and staff login only.
 
@@ -65,7 +65,7 @@ Staff permissions (granted only by SUPER_ADMIN): `MANAGE_USERS`, `MANAGE_PROJECT
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_ACCESS_SECRET` | ≥ 32 random characters |
 | `JWT_REFRESH_SECRET` | ≥ 32 random characters (different from access) |
-| `FRONTEND_URL` | Public marketplace origin (`https://libyafreelance.ly`) |
+| `FRONTEND_URL` | Public marketplace origin (`https://libyanfreelance.ly`) |
 | `CORS_ORIGINS` | Must include marketplace **and** admin origins |
 | `NODE_ENV` | `production` |
 | `STORAGE_DRIVER` | Must be `s3` in production |
@@ -83,18 +83,18 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 | Variable | Example |
 |----------|---------|
-| `NEXT_PUBLIC_SITE_URL` | `https://libyafreelance.ly` |
-| `NEXT_PUBLIC_ADMIN_URL` | `https://admin.libyafreelance.ly` |
-| `NEXT_PUBLIC_API_URL` | `https://api.libyafreelance.ly/api` |
-| `NEXT_PUBLIC_SOCKET_URL` | `https://api.libyafreelance.ly` |
+| `NEXT_PUBLIC_SITE_URL` | `https://libyanfreelance.ly` |
+| `NEXT_PUBLIC_ADMIN_URL` | `https://admin.libyanfreelance.ly` |
+| `NEXT_PUBLIC_API_URL` | `https://api.libyanfreelance.ly/api` |
+| `NEXT_PUBLIC_SOCKET_URL` | `https://api.libyanfreelance.ly` |
 
 Template: `frontend/.env.production.example`
 
 ### Cookie / CORS
 
 ```env
-FRONTEND_URL=https://libyafreelance.ly
-CORS_ORIGINS=https://libyafreelance.ly,https://admin.libyafreelance.ly
+FRONTEND_URL=https://libyanfreelance.ly
+CORS_ORIGINS=https://libyanfreelance.ly,https://admin.libyanfreelance.ly
 ```
 
 Refresh cookie: `secure=true`, `sameSite=strict`, `path=/api/auth` on the API host.
@@ -103,7 +103,7 @@ Architecture remains ready for future MFA. No public admin registration.
 
 ## Production deploy checklist (when DNS/hosting ready)
 
-1. DNS: apex/`libyafreelance.ly`, `admin`, `api` (+ optional `www` → apex)
+1. DNS: apex/`libyanfreelance.ly`, `admin`, `api` (+ optional `www` → apex)
 2. TLS for all hostnames
 3. `cp .env.production.example .env.production` and fill secrets
 4. Migrations + reference seed (**never** `prisma:seed:demo`):
@@ -117,14 +117,14 @@ Architecture remains ready for future MFA. No public admin registration.
 6. Create owner:
    ```bash
    cd backend
-   npm run admin:create -- --super true --email owner@libyafreelance.ly --password "..." --firstName مالك --lastName المنصة
+   npm run admin:create -- --super true --email owner@libyanfreelance.ly --password "..." --firstName مالك --lastName المنصة
    ```
 7. Smoke:
-   - Marketplace loads on `https://libyafreelance.ly`
-   - Admin login on `https://admin.libyafreelance.ly` (no public register)
-   - `https://libyafreelance.ly/admin` redirects to admin host
-   - `GET https://api.libyafreelance.ly/api/health`
-   - `GET https://api.libyafreelance.ly/api/platform/commission-config`
+   - Marketplace loads on `https://libyanfreelance.ly`
+   - Admin login on `https://admin.libyanfreelance.ly` (no public register)
+   - `https://libyanfreelance.ly/admin` redirects to admin host
+   - `GET https://api.libyanfreelance.ly/api/health`
+   - `GET https://api.libyanfreelance.ly/api/platform/commission-config`
 
 ### Do not upload / commit
 
