@@ -1,11 +1,11 @@
 'use client';
 
-import Image, { type StaticImageData } from 'next/image';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import logoIcon from '@/assets/brand/logo-icon.png';
 
-const LOGO_IMAGE: StaticImageData = logoIcon;
+const LOGO_ICON_SRC = '/logo-icon.png';
+const LOGO_ICON_SIZE = 40;
 
 type LogoProps = {
   showName?: boolean;
@@ -28,10 +28,10 @@ export function Logo({
   const content = (
     <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
       <Image
-        src={LOGO_IMAGE}
+        src={LOGO_ICON_SRC}
         alt={t('name')}
-        width={LOGO_IMAGE.width}
-        height={LOGO_IMAGE.height}
+        width={LOGO_ICON_SIZE}
+        height={LOGO_ICON_SIZE}
         sizes="40px"
         className={`h-10 w-10 shrink-0 object-contain ${iconClassName}`}
         priority
