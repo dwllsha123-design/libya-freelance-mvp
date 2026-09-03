@@ -203,7 +203,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
         {/* Brand */}
-        <div className="flex min-w-0 shrink-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none lg:shrink-0">
           <button
             type="button"
             className="grid size-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft lg:hidden"
@@ -213,9 +213,11 @@ export function Navbar() {
           >
             {mobileOpen ? '✕' : '☰'}
           </button>
-          <div className="min-w-0 max-w-[9.5rem] overflow-hidden sm:max-w-[13rem] lg:max-w-none">
-            <Logo className="[&_span.font-display]:truncate" />
-          </div>
+          <Logo
+            compact
+            iconClassName="size-8 sm:size-10"
+            nameClassName="text-[0.95rem] sm:text-[1.05rem]"
+          />
         </div>
 
         {/* Desktop nav — centered, no wrap */}

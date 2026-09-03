@@ -9,6 +9,8 @@ const LOGO_ICON_SIZE = 40;
 
 type LogoProps = {
   showName?: boolean;
+  /** Plain short name (fits mobile nav). Styled keeps kashida for hero/footer. */
+  compact?: boolean;
   className?: string;
   nameClassName?: string;
   iconClassName?: string;
@@ -17,18 +19,24 @@ type LogoProps = {
   variant?: 'default' | 'mark';
 };
 
-function BrandName({ className = '' }: { className?: string }) {
+function BrandName({
+  className = '',
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
   const t = useTranslations('brand');
   const locale = useLocale();
-  const styled = t('nameStyled');
+  const label = compact ? t('name') : t('nameStyled');
 
   if (locale === 'ar') {
-    const parts = styled.split(/\s+/);
-    const first = parts[0] ?? styled;
+    const parts = label.split(/\s+/);
+    const first = parts[0] ?? label;
     const rest = parts.slice(1).join(' ');
     return (
       <span
-        className={`font-display text-[1.05rem] font-bold leading-none tracking-tight ${className}`}
+        className={`font-display whitespace-nowrap text-[1.05rem] font-bold leading-none tracking-tight ${className}`}
       >
         <span className="text-ink">{first}</span>
         {rest ? <span className="text-ember"> {rest}</span> : null}
@@ -38,15 +46,16 @@ function BrandName({ className = '' }: { className?: string }) {
 
   return (
     <span
-      className={`font-display text-[1.05rem] font-bold leading-none tracking-tight text-ink ${className}`}
+      className={`font-display whitespace-nowrap text-[1.05rem] font-bold leading-none tracking-tight text-ink ${className}`}
     >
-      {styled}
+      {label}
     </span>
   );
 }
 
 export function Logo({
   showName = true,
+  compact = false,
   className = '',
   nameClassName = '',
   iconClassName = '',
@@ -57,7 +66,7 @@ export function Logo({
   const src = variant === 'mark' ? DESIGN_LOGO_MARK_PATH : LOGO_ICON_PATH;
 
   const content = (
-    <span className={`inline-flex min-w-0 max-w-full items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex max-w-full items-center gap-2 ${className}`}>
       <Image
         src={src}
         alt={t('name')}
@@ -68,7 +77,7 @@ export function Logo({
         priority
         unoptimized
       />
-      {showName ? <BrandName className={`min-w-0 truncate ${nameClassName}`} /> : null}
+      {showName ? <BrandName compact={compact} className={nameClassName} /> : null}
     </span>
   );
 
