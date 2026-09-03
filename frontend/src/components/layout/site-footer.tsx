@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Logo } from '@/components/brand/logo';
-import { FACEBOOK_PAGE_URL, PLATFORM_FLAG } from '@/lib/branding';
+import {
+  DESIGN_MARBLE_PATH,
+  FACEBOOK_PAGE_URL,
+  PLATFORM_FLAG,
+} from '@/lib/branding';
 import { LIBYAN_CITIES, MARKETPLACE_CATEGORIES } from '@/lib/marketplace-content';
 import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-content';
 import { apiRequest } from '@/lib/api';
@@ -43,17 +47,24 @@ export function SiteFooter() {
   }, []);
 
   return (
-    <footer className="border-t border-outline-variant/40 bg-secondary text-white">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-sm">
-            <Logo
-              href="/"
-              nameClassName="!text-white"
-              iconClassName="rounded-lg bg-white p-0.5"
-            />
-            <p className="mt-3 text-sm text-slate-300">{tBrand('tagline')}</p>
-            <p className="mt-2 text-xs text-slate-400">
+    <footer className="relative mt-16 overflow-hidden border-t border-line/70 bg-cream-deep/40 sm:mt-24">
+      <div
+        className="howto-marble pointer-events-none absolute inset-x-0 top-0 h-40 bg-cover bg-center opacity-20"
+        style={{
+          backgroundImage: `url(${DESIGN_MARBLE_PATH})`,
+          maskImage: 'linear-gradient(to bottom, black, transparent)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)',
+        }}
+        aria-hidden
+      />
+      <div className="page-gutter relative mx-auto max-w-6xl py-10 sm:py-14">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div>
+            <Logo />
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-soft">
+              {tBrand('tagline')}
+            </p>
+            <p className="mt-2 text-xs text-ink-soft/80">
               {PLATFORM_FLAG} {tCommon('forLibyanTalent')} — {tCommon('country')}
             </p>
             <div className="mt-4 flex items-center gap-2">
@@ -63,7 +74,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 aria-label={t('facebookPage')}
                 title={t('facebookPage')}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#1877F2] hover:text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-cream text-ink transition hover:border-[#1877F2] hover:bg-[#1877F2] hover:text-white"
               >
                 <svg
                   className="h-5 w-5"
@@ -76,69 +87,126 @@ export function SiteFooter() {
               </a>
             </div>
             <div className="mt-5">
-              <h3 className="text-sm font-semibold">{t('mobileApps')}</h3>
+              <h3 className="font-display text-sm font-semibold text-ink">{t('mobileApps')}</h3>
               <div className="mt-3">
                 <StoreBadgePair config={appConfig} locale={locale} compact />
               </div>
             </div>
           </div>
 
-          <div className="grid flex-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <h3 className="text-sm font-semibold">{t('platform')}</h3>
-              <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                <li><Link href="/projects" className="hover:text-white">{t('browseProjects')}</Link></li>
-                <li><Link href="/freelancers" className="hover:text-white">{t('findFreelancers')}</Link></li>
-                <li><Link href="/search" className="hover:text-white">{t('advancedSearch')}</Link></li>
-                <li>
-                  <Link href="/register?role=CLIENT&next=/dashboard/projects/new" className="hover:text-white">
-                    {t('postProject')}
+          <div>
+            <h4 className="font-display text-sm font-semibold text-ink">{t('platform')}</h4>
+            <ul className="mt-4 space-y-2.5">
+              <li>
+                <Link href="/projects" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('browseProjects')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/freelancers" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('findFreelancers')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/search" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('advancedSearch')}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/register?role=CLIENT&next=/dashboard/projects/new"
+                  className="text-sm text-ink-soft transition-colors hover:text-ember"
+                >
+                  {t('postProject')}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-display text-sm font-semibold text-ink">{t('resources')}</h4>
+            <ul className="mt-4 space-y-2.5">
+              <li>
+                <Link href="/how-it-works" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('howItWorks')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/escrow" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('escrow')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/help" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('helpCenter')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/sitemap" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('sitemap')}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-display text-sm font-semibold text-ink">{t('company')}</h4>
+            <ul className="mt-4 space-y-2.5">
+              <li>
+                <Link href="/about" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('about')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('contact')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('privacy')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                  {t('terms')}
+                </Link>
+              </li>
+            </ul>
+            <h4 className="mt-6 font-display text-sm font-semibold text-ink">{t('libyanCities')}</h4>
+            <ul className="mt-4 space-y-2.5">
+              {LIBYAN_CITIES.slice(0, 4).map((city) => (
+                <li key={city.slug}>
+                  <Link
+                    href={`/cities/${city.slug}`}
+                    className="text-sm text-ink-soft transition-colors hover:text-ember"
+                  >
+                    {getLocalizedCityName(city, locale)}
                   </Link>
                 </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">{t('resources')}</h3>
-              <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                <li><Link href="/how-it-works" className="hover:text-white">{t('howItWorks')}</Link></li>
-                <li><Link href="/escrow" className="hover:text-white">{t('escrow')}</Link></li>
-                <li><Link href="/help" className="hover:text-white">{t('helpCenter')}</Link></li>
-                <li><Link href="/sitemap" className="hover:text-white">{t('sitemap')}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">{t('company')}</h3>
-              <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                <li><Link href="/about" className="hover:text-white">{t('about')}</Link></li>
-                <li><Link href="/contact" className="hover:text-white">{t('contact')}</Link></li>
-                <li><Link href="/privacy" className="hover:text-white">{t('privacy')}</Link></li>
-                <li><Link href="/terms" className="hover:text-white">{t('terms')}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">{t('libyanCities')}</h3>
-              <ul className="mt-3 space-y-2 text-sm text-slate-300">
-                {LIBYAN_CITIES.slice(0, 6).map((city) => (
-                  <li key={city.slug}>
-                    <Link href={`/cities/${city.slug}`} className="hover:text-white">
-                      {getLocalizedCityName(city, locale)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              ))}
+            </ul>
           </div>
         </div>
-        <div className="mt-8 flex flex-wrap gap-2 border-t border-white/10 pt-6">
+
+        <div className="mt-10 flex flex-wrap gap-2 border-t border-line/70 pt-6">
           {MARKETPLACE_CATEGORIES.slice(0, 6).map((cat) => (
-            <Link key={cat.slug} href={`/categories/${cat.slug}`} className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/20">
+            <Link
+              key={cat.slug}
+              href={`/categories/${cat.slug}`}
+              className="rounded-full border border-line bg-cream/70 px-3 py-1 text-xs text-ink-soft transition hover:border-ember/40 hover:text-ember"
+            >
               {getLocalizedCategoryName(cat, locale)}
             </Link>
           ))}
         </div>
-        <div className="mt-6 flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {tBrand('name')}. {t('copyright')} {PLATFORM_FLAG}</p>
-          <p>{tCommon('paymentsInLyd')}</p>
+      </div>
+
+      <div className="border-t border-line/70">
+        <div className="page-gutter mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 py-5 text-xs text-ink-soft sm:flex-row">
+          <span>
+            © {new Date().getFullYear()} {tBrand('name')} — {t('copyright')} {PLATFORM_FLAG}
+          </span>
         </div>
       </div>
     </footer>

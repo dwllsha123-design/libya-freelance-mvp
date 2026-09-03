@@ -4,7 +4,14 @@ import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { AuthCard } from '@/components/auth/auth-card';
+import {
+  AuthCard,
+  authErrorClassName,
+  authFieldClassName,
+  authLabelClassName,
+  authLinkClassName,
+  authSubmitClassName,
+} from '@/components/auth/auth-card';
 import { useAuth } from '@/contexts/auth-context';
 import { createRegisterSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
@@ -73,7 +80,7 @@ function RegisterForm() {
           {t('hasAccount')}{' '}
           <Link
             href={buildAuthHref('/login', { next: nextPath ?? undefined })}
-            className="font-semibold text-primary"
+            className={authLinkClassName}
           >
             {t('loginButton')}
           </Link>
@@ -81,37 +88,37 @@ function RegisterForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-        ) : null}
+        {error ? <div className={authErrorClassName}>{error}</div> : null}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="firstName" className="mb-1 block text-sm font-medium">
+            <label htmlFor="firstName" className={authLabelClassName}>
               {t('firstName')}
             </label>
             <input
               id="firstName"
               name="firstName"
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+              autoComplete="given-name"
+              className={authFieldClassName}
             />
           </div>
           <div>
-            <label htmlFor="lastName" className="mb-1 block text-sm font-medium">
+            <label htmlFor="lastName" className={authLabelClassName}>
               {t('lastName')}
             </label>
             <input
               id="lastName"
               name="lastName"
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+              autoComplete="family-name"
+              className={authFieldClassName}
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
+          <label htmlFor="email" className={authLabelClassName}>
             {t('email')}
           </label>
           <input
@@ -119,20 +126,21 @@ function RegisterForm() {
             name="email"
             type="email"
             required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+            autoComplete="email"
+            className={authFieldClassName}
           />
         </div>
 
         <div>
-          <span className="mb-2 block text-sm font-medium">{t('chooseRole')}</span>
+          <span className={authLabelClassName}>{t('chooseRole')}</span>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setRole('FREELANCER')}
-              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                 role === 'FREELANCER'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-slate-300'
+                  ? 'border-ember bg-ember/10 text-ember'
+                  : 'border-line bg-cream text-ink-soft hover:border-ink/30'
               }`}
             >
               {t('roleFreelancer')}
@@ -140,10 +148,10 @@ function RegisterForm() {
             <button
               type="button"
               onClick={() => setRole('CLIENT')}
-              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                 role === 'CLIENT'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-slate-300'
+                  ? 'border-ember bg-ember/10 text-ember'
+                  : 'border-line bg-cream text-ink-soft hover:border-ink/30'
               }`}
             >
               {t('roleClient')}
@@ -152,7 +160,7 @@ function RegisterForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
+          <label htmlFor="password" className={authLabelClassName}>
             {t('password')}
           </label>
           <input
@@ -160,12 +168,13 @@ function RegisterForm() {
             name="password"
             type="password"
             required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+            autoComplete="new-password"
+            className={authFieldClassName}
           />
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">
+          <label htmlFor="confirmPassword" className={authLabelClassName}>
             {t('confirmPassword')}
           </label>
           <input
@@ -173,15 +182,12 @@ function RegisterForm() {
             name="confirmPassword"
             type="password"
             required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+            autoComplete="new-password"
+            className={authFieldClassName}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={isSubmitting} className={authSubmitClassName}>
           {isSubmitting ? t('registerSubmitting') : t('registerButton')}
         </button>
       </form>
@@ -194,7 +200,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12">
-      <Suspense fallback={<div className="text-slate-500">{tCommon('loadingPage')}</div>}>
+      <Suspense fallback={<div className="text-ink-soft">{tCommon('loadingPage')}</div>}>
         <RegisterForm />
       </Suspense>
     </div>

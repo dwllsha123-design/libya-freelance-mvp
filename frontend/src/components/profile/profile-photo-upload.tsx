@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { API_BASE_URL, ApiError } from '@/lib/api';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+// Must mirror PROFILE_MIME_TYPES on the API. Uploads are re-encoded to WebP
+// server-side, so these are input formats only.
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 2 * 1024 * 1024;
 
 interface ProfilePhotoUploadProps {

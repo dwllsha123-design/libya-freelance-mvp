@@ -149,5 +149,12 @@
   "freelancersOnlySubmit": "التقديم متاح للمستقلين فقط",
   "aboutClient": "عن العميل",
   "detailNotFound": "مشروع غير موجود",
-  "detailMetaFallback": "مشروع"
+  "detailMetaFallback": "مشروع",
+  "budgetLabel": "الميزانية",
+  "experienceLabel": "مستوى الخبرة",
+  "workModeLabel": "نمط العمل",
+  "proposalsLabel": "التقديمات",
+  "applyCostLabel": "تكلفة التقديم",
+  "unitsShort": "نقطة",
+  "balanceAvailable": "لديك {balance} نقطة متاحة"
 }

@@ -51,6 +51,7 @@ export default function ProjectsDirectoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [view, setView] = useState<'list' | 'grid'>('list');
 
   const activeFilterCount = countActiveFilters(filters);
 
@@ -116,12 +117,12 @@ export default function ProjectsDirectoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:py-10">
-      <h1 className="text-3xl font-bold text-on-surface">{t('browseTitle')}</h1>
+    <div className="page-gutter mx-auto max-w-6xl py-8 md:py-10">
+      <h1 className="font-display text-3xl font-bold text-ink">{t('browseTitle')}</h1>
 
       <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start">
         <aside className="hidden lg:block lg:w-72 lg:shrink-0">
-          <div className="sticky top-24 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="sticky top-24 rounded-2xl border border-line bg-cream p-4 shadow-[0_8px_24px_-16px_rgba(21,32,60,0.25)]">
             <ProjectFiltersSidebar
               filters={filters}
               categories={categories}
@@ -137,17 +138,17 @@ export default function ProjectsDirectoryPage() {
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
               type="button"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-ink/40"
               aria-label={t('closeFilters')}
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto bg-surface-container-low p-4 shadow-xl">
+            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto border-s border-line bg-cream p-4 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-bold">{t('filterProjects')}</h2>
+                <h2 className="font-display font-bold text-ink">{t('filterProjects')}</h2>
                 <button
                   type="button"
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="text-sm text-slate-600"
+                  className="text-sm text-ink-soft"
                 >
                   {tCommon('close')}
                 </button>
@@ -165,9 +166,24 @@ export default function ProjectsDirectoryPage() {
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-slate-400">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex overflow-hidden rounded-xl border border-line">
+              {(['list', 'grid'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    view === v ? 'bg-ink text-cream' : 'bg-cream text-ink-soft hover:bg-cream-deep'
+                  }`}
+                  aria-pressed={view === v}
+                >
+                  {v === 'list' ? '☰' : '▦'}
+                </button>
+              ))}
+            </div>
+            <div className="relative min-w-0 flex-1">
+              <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-ink-soft">
                 ⌕
               </span>
               <input
@@ -179,24 +195,24 @@ export default function ProjectsDirectoryPage() {
                   if (e.key === 'Enter') submitSearch();
                 }}
                 placeholder={t('searchJobsPlaceholder')}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pe-4 ps-9 text-sm shadow-sm"
+                className="w-full rounded-xl border border-line bg-cream py-2.5 pe-4 ps-9 text-sm shadow-sm outline-none ring-ember/30 focus:ring-2"
               />
             </div>
             <button
               type="button"
               onClick={submitSearch}
-              className="rounded-xl bg-on-surface px-4 py-2 text-sm text-white"
+              className="rounded-xl bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-ember-deep"
             >
               {tCommon('search')}
             </button>
             <button
               type="button"
-              className="relative rounded-lg border bg-white px-4 py-2 text-sm lg:hidden"
+              className="relative rounded-xl border border-line bg-cream px-4 py-2 text-sm text-ink lg:hidden"
               onClick={() => setMobileFiltersOpen(true)}
             >
               {t('filter')}
               {activeFilterCount > 0 ? (
-                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-white">
+                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ember text-xs text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -204,21 +220,21 @@ export default function ProjectsDirectoryPage() {
           </div>
 
           {isLoading ? (
-            <p className="mt-8 text-center text-slate-500">{tCommon('loadingPage')}</p>
+            <p className="mt-8 text-center text-ink-soft">{tCommon('loadingPage')}</p>
           ) : null}
 
           {error ? (
-            <p className="mt-8 text-center text-red-600">{error}</p>
+            <p className="mt-8 text-center text-error">{error}</p>
           ) : null}
 
           {!isLoading && !error && data?.items.length === 0 ? (
-            <div className="mt-8 rounded-xl border bg-white p-8 text-center">
-              <p className="text-slate-600">{t('noProjectsFiltered')}</p>
+            <div className="mt-8 rounded-2xl border border-line bg-cream p-8 text-center">
+              <p className="text-ink-soft">{t('noProjectsFiltered')}</p>
               {activeFilterCount > 0 ? (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="mt-4 text-sm text-primary hover:underline"
+                  className="mt-4 text-sm font-semibold text-ember hover:underline"
                 >
                   {tCommon('clearFilters')}
                 </button>
@@ -226,29 +242,35 @@ export default function ProjectsDirectoryPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 space-y-4">
+          <div
+            className={`mt-6 ${
+              view === 'grid' ? 'grid gap-4 sm:grid-cols-2' : 'space-y-4'
+            }`}
+          >
             {data?.items.map((project) => (
               <Link
                 key={project.slug}
                 href={`/projects/${project.slug}`}
-                className="block rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+                className="group block rounded-2xl border border-line bg-cream p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_22px_50px_-24px_rgba(29,24,17,0.35)]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <h2 className="text-lg font-bold text-primary">{project.title}</h2>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <h2 className="font-display text-lg font-bold text-ink group-hover:text-ember">
+                    {project.title}
+                  </h2>
+                  <span className="shrink-0 rounded-full bg-ember/10 px-3 py-1 text-xs font-semibold text-ember">
                     {t('unitsToApply', { cost: 10 })}
                   </span>
                 </div>
-                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">
+                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-soft">
                   {project.description}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
                   <span>
                     {project.budgetType === 'FIXED'
                       ? t('budgetTypeFixed')
                       : t('budgetTypeHourly')}
                   </span>
-                  <span className="font-medium text-on-surface">
+                  <span className="font-mono font-medium text-ink">
                     {formatBudgetRange(
                       project.budgetMin,
                       project.budgetMax,
@@ -287,7 +309,7 @@ export default function ProjectsDirectoryPage() {
                   {project.skills.slice(0, 6).map((s) => (
                     <span
                       key={s.slug}
-                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700"
+                      className="rounded-full border border-line bg-cream-deep/60 px-2.5 py-0.5 text-xs text-ink-soft"
                     >
                       {s.name}
                     </span>
@@ -307,11 +329,11 @@ export default function ProjectsDirectoryPage() {
                     page: String(Math.max(1, Number(filters.page) - 1)),
                   })
                 }
-                className="rounded border bg-white px-4 py-2 text-sm disabled:opacity-40"
+                className="rounded-full border border-line bg-cream px-4 py-2 text-sm text-ink disabled:opacity-40"
               >
                 {tCommon('previous')}
               </button>
-              <span className="px-4 py-2 text-sm">
+              <span className="px-4 py-2 text-sm text-ink-soft">
                 {filters.page} {tCommon('of')} {data.totalPages}
               </span>
               <button
@@ -322,7 +344,7 @@ export default function ProjectsDirectoryPage() {
                     page: String(Number(filters.page) + 1),
                   })
                 }
-                className="rounded border bg-white px-4 py-2 text-sm disabled:opacity-40"
+                className="rounded-full border border-line bg-cream px-4 py-2 text-sm text-ink disabled:opacity-40"
               >
                 {tCommon('next')}
               </button>

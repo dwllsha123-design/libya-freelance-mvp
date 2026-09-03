@@ -6,21 +6,21 @@ import {
 } from '../src/storage/storage-upload.util.js';
 
 describe('storage-upload.util', () => {
-  it('builds safe profile object keys', () => {
-    const key = buildProfileObjectKey('user-1', 'image/png');
-    expect(key).toMatch(/^profile-images\/user-1\/[0-9a-f-]+\.png$/);
+  it('builds safe profile object keys, always .webp', () => {
+    const key = buildProfileObjectKey('user-1');
+    expect(key).toMatch(/^profile-images\/user-1\/[0-9a-f-]+\.webp$/);
     expect(key).not.toContain('..');
   });
 
-  it('builds safe portfolio object keys', () => {
-    const key = buildPortfolioObjectKey('user-1', 'item-1', 'image/jpeg');
-    expect(key).toMatch(/^portfolio\/user-1\/item-1\/[0-9a-f-]+\.jpg$/);
+  it('builds safe portfolio object keys, always .webp', () => {
+    const key = buildPortfolioObjectKey('user-1', 'item-1');
+    expect(key).toMatch(/^portfolio\/user-1\/item-1\/[0-9a-f-]+\.webp$/);
   });
 
   it('rejects unsafe path segments', () => {
-    expect(() => buildProfileObjectKey('../evil', 'image/png')).toThrow();
+    expect(() => buildProfileObjectKey('../evil')).toThrow();
     expect(() =>
-      buildPortfolioObjectKey('user', '../../etc/passwd', 'image/png'),
+      buildPortfolioObjectKey('user', '../../etc/passwd'),
     ).toThrow();
   });
 

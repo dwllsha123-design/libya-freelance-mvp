@@ -71,18 +71,18 @@ function StoreBadge({
 
   const Icon = kind === 'ios' ? AppleIcon : PlayIcon;
   const className = compact
-    ? 'inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white'
-    : 'inline-flex min-w-[11rem] items-center gap-3 rounded-2xl border border-outline-variant/50 bg-on-surface px-4 py-3 text-white shadow-sm';
+    ? 'inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink shadow-sm'
+    : 'inline-flex min-w-[11rem] items-center gap-3 rounded-2xl border border-line bg-ink px-4 py-3 text-cream shadow-sm';
 
   const inner = (
     <>
-      <Icon className={compact ? 'h-5 w-5' : 'h-8 w-8'} />
+      <Icon className={compact ? 'h-5 w-5 shrink-0 text-ink' : 'h-8 w-8 shrink-0 text-cream'} />
       <span className="text-start leading-tight">
-        <span className={`block font-semibold ${compact ? 'text-xs' : 'text-sm'}`}>
+        <span className={`block font-semibold ${compact ? 'text-xs text-ink' : 'text-sm text-cream'}`}>
           {title}
         </span>
         <span
-          className={`block ${compact ? 'text-[11px] text-slate-300' : 'text-xs text-white/80'}`}
+          className={`block ${compact ? 'text-[11px] text-ink-soft' : 'text-xs text-cream/75'}`}
         >
           {badge}
         </span>

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { StorageService } from './storage.interface.js';
+import { toPortfolioWebp, toProfileWebp } from './image-webp.util.js';
 import {
   PORTFOLIO_MAX_SIZE,
   PORTFOLIO_MIME_TYPES,
@@ -40,12 +41,13 @@ export class LocalStorageService implements StorageService {
     file: Express.Multer.File,
   ): Promise<string> {
     validateImageUpload(file, PROFILE_MIME_TYPES, PROFILE_MAX_SIZE);
-    const key = buildProfileObjectKey(userId, file.mimetype);
+    const webp = await toProfileWebp(file.buffer);
+    const key = buildProfileObjectKey(userId);
     const relative = key.replace(/^profile-images\//, '');
     const [segmentUserId, filename] = relative.split('/');
     const userDir = join(this.profileDir, segmentUserId);
     await mkdir(userDir, { recursive: true });
-    await writeFile(join(userDir, filename), file.buffer);
+    await writeFile(join(userDir, filename), webp);
     return `${this.profileBaseUrl}/${segmentUserId}/${filename}`;
   }
 
@@ -55,13 +57,14 @@ export class LocalStorageService implements StorageService {
     file: Express.Multer.File,
   ): Promise<string> {
     validateImageUpload(file, PORTFOLIO_MIME_TYPES, PORTFOLIO_MAX_SIZE);
-    const key = buildPortfolioObjectKey(userId, portfolioItemId, file.mimetype);
+    const webp = await toPortfolioWebp(file.buffer);
+    const key = buildPortfolioObjectKey(userId, portfolioItemId);
     const relative = key.replace(/^portfolio\//, '');
     const parts = relative.split('/');
     const itemDir = join(this.portfolioDir, ...parts.slice(0, -1));
     const filename = parts[parts.length - 1]!;
     await mkdir(itemDir, { recursive: true });
-    await writeFile(join(itemDir, filename), file.buffer);
+    await writeFile(join(itemDir, filename), webp);
     return `${this.portfolioBaseUrl}/${relative}`;
   }
 

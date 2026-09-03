@@ -25,7 +25,7 @@ export function NavSearch() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface-variant"
+        className="flex items-center gap-2 rounded-full border border-line bg-cream-deep/60 px-3 py-2 text-sm text-ink-soft transition hover:bg-cream-deep"
       >
         <span>🔍</span>
         <span>{t('search')}</span>

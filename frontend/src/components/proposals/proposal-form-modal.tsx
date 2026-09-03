@@ -48,8 +48,8 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-      <h3 className="mb-4 border-b border-slate-100 pb-3 text-base font-bold text-on-surface">
+    <section className="rounded-2xl border border-line bg-cream p-5 shadow-sm sm:p-6">
+      <h3 className="mb-4 border-b border-line/70 pb-3 font-display text-base font-bold text-ink">
         {title}
       </h3>
       {children}
@@ -59,9 +59,9 @@ function SectionCard({
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-slate-50 py-2.5 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="text-sm font-medium text-on-surface">{value}</dd>
+    <div className="flex flex-col gap-0.5 border-b border-line/40 py-2.5 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <dt className="text-sm text-ink-soft">{label}</dt>
+      <dd className="text-sm font-medium text-ink">{value}</dd>
     </div>
   );
 }
@@ -198,7 +198,7 @@ function ProposalFormModalBody({
     <div className="fixed inset-0 z-50 flex flex-col">
       <button
         type="button"
-        className="absolute inset-0 bg-black/45"
+        className="absolute inset-0 bg-ink/50"
         aria-label={tCommon('closeDialog')}
         onClick={onClose}
       />
@@ -207,25 +207,25 @@ function ProposalFormModalBody({
         role="dialog"
         aria-modal="true"
         aria-labelledby="proposal-submit-title"
-        className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col bg-[#f3f4f5] shadow-2xl sm:my-4 sm:h-[min(96vh,920px)] sm:rounded-2xl"
+        className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col bg-cream-deep/80 shadow-2xl sm:my-4 sm:h-[min(96vh,920px)] sm:rounded-3xl"
       >
-        <header className="shrink-0 border-b border-slate-200/80 bg-white px-4 py-4 sm:rounded-t-2xl sm:px-6">
+        <header className="shrink-0 border-b border-line bg-cream px-4 py-4 sm:rounded-t-3xl sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2
                 id="proposal-submit-title"
-                className="text-xl font-bold text-on-surface"
+                className="font-display text-xl font-bold text-ink"
               >
                 {t('submit')}
               </h2>
-              <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+              <p className="mt-1 line-clamp-2 text-sm text-ink-soft">
                 {project.title}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-on-surface"
+              className="rounded-full px-2 py-1 text-sm text-ink-soft hover:bg-cream-deep hover:text-ink"
             >
               {tCommon('close')}
             </button>
@@ -239,7 +239,7 @@ function ProposalFormModalBody({
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
             {/* 1. إعدادات التقديم */}
             <SectionCard title={t('sectionSettings')}>
-              <p className="text-sm text-on-surface">
+              <p className="text-sm text-ink">
                 {t('settingsRequires', { cost: submitCost })}
               </p>
               {balance == null ? (
@@ -251,7 +251,7 @@ function ProposalFormModalBody({
                   className={`mt-2 text-sm ${
                     remainingAfterSubmit != null && remainingAfterSubmit < 0
                       ? 'font-medium text-red-600'
-                      : 'text-slate-600'
+                      : 'text-ink-soft'
                   }`}
                 >
                   {t('settingsRemaining', {
@@ -264,7 +264,7 @@ function ProposalFormModalBody({
                   ) : null}
                 </p>
               )}
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-ink-soft">
                 {t('pointsCost', { cost: submitCost })}
                 {balance != null
                   ? ` · ${balance.toLocaleString(numberLocale)} ${t('pointsUnit')}`
@@ -303,14 +303,14 @@ function ProposalFormModalBody({
               </dl>
               {project.skills.length > 0 ? (
                 <div className="mt-3">
-                  <p className="mb-2 text-sm text-slate-500">
+                  <p className="mb-2 text-sm text-ink-soft">
                     {t('detailSkills')}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {project.skills.map((s) => (
                       <span
                         key={s.slug}
-                        className="rounded-full bg-[#f3f4f5] px-2.5 py-0.5 text-xs text-slate-700"
+                        className="rounded-full bg-cream-deep/50 px-2.5 py-0.5 text-xs text-ink"
                       >
                         {s.name}
                       </span>
@@ -322,7 +322,7 @@ function ProposalFormModalBody({
 
             {/* 3. التسليم والسعر */}
             <SectionCard title={t('sectionDeliveryPrice')}>
-              <label className="block text-sm font-medium text-on-surface">
+              <label className="block text-sm font-medium text-ink">
                 {t('estimatedDaysLabel')}
                 <input
                   type="number"
@@ -330,14 +330,14 @@ function ProposalFormModalBody({
                   max={365}
                   value={estimatedDurationDays}
                   onChange={(e) => setEstimatedDurationDays(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="mt-1.5 w-full rounded-lg border border-line bg-cream px-3 py-2.5 text-sm outline-none focus:border-ember focus:ring-1 focus:ring-ember"
                 />
-                <span className="mt-1 block text-xs font-normal text-slate-500">
+                <span className="mt-1 block text-xs font-normal text-ink-soft">
                   {t('estimatedDaysHint')}
                 </span>
               </label>
 
-              <label className="mt-4 block text-sm font-medium text-on-surface">
+              <label className="mt-4 block text-sm font-medium text-ink">
                 {t('proposedPriceLabel')}
                 <div className="relative mt-1.5">
                   <input
@@ -346,13 +346,13 @@ function ProposalFormModalBody({
                     step="1"
                     value={proposedPrice}
                     onChange={(e) => setProposedPrice(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pe-14 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-lg border border-line bg-cream px-3 py-2.5 pe-14 text-sm outline-none focus:border-ember focus:ring-1 focus:ring-ember"
                   />
-                  <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs font-semibold text-slate-500">
+                  <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-xs font-semibold text-ink-soft">
                     د.ل
                   </span>
                 </div>
-                <span className="mt-1 block text-xs font-normal text-slate-500">
+                <span className="mt-1 block text-xs font-normal text-ink-soft">
                   {t('proposedPriceHint')}
                 </span>
               </label>
@@ -360,7 +360,7 @@ function ProposalFormModalBody({
 
             {/* 4. تفاصيل إضافية */}
             <SectionCard title={t('sectionExtraDetails')}>
-              <label className="block text-sm font-medium text-on-surface">
+              <label className="block text-sm font-medium text-ink">
                 {t('coverLetterLabel')}
                 <textarea
                   value={coverLetter}
@@ -369,19 +369,19 @@ function ProposalFormModalBody({
                   }
                   rows={7}
                   maxLength={COVER_MAX}
-                  className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  className="mt-1.5 w-full resize-y rounded-lg border border-line bg-cream px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-ember focus:ring-1 focus:ring-ember"
                   placeholder={t('coverLetterPlaceholder')}
                 />
               </label>
-              <p className="mt-1.5 text-end text-xs text-slate-500">
+              <p className="mt-1.5 text-end text-xs text-ink-soft">
                 {t('coverLetterCounter', { count: coverLetter.length })}
               </p>
             </SectionCard>
 
             {/* 5. المرفقات */}
             <SectionCard title={t('sectionAttachments')}>
-              <p className="text-sm text-slate-600">{t('attachmentsHelp')}</p>
-              <p className="mt-1 text-xs text-slate-500">{t('attachmentsHint')}</p>
+              <p className="text-sm text-ink-soft">{t('attachmentsHelp')}</p>
+              <p className="mt-1 text-xs text-ink-soft">{t('attachmentsHint')}</p>
 
               <input
                 ref={fileInputRef}
@@ -395,13 +395,13 @@ function ProposalFormModalBody({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-[#f3f4f5] px-4 py-2.5 text-sm font-medium text-on-surface hover:bg-slate-200/60"
+                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-line bg-cream-deep/50 px-4 py-2.5 text-sm font-medium text-ink hover:bg-cream-deep"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="h-4 w-4 text-primary"
+                  className="h-4 w-4 text-ember"
                   aria-hidden
                 >
                   <path
@@ -415,17 +415,17 @@ function ProposalFormModalBody({
 
               <div className="mt-3">
                 {attachments.length === 0 ? (
-                  <p className="text-xs text-slate-400">{t('attachmentsNone')}</p>
+                  <p className="text-xs text-ink-soft">{t('attachmentsNone')}</p>
                 ) : (
                   <>
-                    <p className="text-xs font-medium text-slate-600">
+                    <p className="text-xs font-medium text-ink-soft">
                       {t('attachmentsSelected')}
                     </p>
                     <ul className="mt-1.5 space-y-1">
                       {attachments.map((file, idx) => (
                         <li
                           key={`${file.name}-${idx}`}
-                          className="flex items-center justify-between gap-2 rounded-md bg-[#f3f4f5] px-3 py-1.5 text-xs"
+                          className="flex items-center justify-between gap-2 rounded-md bg-cream-deep/50 px-3 py-1.5 text-xs"
                         >
                           <span className="truncate">{file.name}</span>
                           <button
@@ -449,20 +449,20 @@ function ProposalFormModalBody({
 
             {/* 6. تعزيز العرض */}
             <SectionCard title={t('sectionBoost')}>
-              <p className="text-sm text-slate-600">{t('boostIntro')}</p>
+              <p className="text-sm text-ink-soft">{t('boostIntro')}</p>
 
-              <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-                <div className="bg-[#f3f4f5] px-3 py-2 text-xs font-semibold text-slate-600">
+              <div className="mt-4 overflow-hidden rounded-lg border border-line">
+                <div className="bg-cream-deep/50 px-3 py-2 text-xs font-semibold text-ink-soft">
                   {t('boostBoardTitle')}
                 </div>
                 {boostBoard.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-slate-500">
+                  <p className="px-3 py-4 text-sm text-ink-soft">
                     {t('boostBoardEmpty')}
                   </p>
                 ) : (
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 text-start text-xs text-slate-500">
+                      <tr className="border-b border-line/60 text-start text-xs text-ink-soft">
                         <th className="px-3 py-2 font-medium">{t('boostRank')}</th>
                         <th className="px-3 py-2 font-medium">{t('boostBid')}</th>
                         <th className="px-3 py-2 font-medium">{t('boostWhen')}</th>
@@ -475,19 +475,19 @@ function ProposalFormModalBody({
                       {boostBoard.map((row) => (
                         <tr
                           key={`${row.rank}-${row.initials}-${row.boostPoints}`}
-                          className="border-b border-slate-50 last:border-0"
+                          className="border-b border-line/40 last:border-0"
                         >
                           <td className="px-3 py-2">
                             {t('boostPlace', { rank: row.rank })}
                           </td>
-                          <td className="px-3 py-2 font-medium text-primary">
+                          <td className="px-3 py-2 font-medium text-ember">
                             {t('boostPointsLabel', { count: row.boostPoints })}
                           </td>
-                          <td className="px-3 py-2 text-slate-500">
+                          <td className="px-3 py-2 text-ink-soft">
                             {row.createdAtRelative}
                           </td>
                           <td className="px-3 py-2">
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cream-deep text-xs font-bold text-ink">
                               {row.initials}
                             </span>
                           </td>
@@ -500,10 +500,10 @@ function ProposalFormModalBody({
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium">{t('boostYourBid')}</span>
-                <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <div className="inline-flex items-center overflow-hidden rounded-lg border border-line bg-cream">
                   <button
                     type="button"
-                    className="px-3 py-2 text-lg leading-none text-slate-600 hover:bg-slate-50"
+                    className="px-3 py-2 text-lg leading-none text-ink-soft hover:bg-cream-deep"
                     onClick={() =>
                       setBoostDraft((v) => Math.max(0, v - 1))
                     }
@@ -511,12 +511,12 @@ function ProposalFormModalBody({
                   >
                     −
                   </button>
-                  <span className="min-w-[3rem] border-x border-slate-200 px-3 py-2 text-center text-sm font-semibold tabular-nums">
+                  <span className="min-w-[3rem] border-x border-line px-3 py-2 text-center text-sm font-semibold tabular-nums">
                     {boostDraft}
                   </span>
                   <button
                     type="button"
-                    className="px-3 py-2 text-lg leading-none text-slate-600 hover:bg-slate-50"
+                    className="px-3 py-2 text-lg leading-none text-ink-soft hover:bg-cream-deep"
                     onClick={() =>
                       setBoostDraft((v) => Math.min(MAX_BOOST, v + 1))
                     }
@@ -530,28 +530,28 @@ function ProposalFormModalBody({
                   onClick={() =>
                     setBoostPoints(Math.min(MAX_BOOST, Math.max(0, boostDraft)))
                   }
-                  className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+                  className="rounded-lg border border-ember/30 bg-ember/5 px-3 py-2 text-sm font-semibold text-ember hover:bg-ember/10"
                 >
                   {t('boostSetBid')}
                 </button>
               </div>
 
-              <dl className="mt-4 space-y-2 rounded-lg bg-[#f3f4f5] p-4 text-sm">
+              <dl className="mt-4 space-y-2 rounded-lg bg-cream-deep/50 p-4 text-sm">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-600">{t('boostSummaryBoost')}</dt>
+                  <dt className="text-ink-soft">{t('boostSummaryBoost')}</dt>
                   <dd className="font-medium">
                     {t('boostPointsLabel', { count: boostPoints })}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-600">{t('boostSummarySubmit')}</dt>
+                  <dt className="text-ink-soft">{t('boostSummarySubmit')}</dt>
                   <dd className="font-medium">
                     {t('boostPointsLabel', { count: submitCost })}
                   </dd>
                 </div>
-                <div className="flex justify-between gap-3 border-t border-slate-200 pt-2 font-bold text-on-surface">
+                <div className="flex justify-between gap-3 border-t border-line pt-2 font-bold text-ink">
                   <dt>{t('boostSummaryTotal')}</dt>
-                  <dd className="text-primary">
+                  <dd className="text-ember">
                     {t('boostPointsLabel', { count: totalCost })}
                   </dd>
                 </div>
@@ -566,7 +566,7 @@ function ProposalFormModalBody({
           </div>
 
           {/* Sticky footer */}
-          <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:rounded-b-2xl sm:px-6">
+          <div className="shrink-0 border-t border-line bg-cream px-4 py-3 sm:rounded-b-2xl sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
@@ -579,7 +579,7 @@ function ProposalFormModalBody({
               <button
                 type="submit"
                 disabled={isSubmitting || insufficient}
-                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-primary-container disabled:opacity-50"
+                className="rounded-lg bg-ember px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-ember-deep disabled:opacity-50"
               >
                 {isSubmitting
                   ? t('submitting')

@@ -1,31 +1,62 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f9fa;
-  --foreground: #191c1d;
-  --primary: #ff4500;
-  --primary-container: #d83900;
-  --secondary: #1a1b26;
-  --tertiary: #006a35;
-  --tertiary-container: #008645;
-  --on-surface: #191c1d;
-  --on-surface-variant: #5d4038;
+  /* Figma design palette */
+  --cream: #f9f6f0;
+  --cream-deep: #f0eadd;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --royal: #1e3a8a;
+  --ember: #ea580c;
+  --ember-deep: #c2410c;
+  --palm: #059669;
+  --palm-deep: #047857;
+  --sand: #e2e8f0;
+  --line: #e2e4e9;
+
+  /* Semantic tokens (mapped to Figma) */
+  --background: var(--cream);
+  --foreground: var(--ink);
+  --primary: var(--ember);
+  --primary-container: var(--ember-deep);
+  --secondary: var(--ink);
+  --tertiary: var(--palm);
+  --tertiary-container: var(--palm-deep);
+  --on-surface: var(--ink);
+  --on-surface-variant: var(--ink-soft);
   --surface: #ffffff;
-  --surface-container-low: #f3f4f5;
-  --surface-container: #edeeef;
-  --outline-variant: #e7bdb2;
+  --surface-container-low: var(--cream-deep);
+  --surface-container: #f3efe6;
+  --outline-variant: var(--line);
   --error: #ba1a1a;
 }
 
 .dark {
-  --background: #12131a;
-  --foreground: #f0f1f2;
-  --on-surface: #f0f1f2;
-  --on-surface-variant: #c6c5d4;
-  --surface: #1a1b26;
-  --surface-container-low: #22232f;
-  --surface-container: #2a2b38;
-  --outline-variant: #454652;
+  --cream: #090e17;
+  --cream-deep: #111827;
+  --ink: #f8fafc;
+  --ink-soft: #94a3b8;
+  --royal: #60a5fa;
+  --ember: #f97316;
+  --ember-deep: #ea580c;
+  --palm: #34d399;
+  --palm-deep: #10b981;
+  --sand: #1e293b;
+  --line: #1f2937;
+
+  --background: var(--cream);
+  --foreground: var(--ink);
+  --primary: var(--ember);
+  --primary-container: var(--ember-deep);
+  --secondary: #e2e8f0;
+  --tertiary: var(--palm);
+  --tertiary-container: var(--palm-deep);
+  --on-surface: var(--ink);
+  --on-surface-variant: var(--ink-soft);
+  --surface: #111827;
+  --surface-container-low: #1e293b;
+  --surface-container: #243044;
+  --outline-variant: var(--line);
 }
 
 @theme inline {
@@ -43,13 +74,47 @@
   --color-surface-container: var(--surface-container);
   --color-outline-variant: var(--outline-variant);
   --color-error: var(--error);
+
+  --color-cream: var(--cream);
+  --color-cream-deep: var(--cream-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-royal: var(--royal);
+  --color-ember: var(--ember);
+  --color-ember-deep: var(--ember-deep);
+  --color-palm: var(--palm);
+  --color-palm-deep: var(--palm-deep);
+  --color-sand: var(--sand);
+  --color-line: var(--line);
+
   --font-sans: var(--font-ibm-plex-arabic);
+  --font-display: var(--font-readex-pro), var(--font-ibm-plex-arabic), sans-serif;
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(90% 60% at 100% 0%, rgba(234, 88, 12, 0.08) 0%, transparent 55%),
+    radial-gradient(80% 60% at 0% 5%, rgba(5, 150, 105, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #fdfbf8 0%, var(--cream) 40%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-ibm-plex-arabic), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background:
+    radial-gradient(90% 60% at 100% 0%, rgba(249, 115, 22, 0.12) 0%, transparent 55%),
+    radial-gradient(80% 60% at 0% 5%, rgba(52, 211, 153, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, #05080f 0%, var(--cream) 40%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--ember);
+  color: #fff;
 }
 
 @keyframes marquee-rtl {
@@ -61,6 +126,54 @@ body {
   }
 }
 
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes growbar {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .marquee-track {
   animation: marquee-rtl 40s linear infinite;
 }
@@ -69,9 +182,148 @@ body {
   animation-play-state: paused;
 }
 
+.animate-floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+.animate-rise {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-growbar {
+  animation: growbar 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: bottom;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Dim marble texture in night mode */
+.dark .howto-marble {
+  opacity: 0.08;
+  mix-blend-mode: soft-light;
+}
+
+.dark .hero-badge {
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.15);
+  box-shadow: 0 4px 18px -6px rgba(249, 115, 22, 0.4);
+}
+
+.dark .hero-badge-star {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #ffffff;
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.7),
+    0 0 4px rgba(249, 115, 22, 0.8);
+}
+
+.dark .hero-headline {
+  color: #93c5fd;
+  text-shadow:
+    0 2px 20px rgba(96, 165, 250, 0.25),
+    0 1px 0 rgba(248, 250, 252, 0.4) !important;
+}
+
+/* Thin scrollbars (design parity) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: var(--line) transparent;
+}
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+:hover::-webkit-scrollbar-thumb {
+  background: var(--line);
+}
+
 input,
 button,
 select,
 textarea {
   font: inherit;
+}
+
+/* Shared horizontal padding: phone → tablet → desktop */
+.page-gutter {
+  padding-inline: max(1rem, env(safe-area-inset-left))
+    max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .page-gutter {
+    padding-inline: max(1.25rem, env(safe-area-inset-left))
+      max(1.25rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1024px) {
+  .page-gutter {
+    padding-inline: max(1.5rem, env(safe-area-inset-left))
+      max(1.5rem, env(safe-area-inset-right));
+  }
+}
+
+.page-section {
+  padding-block: 3rem;
+}
+@media (min-width: 768px) {
+  .page-section {
+    padding-block: 4rem;
+  }
+}
+@media (min-width: 1024px) {
+  .page-section {
+    padding-block: 5rem;
+  }
+}
+
+/* Fluid display heading without fixed cm margins (bad on mobile) */
+.hero-title {
+  font-size: clamp(2rem, 1.35rem + 3.2vw, 4.25rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.hero-lede {
+  font-size: clamp(1rem, 0.92rem + 0.4vw, 1.125rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-floaty,
+  .animate-rise,
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Design asset paths used as CSS/bg helpers */
+:root {
+  --design-hero-smoke: url('/images/design/hero-smoke.jpg');
+  --design-marble: url('/images/design/marble.jpg');
+  --design-glow: url('/images/design/glow.jpg');
 }

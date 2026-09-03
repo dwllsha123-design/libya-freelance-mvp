@@ -4,7 +4,14 @@ import { useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
-import { AuthCard } from '@/components/auth/auth-card';
+import {
+  AuthCard,
+  authErrorClassName,
+  authFieldClassName,
+  authLabelClassName,
+  authLinkClassName,
+  authSubmitClassName,
+} from '@/components/auth/auth-card';
 import { useAuth } from '@/contexts/auth-context';
 import { createLoginSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
@@ -60,7 +67,7 @@ function LoginForm() {
           {t('noAccount')}{' '}
           <Link
             href={buildAuthHref('/register', { next: nextPath ?? undefined })}
-            className="font-semibold text-primary"
+            className={authLinkClassName}
           >
             {t('createAccount')}
           </Link>
@@ -68,12 +75,10 @@ function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-        ) : null}
+        {error ? <div className={authErrorClassName}>{error}</div> : null}
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
+          <label htmlFor="email" className={authLabelClassName}>
             {t('email')}
           </label>
           <input
@@ -81,12 +86,13 @@ function LoginForm() {
             name="email"
             type="email"
             required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+            autoComplete="email"
+            className={authFieldClassName}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
+          <label htmlFor="password" className={authLabelClassName}>
             {t('password')}
           </label>
           <input
@@ -94,21 +100,18 @@ function LoginForm() {
             name="password"
             type="password"
             required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-primary"
+            autoComplete="current-password"
+            className={authFieldClassName}
           />
         </div>
 
         <div className="text-end">
-          <Link href="/forgot-password" className="text-sm text-primary">
+          <Link href="/forgot-password" className={`text-sm ${authLinkClassName}`}>
             {t('forgotPassword')}
           </Link>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={isSubmitting} className={authSubmitClassName}>
           {isSubmitting ? t('loginSubmitting') : t('loginButton')}
         </button>
       </form>
@@ -121,7 +124,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12">
-      <Suspense fallback={<div className="text-slate-500">{tCommon('loadingPage')}</div>}>
+      <Suspense fallback={<div className="text-ink-soft">{tCommon('loadingPage')}</div>}>
         <LoginForm />
       </Suspense>
     </div>

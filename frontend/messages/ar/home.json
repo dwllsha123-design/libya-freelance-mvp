@@ -26,14 +26,16 @@
   "briefCreating": "جاري التحضير...",
   "briefCreate": "إنشاء إعلاني",
   "briefFullForm": "النموذج الكامل",
-  "statsActiveFreelancers": "مستقلون نشطون",
-  "statsPublishedProjects": "مشاريع منشورة",
-  "statsCompletedProjects": "مشاريع مكتملة",
+  "statsActiveFreelancers": "مستقل موثّق",
+  "statsPublishedProjects": "مشروع منشور",
+  "statsCompletedProjects": "مشروع منجَز",
   "statsSatisfaction": "رضا العملاء",
   "statsVerified": "{count}+ مستقل موثّق على المنصة",
   "carouselPrevious": "السابق",
   "carouselNext": "التالي",
   "carouselPage": "صفحة {page}",
   "mobileAppsTitle": "Libya Freelance قريبًا على هاتفك",
-  "mobileAppsSubtitle": "نعمل على توفير تجربة Libya Freelance على iPhone وAndroid لتتمكن من إدارة مشاريعك وعروضك ورسائلك أينما كنت."
+  "mobileAppsSubtitle": "نعمل على توفير تجربة Libya Freelance على iPhone وAndroid لتتمكن من إدارة مشاريعك وعروضك ورسائلك أينما كنت.",
+  "prayerTimesTitle": "مواقيت الصلاة",
+  "prayerTimesSubtitle": "مواقيت الصلاة حسب موقعك المحلي"
 }

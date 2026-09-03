@@ -41,16 +41,16 @@ export default async function EscrowPage({ params }: Props) {
         {content.mvpNote}
       </p>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="not-prose flex flex-wrap gap-4">
         <Link
           href="/dashboard/escrow"
-          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-full bg-ember px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(234,88,12,0.55)] transition hover:bg-ember-deep"
         >
           {t('escrowLedgerCta')}
         </Link>
         <Link
           href="/contact"
-          className="rounded-lg border border-secondary px-6 py-2.5 text-sm font-semibold text-secondary hover:bg-secondary/5"
+          className="rounded-full border border-line bg-cream px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-ink hover:bg-cream-deep"
         >
           {t('paymentInquiryCta')}
         </Link>

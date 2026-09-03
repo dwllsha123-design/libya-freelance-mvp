@@ -1,9 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { IBM_Plex_Sans_Arabic, Inter } from 'next/font/google';
+import { IBM_Plex_Sans_Arabic, Inter, Readex_Pro } from 'next/font/google';
 import '../globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
@@ -17,11 +17,27 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
   variable: '--font-ibm-plex-arabic',
 });
 
+const readexPro = Readex_Pro({
+  subsets: ['latin', 'arabic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-readex-pro',
+});
+
 const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f9f6f0' },
+    { media: '(prefers-color-scheme: dark)', color: '#090e17' },
+  ],
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -62,11 +78,11 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       dir={isArabic ? 'rtl' : 'ltr'}
-      className={`${ibmPlexArabic.variable} ${inter.variable} h-full`}
+      className={`${ibmPlexArabic.variable} ${readexPro.variable} ${inter.variable} h-full`}
       suppressHydrationWarning
     >
       <body
-        className={`flex min-h-full flex-col overflow-x-hidden bg-background text-on-surface antialiased ${
+        className={`flex min-h-full flex-col overflow-x-hidden text-on-surface antialiased ${
           isArabic ? 'font-sans' : 'font-[family-name:var(--font-inter)]'
         }`}
       >

@@ -11,6 +11,11 @@ import {
 import type { Readable } from 'node:stream';
 import type { StorageObject, StorageService } from './storage.interface.js';
 import {
+  WEBP_CONTENT_TYPE,
+  toPortfolioWebp,
+  toProfileWebp,
+} from './image-webp.util.js';
+import {
   PORTFOLIO_MAX_SIZE,
   PORTFOLIO_MIME_TYPES,
   PROFILE_MAX_SIZE,
@@ -96,8 +101,9 @@ export class S3StorageService implements StorageService {
     file: Express.Multer.File,
   ): Promise<string> {
     validateImageUpload(file, PROFILE_MIME_TYPES, PROFILE_MAX_SIZE);
-    const key = buildProfileObjectKey(userId, file.mimetype);
-    await this.putObject(key, file.buffer, file.mimetype);
+    const webp = await toProfileWebp(file.buffer);
+    const key = buildProfileObjectKey(userId);
+    await this.putObject(key, webp, WEBP_CONTENT_TYPE);
     return this.publicUrlForKey(key);
   }
 
@@ -107,8 +113,9 @@ export class S3StorageService implements StorageService {
     file: Express.Multer.File,
   ): Promise<string> {
     validateImageUpload(file, PORTFOLIO_MIME_TYPES, PORTFOLIO_MAX_SIZE);
-    const key = buildPortfolioObjectKey(userId, portfolioItemId, file.mimetype);
-    await this.putObject(key, file.buffer, file.mimetype);
+    const webp = await toPortfolioWebp(file.buffer);
+    const key = buildPortfolioObjectKey(userId, portfolioItemId);
+    await this.putObject(key, webp, WEBP_CONTENT_TYPE);
     return this.publicUrlForKey(key);
   }
 

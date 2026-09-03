@@ -3,7 +3,14 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { AuthCard } from '@/components/auth/auth-card';
+import {
+  AuthCard,
+  authErrorClassName,
+  authFieldClassName,
+  authLabelClassName,
+  authLinkClassName,
+  authSubmitClassName,
+} from '@/components/auth/auth-card';
 import { apiRequest, ApiError } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
@@ -36,20 +43,18 @@ export default function ForgotPasswordPage() {
         title={t('forgotPasswordTitle')}
         subtitle={t('forgotPasswordSubtitle')}
         footer={
-          <Link href="/login" className="font-semibold text-primary">
+          <Link href="/login" className={authLinkClassName}>
             {t('backToLogin')}
           </Link>
         }
       >
         {sent ? (
-          <p className="text-center text-sm text-on-surface-variant">{t('resetSentMessage')}</p>
+          <p className="text-center text-sm text-ink-soft">{t('resetSentMessage')}</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error ? (
-              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-            ) : null}
+            {error ? <div className={authErrorClassName}>{error}</div> : null}
             <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium">
+              <label htmlFor="email" className={authLabelClassName}>
                 {t('email')}
               </label>
               <input
@@ -58,14 +63,11 @@ export default function ForgotPasswordPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-outline-variant/60 px-3 py-2 focus:border-primary"
+                autoComplete="email"
+                className={authFieldClassName}
               />
             </div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-lg bg-primary py-2.5 font-semibold text-white disabled:opacity-60"
-            >
+            <button type="submit" disabled={isSubmitting} className={authSubmitClassName}>
               {isSubmitting ? t('sendResetSubmitting') : t('sendResetLink')}
             </button>
           </form>

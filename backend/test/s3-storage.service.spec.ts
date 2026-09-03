@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
+import sharp from 'sharp';
 import {
   resolveS3StorageConfig,
   S3StorageService,
@@ -44,6 +45,20 @@ function config(overrides: Record<string, string | undefined> = {}) {
   } as unknown as ConfigService;
 }
 
+/** A real, decodable image — uploads now run through the WebP transcoder. */
+function pngFixture(width = 64, height = 64): Promise<Buffer> {
+  return sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 10, g: 120, b: 200 },
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
 describe('S3StorageService', () => {
   beforeEach(() => {
     sendMock.mockReset();
@@ -56,34 +71,74 @@ describe('S3StorageService', () => {
     );
   });
 
-  it('uploads profile image to safe bucket key', async () => {
+  it('stores a PNG profile upload as WebP under a safe bucket key', async () => {
     const service = new S3StorageService(config());
     const url = await service.uploadProfileImage('user-1', {
       mimetype: 'image/png',
       size: 128,
-      buffer: Buffer.from('png'),
+      buffer: await pngFixture(),
       originalname: 'evil/../../secret.png',
     } as Express.Multer.File);
 
     expect(sendMock).toHaveBeenCalledOnce();
     const command = sendMock.mock.calls[0]![0];
     expect(command.input.Bucket).toBe('libya-staging');
-    expect(command.input.Key).toMatch(/^profile-images\/user-1\//);
-    expect(command.input.ContentType).toBe('image/png');
-    expect(url).toMatch(/^https:\/\/cdn\.example\.com\/profile-images\/user-1\//);
+    expect(command.input.Key).toMatch(
+      /^profile-images\/user-1\/[0-9a-f-]+\.webp$/,
+    );
+    expect(command.input.ContentType).toBe('image/webp');
+    expect(url).toMatch(
+      /^https:\/\/cdn\.example\.com\/profile-images\/user-1\/[0-9a-f-]+\.webp$/,
+    );
+
+    // The uploaded bytes are the transcoded image, never the original PNG.
+    const stored = await sharp(command.input.Body as Buffer).metadata();
+    expect(stored.format).toBe('webp');
   });
 
-  it('uploads portfolio image with ownership segments in key', async () => {
+  it('stores a JPEG portfolio upload as WebP with ownership segments', async () => {
     const service = new S3StorageService(config());
+    const original = await sharp({
+      create: {
+        width: 80,
+        height: 40,
+        channels: 3,
+        background: { r: 0, g: 0, b: 0 },
+      },
+    })
+      .jpeg()
+      .toBuffer();
+
     await service.uploadPortfolioImage('user-1', 'item-9', {
       mimetype: 'image/jpeg',
-      size: 256,
-      buffer: Buffer.from('jpg'),
+      size: original.byteLength,
+      buffer: original,
       originalname: 'photo.jpg',
     } as Express.Multer.File);
 
     const command = sendMock.mock.calls[0]![0];
-    expect(command.input.Key).toMatch(/^portfolio\/user-1\/item-9\//);
+    expect(command.input.Key).toMatch(
+      /^portfolio\/user-1\/item-9\/[0-9a-f-]+\.webp$/,
+    );
+    expect(command.input.ContentType).toBe('image/webp');
+
+    const stored = await sharp(command.input.Body as Buffer).metadata();
+    expect(stored.format).toBe('webp');
+  });
+
+  it('rejects bytes that are not a decodable image', async () => {
+    const service = new S3StorageService(config());
+
+    await expect(
+      service.uploadProfileImage('user-1', {
+        mimetype: 'image/png',
+        size: 3,
+        buffer: Buffer.from('png'),
+        originalname: 'fake.png',
+      } as Express.Multer.File),
+    ).rejects.toThrow();
+
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it('deletes by object key derived from public URL', async () => {

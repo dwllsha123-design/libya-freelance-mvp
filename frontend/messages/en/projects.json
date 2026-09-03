@@ -149,5 +149,12 @@
   "freelancersOnlySubmit": "Submissions are for freelancers only",
   "aboutClient": "About the client",
   "detailNotFound": "Project not found",
-  "detailMetaFallback": "Project"
+  "detailMetaFallback": "Project",
+  "budgetLabel": "Budget",
+  "experienceLabel": "Experience level",
+  "workModeLabel": "Work mode",
+  "proposalsLabel": "Proposals",
+  "applyCostLabel": "Application cost",
+  "unitsShort": "pts",
+  "balanceAvailable": "You have {balance} points available"
 }

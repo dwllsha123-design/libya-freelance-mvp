@@ -82,13 +82,13 @@ export default async function HowItWorksPage({ params }: Props) {
       <div className="not-prose mt-8 flex flex-wrap gap-4">
         <Link
           href="/register?role=CLIENT&next=/dashboard/projects/new"
-          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-full bg-ember px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(234,88,12,0.55)] transition hover:bg-ember-deep"
         >
           {t('postProjectCta')}
         </Link>
         <Link
           href="/register?role=FREELANCER"
-          className="rounded-lg border border-secondary px-6 py-2.5 text-sm font-semibold text-secondary hover:bg-secondary/5"
+          className="rounded-full border border-line bg-cream px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-ink hover:bg-cream-deep"
         >
           {t('joinFreelancerCta')}
         </Link>

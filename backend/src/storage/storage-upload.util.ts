@@ -1,10 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
+import { WEBP_EXTENSION } from './image-webp.util.js';
 
+/**
+ * Accepted *input* types. Everything is re-encoded to WebP on the way in, so
+ * this list only governs what a client may send, never what gets stored.
+ */
 export const PROFILE_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
-  'image/gif',
 ]);
 
 export const PORTFOLIO_MIME_TYPES = new Set([
@@ -15,13 +19,6 @@ export const PORTFOLIO_MIME_TYPES = new Set([
 
 export const PROFILE_MAX_SIZE = 2 * 1024 * 1024;
 export const PORTFOLIO_MAX_SIZE = 5 * 1024 * 1024;
-
-const MIME_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'image/gif': '.gif',
-};
 
 export function validateImageUpload(
   file: Express.Multer.File,
@@ -37,25 +34,24 @@ export function validateImageUpload(
   }
 }
 
-export function extensionForMime(mimeType: string): string {
-  return MIME_EXTENSION[mimeType] ?? '.bin';
-}
-
-export function buildProfileObjectKey(userId: string, mimeType: string): string {
+/**
+ * Keys are always `.webp` — the extension describes the stored object, which is
+ * WebP regardless of the uploaded format, so no MIME argument is involved.
+ */
+export function buildProfileObjectKey(userId: string): string {
   assertSafePathSegment(userId, 'userId');
   const id = cryptoRandomId();
-  return `profile-images/${userId}/${id}${extensionForMime(mimeType)}`;
+  return `profile-images/${userId}/${id}${WEBP_EXTENSION}`;
 }
 
 export function buildPortfolioObjectKey(
   userId: string,
   portfolioItemId: string,
-  mimeType: string,
 ): string {
   assertSafePathSegment(userId, 'userId');
   assertSafePathSegment(portfolioItemId, 'portfolioItemId');
   const id = cryptoRandomId();
-  return `portfolio/${userId}/${portfolioItemId}/${id}${extensionForMime(mimeType)}`;
+  return `portfolio/${userId}/${portfolioItemId}/${id}${WEBP_EXTENSION}`;
 }
 
 export function assertSafePathSegment(value: string, label: string) {

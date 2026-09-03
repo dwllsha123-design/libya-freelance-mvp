@@ -2,8 +2,12 @@
   "name": "Libyi Freelance",
   "nameStyled": "Libyi Freelance",
   "tagline": "Libya's Freelance Marketplace",
-  "heroHeadline": "Libyan talent. Libyan projects.",
-  "heroSubheadline": "From Tripoli to Benghazi and Misrata — we connect project owners with rated local freelancers, with clear budgets in Libyan Dinar (LYD).",
+  "platformFirst": "Libya's first freelance platform",
+  "heroHeadline": "Stop searching.",
+  "heroHeadlineAccent": "Start building.",
+  "heroSubheadline": "connects project owners with trusted, rated freelancers ready to deliver real results from day one.",
   "citiesHighlight": "Tripoli · Benghazi · Misrata · Zawiya · Sebha · Remote",
-  "mission": "Empowering Libyan talent to freelance professionally, building a trusted bridge between businesses and individuals across Libya."
+  "mission": "Empowering Libyan talent to freelance professionally, building a trusted bridge between businesses and individuals across Libya.",
+  "browseOffers": "Browse offers",
+  "postProjectFree": "Post your project free"
 }

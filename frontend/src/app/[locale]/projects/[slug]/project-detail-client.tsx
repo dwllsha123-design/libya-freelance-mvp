@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ProposalFormModal } from '@/components/proposals/proposal-form-modal';
 import { BackLink } from '@/components/ui/back-link';
+import { Pill } from '@/components/ui/motion';
 import { useAuth } from '@/contexts/auth-context';
 import { useNuqatiApi, useNuqatiBalance } from '@/hooks/use-nuqati';
 import { useProjectsApi } from '@/hooks/use-projects';
@@ -114,7 +115,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] bg-[#f3f4f5] p-8 text-center text-slate-500">
+      <div className="page-gutter min-h-[50vh] py-8 text-center text-ink-soft">
         {tCommon('loadingPage')}
       </div>
     );
@@ -122,9 +123,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
 
   if (error || !project) {
     return (
-      <div className="min-h-[50vh] bg-[#f3f4f5] p-8 text-center text-red-600">
-        {error}
-      </div>
+      <div className="page-gutter min-h-[50vh] py-8 text-center text-error">{error}</div>
     );
   }
 
@@ -132,152 +131,195 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
     user?.role === 'CLIENT' &&
     project.client?.username === user.profile?.username;
 
-  const canApply =
-    user?.role === 'FREELANCER' && !myProposal && !isOwner;
-
+  const canApply = user?.role === 'FREELANCER' && !myProposal && !isOwner;
   const showStickyApply = canApply;
 
+  const budgetLabel = `${project.budgetMin.toLocaleString(numberLocale)}–${project.budgetMax.toLocaleString(numberLocale)} ${tCommon('currencyCode')}`;
+
+  const meta = [
+    {
+      l: t('budgetLabel'),
+      v: budgetLabel,
+      icon: '◈',
+    },
+    {
+      l: t('experienceLabel'),
+      v: EXPERIENCE_LABELS[project.experienceLevel] ?? project.experienceLevel,
+      icon: '▲',
+    },
+    {
+      l: t('workModeLabel'),
+      v:
+        project.workMode === 'REMOTE'
+          ? t('workModeRemote')
+          : project.city
+            ? getLocalizedCityName(project.city, locale)
+            : '—',
+      icon: '◷',
+    },
+    {
+      l: t('proposalsLabel'),
+      v: String(project.proposalCount ?? 0),
+      icon: '◱',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f3f4f5] pb-28">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="min-h-screen pb-28">
+      <div className="page-gutter mx-auto max-w-4xl py-8 sm:py-10">
         <BackLink href="/projects">{t('browseTitle')}</BackLink>
 
-        <article className="mt-6">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-              {getLocalizedCategoryName(project.category, locale)}
-            </p>
-            <h1 className="mt-2 text-2xl font-bold text-on-surface sm:text-3xl">
-              {project.title}
-            </h1>
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <Pill tone="palm">{getLocalizedCategoryName(project.category, locale)}</Pill>
+          <span className="inline-flex items-center gap-1 rounded-full bg-palm/10 px-3 py-1 text-xs font-medium text-palm-deep">
+            ● {t('statusOpen')}
+          </span>
+        </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full bg-[#f3f4f5] px-3 py-1.5 text-sm font-medium text-on-surface">
-                {project.budgetMin.toLocaleString(numberLocale)}–
-                {project.budgetMax.toLocaleString(numberLocale)} د.ل
-              </span>
-              <span className="rounded-full bg-[#f3f4f5] px-3 py-1.5 text-sm text-slate-700">
-                {project.budgetType === 'FIXED'
-                  ? t('budgetTypeFixed')
-                  : t('budgetTypeHourly')}
-              </span>
-              <span className="rounded-full bg-[#f3f4f5] px-3 py-1.5 text-sm text-slate-700">
-                {EXPERIENCE_LABELS[project.experienceLevel]}
-              </span>
-              <span className="rounded-full bg-[#f3f4f5] px-3 py-1.5 text-sm text-slate-700">
-                {project.workMode === 'REMOTE'
-                  ? t('workModeRemote')
-                  : project.city
-                    ? getLocalizedCityName(project.city, locale)
-                    : '—'}
-              </span>
-              {project.deadline ? (
-                <span className="rounded-full bg-[#f3f4f5] px-3 py-1.5 text-sm text-slate-700">
-                  {new Date(project.deadline).toLocaleDateString(numberLocale)}
-                </span>
-              ) : null}
-              {project.proposalCount !== undefined ? (
-                <span className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
-                  {t('proposalsCount', { count: project.proposalCount })}
-                </span>
-              ) : null}
+        <h1 className="mt-4 font-display text-3xl font-bold leading-tight text-ink md:text-4xl">
+          {project.title}
+        </h1>
+        {project.publishedAt ? (
+          <p className="mt-2 text-sm text-ink-soft">
+            {t('publishedAgo', {
+              date: new Date(project.publishedAt).toLocaleDateString(numberLocale),
+            })}
+          </p>
+        ) : null}
+
+        <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4">
+          {meta.map((m) => (
+            <div key={m.l} className="bg-cream px-4 py-5 sm:px-5">
+              <div className="text-lg text-ember">{m.icon}</div>
+              <div className="mt-2 font-display text-sm font-semibold text-ink sm:text-base">
+                {m.v}
+              </div>
+              <div className="text-xs text-ink-soft">{m.l}</div>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <section className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-            <h2 className="text-lg font-bold text-on-surface">
+        <div className="mt-8 grid gap-8 md:grid-cols-[1fr_260px]">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-ink">
               {t('offerDetailsCard')}
             </h2>
-            <p className="mt-4 whitespace-pre-wrap leading-relaxed text-slate-700">
+            <p className="mt-3 whitespace-pre-wrap leading-loose text-ink-soft">
               {project.description}
             </p>
-          </section>
 
-          <section className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-            <h2 className="text-lg font-bold text-on-surface">
+            <h2 className="mt-8 font-display text-xl font-semibold text-ink">
               {t('requiredSkills')}
             </h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {project.skills.map((s) => (
-                <span
-                  key={s.slug}
-                  className="rounded-full border border-slate-200 bg-[#f3f4f5] px-3 py-1 text-sm text-slate-700"
-                >
+                <Pill key={s.slug} tone="sand">
                   {s.name}
-                </span>
+                </Pill>
               ))}
             </div>
-          </section>
 
-          {project.client ? (
-            <section className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="text-lg font-bold text-on-surface">
-                {t('aboutClient')}
-              </h2>
-              <Link
-                href={`/clients/${project.client.username}`}
-                className="mt-3 inline-block font-medium text-primary hover:underline"
-              >
-                {project.client.displayName}
-              </Link>
-            </section>
-          ) : null}
+            {project.client ? (
+              <div className="mt-8 rounded-2xl border border-line bg-cream p-5">
+                <h2 className="font-display text-lg font-semibold text-ink">
+                  {t('aboutClient')}
+                </h2>
+                <Link
+                  href={`/clients/${project.client.username}`}
+                  className="mt-3 inline-block font-medium text-ember hover:underline"
+                >
+                  {project.client.displayName}
+                </Link>
+              </div>
+            ) : null}
 
-          {!showStickyApply ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
-              {!user ? (
-                <div className="space-y-4">
-                  <p className="text-slate-600">{t('guestReadOnly')}</p>
-                  <div className="flex flex-wrap justify-center gap-3">
-                    <Link
-                      href={buildAuthHref('/register', {
-                        next: pathname,
-                        role: 'FREELANCER',
-                      })}
-                      className="inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-white"
-                    >
-                      {t('guestRegisterCta')}
-                    </Link>
-                    <Link
-                      href={buildAuthHref('/login', { next: pathname })}
-                      className="inline-block rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-on-surface"
-                    >
-                      {tDashboard('login')}
-                    </Link>
+            {!showStickyApply ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-line bg-cream p-6 text-center">
+                {!user ? (
+                  <div className="space-y-4">
+                    <p className="text-ink-soft">{t('guestReadOnly')}</p>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <Link
+                        href={buildAuthHref('/register', {
+                          next: pathname,
+                          role: 'FREELANCER',
+                        })}
+                        className="inline-block rounded-full bg-ember px-6 py-3 font-semibold text-white hover:bg-ember-deep"
+                      >
+                        {t('guestRegisterCta')}
+                      </Link>
+                      <Link
+                        href={buildAuthHref('/login', { next: pathname })}
+                        className="inline-block rounded-full border border-line bg-cream px-6 py-3 font-semibold text-ink hover:border-ink"
+                      >
+                        {tDashboard('login')}
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ) : isOwner ? (
-                <p className="text-slate-600">{t('ownerCannotPropose')}</p>
-              ) : user.role === 'FREELANCER' && myProposal ? (
-                <>
-                  <p className="font-semibold text-primary">
-                    {t('proposalSubmitted')}
-                  </p>
-                  <Link
-                    href="/dashboard/proposals"
-                    className="mt-3 inline-block text-sm text-on-surface underline"
-                  >
-                    {t('viewMyProposal')}
-                  </Link>
-                </>
+                ) : isOwner ? (
+                  <p className="text-ink-soft">{t('ownerCannotPropose')}</p>
+                ) : user.role === 'FREELANCER' && myProposal ? (
+                  <>
+                    <p className="font-semibold text-ember">{t('proposalSubmitted')}</p>
+                    <Link
+                      href="/dashboard/proposals"
+                      className="mt-3 inline-block text-sm text-ink underline"
+                    >
+                      {t('viewMyProposal')}
+                    </Link>
+                  </>
+                ) : (
+                  <p className="text-ink-soft">{t('freelancersOnlySubmit')}</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <aside className="h-fit space-y-4 md:sticky md:top-24">
+            <div className="rounded-2xl border border-line bg-cream p-6">
+              <div className="text-sm text-ink-soft">{t('applyCostLabel')}</div>
+              <div className="mt-1 font-display text-3xl font-bold text-ink">
+                <span className="font-mono">{submitCost}</span>{' '}
+                <span className="text-base font-medium text-ink-soft">
+                  {t('unitsShort')}
+                </span>
+              </div>
+              {balance != null ? (
+                <p className="mt-1 text-xs text-ink-soft">
+                  {t('balanceAvailable', { balance })}
+                </p>
+              ) : null}
+              {canApply ? (
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="mt-5 block w-full rounded-xl bg-ember py-3 text-center text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-ember-deep"
+                >
+                  {t('applyNow')}
+                </button>
               ) : (
-                <p className="text-slate-600">{t('freelancersOnlySubmit')}</p>
+                <Link
+                  href={buildAuthHref('/login', { next: pathname })}
+                  className="mt-5 block w-full rounded-xl bg-ember py-3 text-center text-sm font-semibold text-white transition-all hover:bg-ember-deep"
+                >
+                  {t('applyNow')}
+                </Link>
               )}
             </div>
-          ) : null}
-        </article>
+          </aside>
+        </div>
       </div>
 
       {showStickyApply ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-            <div className="hidden text-sm text-slate-600 sm:block">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-cream/95 backdrop-blur md:hidden">
+          <div className="page-gutter flex items-center justify-between gap-3 py-3">
+            <div className="text-sm text-ink-soft">
               {t('applyNowWithCost', { cost: submitCost })}
             </div>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="ms-auto w-full rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-container sm:w-auto"
+              className="rounded-full bg-ember px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-ember-deep"
             >
               {t('applyNow')}
             </button>
