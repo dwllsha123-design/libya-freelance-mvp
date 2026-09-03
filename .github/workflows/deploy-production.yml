@@ -129,14 +129,43 @@ jobs:
           NODE_ENV: production
         run: npm run build
 
-  deploy:
-    name: Deploy to production server
+  autodeploy-gate:
+    name: Evaluate production autodeploy gate
     needs: [ci-backend, ci-frontend]
     if: >-
       always() &&
       needs.ci-backend.result != 'failure' &&
       needs.ci-frontend.result != 'failure' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.evaluate.outputs.deploy }}
+    steps:
+      - name: Decide whether to deploy
+        id: evaluate
+        env:
+          PRODUCTION_AUTODEPLOY: ${{ secrets.PRODUCTION_AUTODEPLOY }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Manual workflow_dispatch — deployment enabled."
+            exit 0
+          fi
+          if [ "${PRODUCTION_AUTODEPLOY}" = "true" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "PRODUCTION_AUTODEPLOY=true — automatic push deployment enabled."
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping deployment: set secret PRODUCTION_AUTODEPLOY=true to enable push deploys."
+          fi
+
+  deploy:
+    name: Deploy to production server
+    needs: [ci-backend, ci-frontend, autodeploy-gate]
+    if: >-
+      always() &&
+      needs.autodeploy-gate.result == 'success' &&
+      needs.autodeploy-gate.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -176,7 +205,7 @@ jobs:
             export DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
             export GITHUB_SHA="${{ steps.meta.outputs.sha }}"
             cd "${{ secrets.PRODUCTION_PATH }}"
-            chmod +x scripts/deploy-production.sh scripts/production-healthcheck.sh scripts/rollback-production.sh scripts/deploy-lib.sh
+            chmod +x scripts/deploy-production.sh scripts/deploy-preflight.sh scripts/production-healthcheck.sh scripts/rollback-production.sh scripts/deploy-lib.sh
             ./scripts/deploy-production.sh
             echo "GitHub Actions deployed commit: ${GITHUB_SHA}"
 

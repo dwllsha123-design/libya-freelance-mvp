@@ -51,6 +51,10 @@ Create these in **Settings → Secrets and variables → Actions** (repository o
 | `PRODUCTION_PORT` | SSH port | `22` |
 | `PRODUCTION_PATH` | Absolute path to repo on server | `/root/libya-freelance-mvp` |
 | `PRODUCTION_SSH_KNOWN_HOSTS` | (Recommended) Output of `ssh-keyscan` for the host | `102.203.200.88 ssh-ed25519 AAAA...` |
+| `PRODUCTION_AUTODEPLOY` | Enable automatic deploy on `push` to `main` (`true` to enable) | `true` |
+
+Push to `main` runs CI always. **SSH deployment runs only when** `PRODUCTION_AUTODEPLOY=true`.  
+Manual **workflow_dispatch** deploys after CI even when autodeploy is off.
 
 Optional repository variable:
 
