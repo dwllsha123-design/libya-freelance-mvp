@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStorageService } from './local-storage.service.js';
+import { MediaController } from './media.controller.js';
 import { S3StorageService } from './s3-storage.service.js';
 import { STORAGE_SERVICE } from './storage.interface.js';
 
@@ -27,6 +28,7 @@ export function resolveStorageDriver(configService: ConfigService): 'local' | 's
 
 @Module({
   imports: [ConfigModule],
+  controllers: [MediaController],
   providers: [
     {
       provide: STORAGE_SERVICE,

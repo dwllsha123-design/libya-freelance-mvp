@@ -147,14 +147,14 @@ Set remaining variables from `backend/.env.railway.example`:
 | `AUTH_COOKIE_DOMAIN` | No | Leave empty on Railway staging |
 | `FRONTEND_URL` | Yes | Railway frontend public URL |
 | `CORS_ORIGINS` | Yes | Comma-separated frontend origins |
-| `STORAGE_DRIVER` | Yes | Must be `s3` |
-| `S3_ENDPOINT` | Yes | S3-compatible API endpoint |
-| `S3_REGION` | No | Default `auto` |
-| `S3_BUCKET` | Yes | Bucket name |
-| `S3_ACCESS_KEY_ID` | Yes | Access key |
-| `S3_SECRET_ACCESS_KEY` | Yes | Secret key |
-| `S3_PUBLIC_BASE_URL` | Yes | Public base URL for uploaded images |
-| `S3_FORCE_PATH_STYLE` | No | `true` for MinIO-style; often `false` for R2/AWS |
+| `STORAGE_DRIVER` | Yes | Must be `s3` — **add manually**, Bucket auto-inject does not set it |
+| `AWS_ACCESS_KEY_ID` | Yes | Auto-injected by Railway Bucket |
+| `AWS_SECRET_ACCESS_KEY` | Yes | Auto-injected by Railway Bucket |
+| `AWS_DEFAULT_REGION` | Yes | Auto-injected (`auto`) |
+| `AWS_ENDPOINT_URL` | Yes | Auto-injected (`https://storage.railway.app`) |
+| `AWS_S3_BUCKET_NAME` | Yes | Auto-injected — the S3 API bucket name |
+| `S3_PUBLIC_BASE_URL` | Yes | **Add manually** — `https://<backend-domain>/api/media` (see STEP E) |
+| `AWS_S3_URL_STYLE` | No | Only if the bucket's Credentials tab says path-style |
 | `PAYMENT_DRIVER` | No | `simulated` for staging |
 | `PAYMENT_CURRENCY` | No | `LYD` |
 | `EMAIL_FROM` | No | Outbound sender |
@@ -163,34 +163,62 @@ Set remaining variables from `backend/.env.railway.example`:
 
 ---
 
-## STEP E — S3-compatible object storage
+## STEP E — Object storage (Railway Bucket)
 
-### Option 1 — Railway Bucket (if available in your project)
+### Option 1 — Railway Bucket
 
-Map Railway Bucket credentials to the application's existing variable names:
+1. **+ New** → **Bucket**, choose a region (it cannot be changed later).
+2. Open the **backend** service → **Variables** → use **auto-inject** to add the bucket credentials.
 
-| Railway / provider | Backend variable |
-|--------------------|------------------|
-| Endpoint URL | `S3_ENDPOINT` |
-| Region | `S3_REGION` |
-| Bucket name | `S3_BUCKET` |
-| Access key | `S3_ACCESS_KEY_ID` |
-| Secret key | `S3_SECRET_ACCESS_KEY` |
-| Public asset base URL | `S3_PUBLIC_BASE_URL` |
+Auto-inject supplies the AWS-standard names, which the backend reads directly — no manual mapping is needed:
 
-`S3_PUBLIC_BASE_URL` must match how objects are served publicly (CDN URL or path-style bucket URL). Profile and portfolio uploads use this for `publicUrlForKey()`.
+| Railway-injected variable | Example | Read by |
+|---------------------------|---------|---------|
+| `AWS_ACCESS_KEY_ID` | *(secret)* | `storage.s3.accessKeyId` |
+| `AWS_SECRET_ACCESS_KEY` | *(secret)* | `storage.s3.secretAccessKey` |
+| `AWS_DEFAULT_REGION` | `auto` | `storage.s3.region` |
+| `AWS_ENDPOINT_URL` | `https://storage.railway.app` | `storage.s3.endpoint` |
+| `AWS_S3_BUCKET_NAME` | `my-bucket-jdhhd8oe18xi` | `storage.s3.bucket` |
 
-Set `S3_FORCE_PATH_STYLE=true` if the provider requires path-style addressing (common for MinIO-compatible endpoints).
+`AWS_REGION` is accepted as an alternative to `AWS_DEFAULT_REGION`. The legacy `S3_*` names still work for the VPS/MinIO deployment; when both are set, `AWS_*` wins.
+
+Two variables are **not** auto-injected and must be added by hand:
+
+- `STORAGE_DRIVER=s3`
+- `S3_PUBLIC_BASE_URL=https://<backend-domain>/api/media`
+
+### Addressing style — do not force path style
+
+Railway Buckets are backed by Cloudflare R2 and require **virtual-hosted-style** URLs, where the bucket is a subdomain of the endpoint. The S3 client is therefore configured with `forcePathStyle: false`, which is the default. Forcing path style against Railway produces intermittent failures and timeouts.
+
+Only override this if your bucket's **Credentials** tab explicitly says to use path-style URLs (buckets created before Railway's switch to virtual-hosted style), in which case set `AWS_S3_URL_STYLE=path`.
+
+### Private bucket — reads go through the API
+
+**Railway Buckets are private and have no public object URLs.** Railway's own guidance is to serve stored files through your backend.
+
+The API therefore exposes a read-through media proxy:
+
+```
+GET /api/media/profile-images/:userId/:filename
+GET /api/media/portfolio/:userId/:itemId/:filename
+```
+
+Setting `S3_PUBLIC_BASE_URL` to `https://<backend-domain>/api/media` makes `publicUrlForKey()` mint URLs that resolve through this proxy, so:
+
+- stored image URLs stay **stable and permanent** (presigned links expire, and the URLs are persisted in Postgres on `Profile.profilePhoto` and `PortfolioImage.imageUrl`),
+- upload, delete, and every read path are unchanged,
+- objects are served with `Cache-Control: public, max-age=31536000, immutable` (keys contain a UUID, so they never change) plus `X-Content-Type-Options: nosniff`.
+
+Only the `profile-images/` and `portfolio/` prefixes are reachable, at fixed path depth, so arbitrary bucket keys cannot be read through the proxy. These two prefixes are exactly the ones the VPS MinIO setup marks anonymously downloadable, so this preserves existing behaviour rather than changing the security model.
+
+Presigned GET URLs were rejected as the primary mechanism: they would expire while persisted URLs would not, forcing every read path that returns an image URL to be rewritten. For high-traffic asset serving later, put a CDN in front of the proxy or move to presigned URLs at that point.
+
+Set the frontend's `NEXT_PUBLIC_MEDIA_ORIGIN` to the backend origin (scheme + host, no path) so `next/image` will optimize proxied images.
 
 ### Option 2 — External S3 (Cloudflare R2, DigitalOcean Spaces, AWS)
 
-Use the same variable names. See `backend/docs/STORAGE.md` for provider examples.
-
-### Public file behavior
-
-The application generates **public URLs** from `S3_PUBLIC_BASE_URL` + object key. It does **not** require presigned URLs for marketplace profile/portfolio images when the bucket (or CDN) serves those prefixes publicly.
-
-If your bucket is private-only, configure a public CDN origin or bucket policy for `profile-images/` and `portfolio/` prefixes (same as VPS MinIO init).
+Use either naming scheme. With a genuinely public bucket or CDN, point `S3_PUBLIC_BASE_URL` at that public base URL instead of the media proxy and the images are served directly. See `backend/docs/STORAGE.md` for provider examples.
 
 ---
 
@@ -207,6 +235,16 @@ If your bucket is private-only, configure a public CDN origin or bucket policy f
 
    `/api/health` → liveness (200).  
    `/api/health/ready` → readiness (200 when DB connected).
+
+4. After the first profile-photo upload, confirm the media proxy serves it:
+
+   ```bash
+   curl -fsSI "https://<backend-domain>/api/media/profile-images/<userId>/<filename>"
+   ```
+
+   Expect `200` with an `image/*` content type. A `404` means the object key is absent; a `500` points at bucket credentials or addressing style.
+
+   `/api/health/storage` reports the driver and whether the storage service is wired, but it does **not** perform a live bucket round-trip.
 
 ---
 
@@ -251,7 +289,7 @@ Set at **build time** (Railway rebuilds when these change):
 | `NEXT_PUBLIC_SOCKET_URL` | `https://<backend-domain>` |
 | `NEXT_PUBLIC_SITE_URL` | `https://<frontend-domain>` |
 | `NEXT_PUBLIC_ADMIN_URL` | `https://<frontend-domain>` (same host for Railway staging) |
-| `NEXT_PUBLIC_MEDIA_ORIGIN` | Same scheme+host as `S3_PUBLIC_BASE_URL` |
+| `NEXT_PUBLIC_MEDIA_ORIGIN` | `https://<backend-domain>` — same scheme+host as `S3_PUBLIC_BASE_URL`, no path |
 | `NEXT_PUBLIC_IMAGE_HOSTS` | Optional extra CDN hostnames, comma-separated |
 
 For Railway staging, set `NEXT_PUBLIC_ADMIN_URL` equal to `NEXT_PUBLIC_SITE_URL` so `/admin` works on the same hostname (no separate admin subdomain required).
