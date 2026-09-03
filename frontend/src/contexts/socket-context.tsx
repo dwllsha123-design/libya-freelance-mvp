@@ -42,7 +42,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     const nextSocket = io(SOCKET_URL, {
       auth: { token: accessToken },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 10,
     });

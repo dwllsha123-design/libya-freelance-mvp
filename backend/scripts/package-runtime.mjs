@@ -58,6 +58,23 @@ cpSync(join(backendRoot, 'dist'), join(bundleDir, 'dist'), { recursive: true });
 console.log('==> npm ci --omit=dev (production dependencies only)');
 run(npmCmd, ['ci', '--omit=dev', '--legacy-peer-deps'], { cwd: bundleDir });
 
+// @prisma/client declares optional peers (prisma, typescript). Some npm versions
+// materialize them under --omit=dev. API runtime only needs @prisma/client +
+// generated .prisma; migrations use the dedicated migrate/build image.
+const migrationOnlyOptionalPeers = [
+  'prisma',
+  'typescript',
+  'deepmerge-ts',
+  '@prisma/config',
+];
+for (const pkg of migrationOnlyOptionalPeers) {
+  const target = join(bundleDir, 'node_modules', ...pkg.split('/'));
+  if (existsSync(target)) {
+    rmSync(target, { recursive: true, force: true });
+    console.log(`==> Pruned migration-only optional peer: ${pkg}`);
+  }
+}
+
 console.log('==> Copy generated Prisma Client (deterministic, always)');
 rmSync(join(bundleDir, 'node_modules', '.prisma'), { recursive: true, force: true });
 cpSync(
@@ -68,7 +85,7 @@ cpSync(
 
 const forbidden = ['prisma', 'deepmerge-ts', '@prisma/config', 'vitest', 'typescript'];
 const leaked = forbidden.filter((pkg) =>
-  existsSync(join(bundleDir, 'node_modules', pkg)),
+  existsSync(join(bundleDir, 'node_modules', ...pkg.split('/'))),
 );
 assert(leaked.length === 0, `Dev packages leaked into bundle: ${leaked.join(', ')}`);
 assert(
@@ -87,8 +104,10 @@ writeFileSync(
       packagedAt: new Date().toISOString(),
       nodeStartCommand: 'node dist/main.js',
       prismaClientCopiedFrom: 'build-stage node_modules/.prisma',
+      migrationStrategy: 'dedicated migrate/build image — Prisma CLI not in API runtime',
+      prunedOptionalPeers: migrationOnlyOptionalPeers,
       devPackagesExcluded: forbidden.filter(
-        (pkg) => !existsSync(join(bundleDir, 'node_modules', pkg)),
+        (pkg) => !existsSync(join(bundleDir, 'node_modules', ...pkg.split('/'))),
       ),
       prismaCliInBundle: existsSync(join(bundleDir, 'node_modules', 'prisma')),
     },

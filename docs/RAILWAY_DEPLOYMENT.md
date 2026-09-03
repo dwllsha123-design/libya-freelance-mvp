@@ -1,0 +1,382 @@
+# Railway Deployment — Libya Freelance
+
+Additive deployment path for [Railway](https://railway.app). **Does not replace** the existing VPS + Docker Compose + Caddy production stack documented in `docs/PRODUCTION_DEPLOYMENT.md`.
+
+| Environment | Stack |
+|-------------|-------|
+| VPS production | `docker-compose.production.yml` + Caddy + MinIO + GitHub Actions SSH deploy |
+| Railway staging/prod | Independent `frontend` + `backend` services + managed Postgres + S3-compatible storage |
+
+**Do not move production DNS** until Railway staging is fully validated.
+
+---
+
+## Architecture on Railway
+
+```
+GitHub (railway/production-ready or main after merge)
+  ├── Frontend service  (Root: /frontend)  → Next.js standalone
+  ├── Backend service   (Root: /backend)   → NestJS API + Socket.IO
+  ├── PostgreSQL        (Railway plugin)
+  └── S3-compatible storage (Railway Bucket or external R2/Spaces/AWS)
+```
+
+The API enforces `STORAGE_DRIVER=s3` in production. Local disk storage is **not** permitted.
+
+---
+
+## STEP A — Create Railway project
+
+1. Log in to [Railway](https://railway.app).
+2. **New Project** → **Deploy from GitHub repo** → `libya-freelance-mvp`.
+3. Select branch **`railway/production-ready`** for initial staging (not `main` until reviewed).
+4. **Do not** enable auto-deploy to VPS — Railway is a separate target.
+
+---
+
+## STEP B — Add PostgreSQL
+
+1. In the project: **+ New** → **Database** → **PostgreSQL**.
+2. Note the Postgres **service name** (default `Postgres`) — it is needed for the reference variable below.
+
+### Wiring `DATABASE_URL` into the backend (reference variable)
+
+Do **not** copy the connection string by hand, and never commit it. In the **backend** service → **Variables**, add:
+
+| Name | Value |
+|------|-------|
+| `DATABASE_URL` | `${{ Postgres.DATABASE_URL }}` |
+
+Replace `Postgres` with the actual Postgres service name if you renamed it.
+
+Railway resolves this at build and deploy time, so the credentials only ever live in the Postgres service:
+
+| Railway variable | Host form | Use |
+|------------------|-----------|-----|
+| `DATABASE_URL` | `postgres.railway.internal` (private network) | **Use this** — services in the same project; no egress billing |
+| `DATABASE_PUBLIC_URL` | TCP proxy host | Local `psql`/admin tools only; billed as network egress |
+
+The private `*.railway.internal` hostname does not resolve outside Railway, so it cannot be used for local development.
+
+The application reads `DATABASE_URL` from the environment only — `prisma/schema.prisma` uses `env("DATABASE_URL")` and nothing hardcodes a host, port, user, password, or database name. Railway's private Postgres does not require `sslmode=require`; use the connection string exactly as Railway provides it and add parameters only if Railway's value includes them.
+
+---
+
+## STEP C — Add Backend service
+
+1. **+ New** → **GitHub Repo** → same repository.
+2. **Settings → Root Directory**: `backend`
+3. **Settings → Config file path** (if using config-as-code): `backend/railway.json`
+
+   > Railway has deprecated Config as Code in favour of Infrastructure as Code. Existing `railway.json` files keep working for legacy services **until 2026-12-01**. The settings in `railway.json` are all settable from the dashboard, so this is not a blocker for staging, but plan the migration before that date.
+
+4. **Build**: Railway detects `backend/Dockerfile` (multi-stage production image).
+5. **Deploy → Pre-deploy command** (from `backend/railway.json`):
+
+   ```bash
+   npx prisma@6.19.3 migrate deploy
+   ```
+
+   Requires `prisma/` migrations folder in the image (included) and `DATABASE_URL` linked.
+
+   **Why `npx` and not the local CLI.** Railway runs the pre-deploy command in a *separate container started from the application image*, on the private network, with the service's environment variables. The runtime stage of `backend/Dockerfile` deliberately deletes `node_modules/prisma` so the Prisma CLI (and its `deepmerge-ts` dependency — see `docs/DEPENDENCY_AUDIT.md`) is never present in the long-running API container. `node node_modules/prisma/build/index.js migrate deploy` would therefore fail on Railway. `npx prisma@6.19.3` downloads the pinned CLI into the throwaway pre-deploy container instead, which keeps the API runtime boundary intact.
+
+   This requires outbound network access to the npm registry during pre-deploy. If a Railway environment blocks that egress, the fallback is to add a `migrate` stage/service that retains the CLI rather than reintroducing it into the API runtime image.
+
+6. **Deploy → Start command**:
+
+   ```bash
+   node dist/main.js
+   ```
+
+7. **Healthcheck path**: `/api/health/ready` (from `backend/railway.json`)
+
+   The API exposes two distinct probes:
+
+   | Endpoint | Role | Checks DB? | Failure code |
+   |----------|------|-----------|--------------|
+   | `/api/health` | Liveness | **No** — returns static `{"status":"ok"}` | never fails while the process is up |
+   | `/api/health/ready` | Readiness | **Yes** — runs `SELECT 1` via Prisma | `503` when the database is unreachable |
+
+   Railway's deployment healthcheck uses the **readiness** path so a deploy that cannot reach Postgres is never promoted as healthy. `/api/health` does **not** verify the database and must not be used to gate a deploy. Readiness also reports storage, but degraded storage returns `200` with `"status":"degraded"` and so does not block a deploy — only the database gates it.
+
+### Database startup behaviour (fail-fast, intentional)
+
+`PrismaService.onModuleInit` calls `$connect()` and **rethrows** on failure, so Nest never reaches `listen()` when Postgres is unreachable. This is deliberate and correct for Railway:
+
+- The API never starts in an unusable state serving errors on every route.
+- The container exits non-zero, and `restartPolicyType: ON_FAILURE` retries it.
+- The deploy healthcheck fails, so a broken deployment is not promoted while the previous one keeps serving.
+
+Because `migrate deploy` already runs in pre-deploy and fails the deployment when the database is unreachable, a container that reaches the start command has normally proven database connectivity. Do not soften this into a warn-and-continue.
+
+### Backend build (manual reference)
+
+```bash
+cd backend
+npm ci --legacy-peer-deps
+npx prisma generate
+npm run build
+```
+
+### Backend start
+
+```bash
+node dist/main.js
+```
+
+Listens on `HOST` (default `0.0.0.0`) and `PORT` (Railway-injected).
+
+---
+
+## STEP D — Backend environment variables
+
+Link Postgres `DATABASE_URL` from the Railway Postgres service.
+
+Set remaining variables from `backend/.env.railway.example`:
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `NODE_ENV` | Yes | `production` |
+| `DATABASE_URL` | Yes | From Railway Postgres |
+| `JWT_ACCESS_SECRET` | Yes | Min 32 random chars |
+| `JWT_REFRESH_SECRET` | Yes | Different from access secret |
+| `JWT_ACCESS_EXPIRES_IN` | No | Default `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | No | Default `7d` |
+| `AUTH_COOKIE_SAME_SITE` | Yes (Railway) | `none` for cross-origin `*.up.railway.app` |
+| `AUTH_COOKIE_DOMAIN` | No | Leave empty on Railway staging |
+| `FRONTEND_URL` | Yes | Railway frontend public URL |
+| `CORS_ORIGINS` | Yes | Comma-separated frontend origins |
+| `STORAGE_DRIVER` | Yes | Must be `s3` |
+| `S3_ENDPOINT` | Yes | S3-compatible API endpoint |
+| `S3_REGION` | No | Default `auto` |
+| `S3_BUCKET` | Yes | Bucket name |
+| `S3_ACCESS_KEY_ID` | Yes | Access key |
+| `S3_SECRET_ACCESS_KEY` | Yes | Secret key |
+| `S3_PUBLIC_BASE_URL` | Yes | Public base URL for uploaded images |
+| `S3_FORCE_PATH_STYLE` | No | `true` for MinIO-style; often `false` for R2/AWS |
+| `PAYMENT_DRIVER` | No | `simulated` for staging |
+| `PAYMENT_CURRENCY` | No | `LYD` |
+| `EMAIL_FROM` | No | Outbound sender |
+
+**Never** commit filled values. Set only in Railway UI.
+
+---
+
+## STEP E — S3-compatible object storage
+
+### Option 1 — Railway Bucket (if available in your project)
+
+Map Railway Bucket credentials to the application's existing variable names:
+
+| Railway / provider | Backend variable |
+|--------------------|------------------|
+| Endpoint URL | `S3_ENDPOINT` |
+| Region | `S3_REGION` |
+| Bucket name | `S3_BUCKET` |
+| Access key | `S3_ACCESS_KEY_ID` |
+| Secret key | `S3_SECRET_ACCESS_KEY` |
+| Public asset base URL | `S3_PUBLIC_BASE_URL` |
+
+`S3_PUBLIC_BASE_URL` must match how objects are served publicly (CDN URL or path-style bucket URL). Profile and portfolio uploads use this for `publicUrlForKey()`.
+
+Set `S3_FORCE_PATH_STYLE=true` if the provider requires path-style addressing (common for MinIO-compatible endpoints).
+
+### Option 2 — External S3 (Cloudflare R2, DigitalOcean Spaces, AWS)
+
+Use the same variable names. See `backend/docs/STORAGE.md` for provider examples.
+
+### Public file behavior
+
+The application generates **public URLs** from `S3_PUBLIC_BASE_URL` + object key. It does **not** require presigned URLs for marketplace profile/portfolio images when the bucket (or CDN) serves those prefixes publicly.
+
+If your bucket is private-only, configure a public CDN origin or bucket policy for `profile-images/` and `portfolio/` prefixes (same as VPS MinIO init).
+
+---
+
+## STEP F — Deploy backend
+
+1. Deploy the backend service.
+2. **Settings → Networking → Generate Domain** (e.g. `libya-freelance-api-production.up.railway.app`).
+3. Verify:
+
+   ```bash
+   curl -fsS https://<backend-domain>/api/health
+   curl -fsS https://<backend-domain>/api/health/ready
+   ```
+
+   `/api/health` → liveness (200).  
+   `/api/health/ready` → readiness (200 when DB connected).
+
+---
+
+## STEP G — Add Frontend service
+
+1. **+ New** → **GitHub Repo** → same repository.
+2. **Settings → Root Directory**: `frontend`
+3. **Config file path**: `frontend/railway.json`
+4. **Build**: `frontend/Dockerfile` (Next.js standalone).
+5. **Start command**: `node server.js` (standalone output).
+6. **Healthcheck**: `/api/health`
+
+### Frontend build (manual reference)
+
+```bash
+cd frontend
+npm ci
+NEXT_PUBLIC_API_URL=https://<backend-domain>/api \
+NEXT_PUBLIC_SOCKET_URL=https://<backend-domain> \
+NEXT_PUBLIC_SITE_URL=https://<frontend-domain> \
+NEXT_PUBLIC_ADMIN_URL=https://<frontend-domain> \
+npm run build
+```
+
+### Frontend start
+
+```bash
+node server.js
+```
+
+Next.js standalone respects `PORT` and `HOSTNAME=0.0.0.0`.
+
+---
+
+## STEP H — Frontend environment variables
+
+Set at **build time** (Railway rebuilds when these change):
+
+| Variable | Example (staging) |
+|----------|-------------------|
+| `NEXT_PUBLIC_API_URL` | `https://<backend-domain>/api` |
+| `NEXT_PUBLIC_SOCKET_URL` | `https://<backend-domain>` |
+| `NEXT_PUBLIC_SITE_URL` | `https://<frontend-domain>` |
+| `NEXT_PUBLIC_ADMIN_URL` | `https://<frontend-domain>` (same host for Railway staging) |
+| `NEXT_PUBLIC_MEDIA_ORIGIN` | Same scheme+host as `S3_PUBLIC_BASE_URL` |
+| `NEXT_PUBLIC_IMAGE_HOSTS` | Optional extra CDN hostnames, comma-separated |
+
+For Railway staging, set `NEXT_PUBLIC_ADMIN_URL` equal to `NEXT_PUBLIC_SITE_URL` so `/admin` works on the same hostname (no separate admin subdomain required).
+
+---
+
+## STEP I — Deploy frontend
+
+1. Generate Railway public domain for frontend.
+2. Update backend `CORS_ORIGINS` and `FRONTEND_URL` to include the frontend Railway URL.
+3. Redeploy backend if CORS changed.
+4. Verify:
+
+   ```bash
+   curl -fsS https://<frontend-domain>/api/health
+   ```
+
+---
+
+## STEP J — CORS for Railway domains
+
+Backend `CORS_ORIGINS` must include every browser origin that calls the API:
+
+```
+https://your-frontend.up.railway.app
+```
+
+Add `www.` variant if used. Socket.IO uses the same `CORS_ORIGINS` list.
+
+After adding origins, redeploy backend.
+
+---
+
+## STEP K — Staging test checklist
+
+| Flow | Pass criteria |
+|------|---------------|
+| Homepage | Loads on Railway frontend domain |
+| Registration | Client + freelancer signup |
+| Login | Session refresh via httpOnly cookie (`AUTH_COOKIE_SAME_SITE=none`) |
+| Profile image upload | Image stored in S3; URL loads |
+| Portfolio upload | Same |
+| Project creation | API persists to Postgres |
+| Proposals + acceptance | End-to-end |
+| Socket.IO messages | Realtime delivery |
+| Notifications | Push via socket event |
+| Reviews | Create + display |
+| Admin `/admin/login` | Staff login on same Railway frontend host |
+| Admin dashboard | SUPER_ADMIN / ADMIN routes |
+
+---
+
+## STEP L — Custom domains (after staging passes)
+
+**Do not** change VPS production DNS until Railway is validated.
+
+When ready:
+
+1. Railway **Settings → Custom Domain** on frontend → `libyanfreelance.ly`, `www.libyanfreelance.ly`
+2. Optional admin subdomain on same frontend service → `admin.libyanfreelance.ly`  
+   Set `NEXT_PUBLIC_ADMIN_URL=https://admin.libyanfreelance.ly` and `ADMIN_HOSTS=admin.libyanfreelance.ly`
+3. Backend custom domain → `api.libyanfreelance.ly`
+4. Update all `NEXT_PUBLIC_*`, `CORS_ORIGINS`, `FRONTEND_URL`, `S3_PUBLIC_BASE_URL`
+5. For VPS-style same-site cookies on custom domains: `AUTH_COOKIE_SAME_SITE=strict`, leave `AUTH_COOKIE_DOMAIN` empty (subdomains of `libyanfreelance.ly` are same-site)
+
+VPS deployment remains available via existing scripts and GitHub Actions.
+
+---
+
+## Prisma migration strategy
+
+| Action | Command | Where |
+|--------|---------|-------|
+| Production migrate | `prisma migrate deploy` | Railway **pre-deploy** (see `backend/railway.json`) |
+| Production status | `prisma migrate status` | Read-only; safe to run manually |
+| Never use | `migrate reset`, `db push --force-reset`, `migrate dev` | — |
+| Reference seed | `npm run prisma:seed` | Manual one-off only if needed; not automatic on Railway |
+
+Runtime container does **not** run migrations on boot. `migrate deploy` only applies pending migrations and never resets or drops the database, which makes it the correct production strategy.
+
+`prisma/migrations/` holds 19 forward-only migrations with `migration_lock.toml` pinned to `postgresql`. They apply cleanly to an empty database, which is what a fresh Railway Postgres provides. Do not edit applied migration history — ship a forward-fix migration instead.
+
+If a migration fails partway on Railway, the deploy is aborted and the previous deployment keeps serving. Resolve by restoring from a backup or shipping a forward-fix migration — never with `migrate reset`.
+
+---
+
+## Auth cookies on Railway
+
+| Setting | Railway staging | VPS production (custom domains) |
+|---------|-----------------|----------------------------------|
+| `AUTH_COOKIE_SAME_SITE` | `none` | `strict` (default) |
+| `AUTH_COOKIE_DOMAIN` | empty | empty |
+| `secure` | `true` (auto when `none`) | `true` |
+
+Access tokens are sent as `Authorization: Bearer` headers. Refresh tokens use httpOnly cookies on the **API domain** — cross-origin Railway hosts require `AUTH_COOKIE_SAME_SITE=none`.
+
+---
+
+## Socket.IO
+
+- URL: `NEXT_PUBLIC_SOCKET_URL` (API origin, no `/api` suffix)
+- Auth: Bearer token in handshake (`auth.token`)
+- Transports: `websocket` + `polling` fallback
+- CORS: `CORS_ORIGINS` on backend
+- No Redis adapter (single instance). Document horizontal scaling as future work.
+
+---
+
+## VPS compatibility preserved
+
+Unchanged:
+
+- `docker-compose.production.yml`
+- `scripts/deploy-*.sh`
+- `.github/workflows/deploy-production.yml`
+- Caddy external reverse proxy assumptions
+- MinIO bundled in VPS compose
+
+Railway uses environment configuration only — no compose required.
+
+---
+
+## Related docs
+
+- `backend/docs/STORAGE.md` — S3 providers
+- `docs/PRODUCTION_DEPLOYMENT.md` — VPS path
+- `backend/.env.railway.example` — backend variable template
+- `frontend/.env.railway.example` — frontend variable template

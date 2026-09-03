@@ -58,6 +58,9 @@ main() {
     exit 0
   fi
 
+  log_section "Pre-deploy storage gate (must pass before rebuild/restart)"
+  require_production_storage_env "${env_file}"
+
   cd "${REPO_ROOT}"
   PREVIOUS_COMMIT="$(git_current_sha)"
   log "Previous commit: ${PREVIOUS_COMMIT}"
@@ -72,6 +75,10 @@ main() {
   fi
 
   validate_compose_config
+
+  # Re-check after git fast-forward in case env expectations changed; still before build.
+  require_production_storage_env "${env_file}"
+
   build_app_images
   run_migrations
   restart_app_services

@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.gitignore
+.env*
+!.env.railway.example
+coverage
+test
+*.log
+npm-debug.log*
+.DS_Store
+.prod-verify
+.runtime-bundle
+docs/PROD_DEPLOY_BOUNDARY_REPORT.json
+.vscode
+.idea

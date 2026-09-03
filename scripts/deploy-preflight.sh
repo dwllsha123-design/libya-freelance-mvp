@@ -87,22 +87,30 @@ check_env_files() {
 
   local required_vars=(
     POSTGRES_PASSWORD JWT_ACCESS_SECRET JWT_REFRESH_SECRET
+    STORAGE_DRIVER
     S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_PUBLIC_BASE_URL
   )
-  local key line val
+  local key val
   for key in "${required_vars[@]}"; do
-    line="$(grep -E "^${key}=" "${env_file}" | tail -1 || true)"
-    if [[ -z "${line}" ]]; then
+    val="$(env_file_get "${env_file}" "${key}" || true)"
+    if [[ -z "${val}" ]]; then
       fail "env missing variable: ${key}"
       continue
     fi
-    val="${line#*=}"
-    if [[ -z "${val}" || "${val}" == CHANGE_ME* ]]; then
+    if [[ "${val}" == CHANGE_ME* ]]; then
       fail "env variable not configured: ${key}"
     else
       pass "env variable set: ${key}"
     fi
   done
+
+  local driver
+  driver="$(env_file_get "${env_file}" STORAGE_DRIVER || true)"
+  if [[ "${driver}" != "s3" ]]; then
+    fail "STORAGE_DRIVER must be s3 for production (local disk is not permitted)"
+  else
+    pass "STORAGE_DRIVER=s3 (production object storage required)"
+  fi
 }
 
 check_docker() {

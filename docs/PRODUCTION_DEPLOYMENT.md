@@ -63,6 +63,21 @@ Create these in **Settings → Secrets and variables → Actions → Variables**
 Push to `main` runs CI always. **SSH deployment runs only when** `vars.PRODUCTION_AUTODEPLOY == 'true'`.  
 Manual **workflow_dispatch** deploys after CI even when autodeploy is off. There is no `skip_ci` path.
 
+### Production storage gate (preflight)
+
+Production architecture uses **S3-compatible object storage** (bundled MinIO by default). Local disk is forbidden.
+
+Before rebuild/restart, `deploy-production.sh` and `deploy-preflight.sh` require these env keys (names only; values never printed):
+
+| Variable | Required |
+|----------|----------|
+| `STORAGE_DRIVER` | Must equal `s3` |
+| `S3_ENDPOINT` | Non-empty |
+| `S3_BUCKET` | Non-empty |
+| `S3_ACCESS_KEY_ID` | Non-empty |
+| `S3_SECRET_ACCESS_KEY` | Non-empty |
+| `S3_PUBLIC_BASE_URL` | Non-empty |
+
 Optional repository variable:
 
 | Variable | Default | Purpose |

@@ -52,7 +52,6 @@ function configuredAdminHosts(): Set<string> {
   }
 
   hosts.add('admin.localhost');
-  hosts.add('admin.libyanfreelance.ly');
 
   return hosts;
 }

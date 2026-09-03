@@ -56,6 +56,75 @@ compose() {
   docker compose -f "${REPO_ROOT}/${COMPOSE_FILE}" --env-file "${env_file}" "$@"
 }
 
+# Read KEY=value from an env file without printing secret values.
+env_file_get() {
+  local env_file="$1"
+  local key="$2"
+  local line val
+  line="$(grep -E "^${key}=" "${env_file}" | tail -1 || true)"
+  if [[ -z "${line}" ]]; then
+    return 1
+  fi
+  val="${line#*=}"
+  # Strip optional surrounding quotes
+  val="${val%\"}"
+  val="${val#\"}"
+  val="${val%\'}"
+  val="${val#\'}"
+  printf '%s' "${val}"
+}
+
+# Fail loudly if production storage config is missing/placeholder.
+# Never prints secret values — only key names and pass/fail.
+require_production_storage_env() {
+  local env_file="$1"
+  local missing=0
+  local key val driver
+
+  if [[ ! -f "${env_file}" ]]; then
+    echo "ERROR: production env file not found for storage validation: ${env_file}" >&2
+    return 1
+  fi
+
+  driver="$(env_file_get "${env_file}" STORAGE_DRIVER || true)"
+  if [[ -z "${driver}" ]]; then
+    # docker-compose.production.yml hardcodes STORAGE_DRIVER=s3 for the api service,
+    # but the env file must still declare it so non-compose boots cannot drift to local.
+    echo "ERROR: STORAGE_DRIVER is missing from ${env_file} (required: s3)" >&2
+    missing=1
+  elif [[ "${driver}" != "s3" ]]; then
+    echo "ERROR: STORAGE_DRIVER must be 's3' in production (got a non-s3 value; value not printed)" >&2
+    missing=1
+  else
+    log "STORAGE_DRIVER=s3 confirmed"
+  fi
+
+  # Exact variable names used by backend ConfigService + docker-compose.production.yml
+  local required_s3_vars=(
+    S3_ENDPOINT
+    S3_BUCKET
+    S3_ACCESS_KEY_ID
+    S3_SECRET_ACCESS_KEY
+    S3_PUBLIC_BASE_URL
+  )
+
+  for key in "${required_s3_vars[@]}"; do
+    val="$(env_file_get "${env_file}" "${key}" || true)"
+    if [[ -z "${val}" || "${val}" == CHANGE_ME* ]]; then
+      echo "ERROR: production storage env missing or unset: ${key}" >&2
+      missing=1
+    else
+      log "storage env present: ${key}"
+    fi
+  done
+
+  if [[ "${missing}" -ne 0 ]]; then
+    echo "ERROR: Refusing to deploy — production S3-compatible storage is not configured." >&2
+    return 1
+  fi
+  return 0
+}
+
 # --- Repository guard --------------------------------------------------------
 assert_production_repo() {
   local expected_name="${PRODUCTION_REPO_NAME:-libya-freelance-mvp}"
