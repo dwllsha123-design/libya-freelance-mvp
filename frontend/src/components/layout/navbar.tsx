@@ -295,12 +295,6 @@ export function Navbar() {
           ) : (
             <>
               <Link
-                href="/register?role=CLIENT&next=/dashboard/projects/new"
-                className="hidden rounded-full border border-line bg-cream px-3 py-2 text-sm font-semibold text-ink transition hover:border-ink hover:bg-cream-deep xl:inline-flex"
-              >
-                {t('postProject')}
-              </Link>
-              <Link
                 href="/login"
                 className="hidden rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-cream-deep hover:text-ink sm:inline"
               >
@@ -419,12 +413,6 @@ export function Navbar() {
                   </>
                 ) : (
                   <>
-                    <NavLink
-                      href="/register?role=CLIENT&next=/dashboard/projects/new"
-                      onNavigate={closeMobile}
-                    >
-                      {t('postProject')}
-                    </NavLink>
                     <NavLink href="/login" onNavigate={closeMobile}>
                       {t('login')}
                     </NavLink>

@@ -112,14 +112,6 @@ export function SiteFooter() {
                   {t('advancedSearch')}
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/register?role=CLIENT&next=/dashboard/projects/new"
-                  className="text-sm text-ink-soft transition-colors hover:text-ember"
-                >
-                  {t('postProject')}
-                </Link>
-              </li>
             </ul>
           </div>
 
