@@ -213,7 +213,7 @@ export function Navbar() {
           >
             {mobileOpen ? '✕' : '☰'}
           </button>
-          <div className="min-w-0 max-w-[10.5rem] overflow-hidden sm:max-w-[13rem] lg:max-w-none">
+          <div className="min-w-0 max-w-[9.5rem] overflow-hidden sm:max-w-[13rem] lg:max-w-none">
             <Logo className="[&_span.font-display]:truncate" />
           </div>
         </div>
@@ -245,25 +245,25 @@ export function Navbar() {
           )}
         </nav>
 
-        {/* Actions — never wrap into the brand */}
-        <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <div className="hidden lg:block">
+        {/* Actions — mobile keeps CTA only; tools live in the drawer */}
+        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+          <div className="hidden items-center gap-1.5 lg:flex">
             <NavSearch compact />
+            <button
+              type="button"
+              onClick={() => setDemoOpen(true)}
+              className="relative grid size-9 place-items-center rounded-full bg-ember text-white shadow-[0_6px_16px_-6px_rgba(239,77,26,0.8)] transition-transform hover:-translate-y-0.5"
+              aria-label={t('demoTour')}
+              title={t('demoTour')}
+            >
+              ▶
+              <span className="absolute -top-1.5 -start-1.5 rounded-full bg-palm px-1.5 py-0.5 text-[9px] font-bold text-white">
+                {t('newBadge')}
+              </span>
+            </button>
+            <LanguageSwitcher />
+            <ThemeToggle />
           </div>
-          <button
-            type="button"
-            onClick={() => setDemoOpen(true)}
-            className="relative grid size-9 place-items-center rounded-full bg-ember text-white shadow-[0_6px_16px_-6px_rgba(239,77,26,0.8)] transition-transform hover:-translate-y-0.5"
-            aria-label={t('demoTour')}
-            title={t('demoTour')}
-          >
-            ▶
-            <span className="absolute -top-1.5 -start-1.5 rounded-full bg-palm px-1.5 py-0.5 text-[9px] font-bold text-white">
-              {t('newBadge')}
-            </span>
-          </button>
-          <LanguageSwitcher />
-          <ThemeToggle />
           {isLoading ? (
             <span className="text-sm text-ink-soft">{tCommon('loading')}</span>
           ) : user ? (
@@ -294,7 +294,7 @@ export function Navbar() {
             <>
               <Link
                 href="/login"
-                className="hidden rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-cream-deep hover:text-ink sm:inline"
+                className="hidden rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-cream-deep hover:text-ink sm:inline lg:inline"
               >
                 {t('login')}
               </Link>
@@ -324,18 +324,33 @@ export function Navbar() {
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <Logo />
-                  <div className="flex items-center gap-2">
-                    <LanguageSwitcher />
-                    <button
-                      type="button"
-                      className="grid size-9 place-items-center rounded-lg border border-line text-ink-soft"
-                      aria-label={t('closeMenu')}
-                      onClick={closeMobile}
-                    >
-                      ✕
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="grid size-9 place-items-center rounded-lg border border-line text-ink-soft"
+                    aria-label={t('closeMenu')}
+                    onClick={closeMobile}
+                  >
+                    ✕
+                  </button>
                 </div>
+                <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-line bg-cream-deep/60 px-3 py-2.5">
+                  <LanguageSwitcher />
+                  <ThemeToggle />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobile();
+                    setDemoOpen(true);
+                  }}
+                  className="mb-2 inline-flex items-center gap-2 rounded-full bg-ember px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  <span aria-hidden>▶</span>
+                  {t('demoTour')}
+                  <span className="rounded-full bg-palm px-1.5 py-0.5 text-[10px] font-bold">
+                    {t('newBadge')}
+                  </span>
+                </button>
                 <NavLink href="/" onNavigate={closeMobile} active={pathname === '/'}>
                   {t('home')}
                 </NavLink>
