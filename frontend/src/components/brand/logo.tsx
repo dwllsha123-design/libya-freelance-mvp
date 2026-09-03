@@ -57,7 +57,7 @@ export function Logo({
   const src = variant === 'mark' ? DESIGN_LOGO_MARK_PATH : LOGO_ICON_PATH;
 
   const content = (
-    <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex min-w-0 max-w-full items-center gap-2.5 ${className}`}>
       <Image
         src={src}
         alt={t('name')}
@@ -68,7 +68,7 @@ export function Logo({
         priority
         unoptimized
       />
-      {showName ? <BrandName className={nameClassName} /> : null}
+      {showName ? <BrandName className={`min-w-0 truncate ${nameClassName}`} /> : null}
     </span>
   );
 

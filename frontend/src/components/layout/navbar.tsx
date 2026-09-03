@@ -30,7 +30,7 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`block rounded-full px-3 py-2 text-sm font-medium transition-colors md:inline-flex lg:px-4 ${
+      className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
         active
           ? 'bg-ink text-cream'
           : 'text-ink-soft hover:bg-cream-deep hover:text-ink'
@@ -64,7 +64,7 @@ function NavDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors lg:px-4 ${
+        className={`flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
           open ? 'bg-cream-deep text-ink' : 'text-ink-soft hover:bg-cream-deep hover:text-ink'
         }`}
       >
@@ -201,27 +201,25 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 sm:h-16 sm:gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
+        {/* Brand */}
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
           <button
             type="button"
-            className="grid size-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft md:hidden"
+            className="grid size-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft lg:hidden"
             aria-label={mobileOpen ? t('closeMenu') : t('openMenu')}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((open) => !open)}
           >
             {mobileOpen ? '✕' : '☰'}
           </button>
-          <div className="min-w-0 scale-95 sm:scale-100">
-            <Logo />
+          <div className="min-w-0 max-w-[10.5rem] overflow-hidden sm:max-w-[13rem] lg:max-w-none">
+            <Logo className="[&_span.font-display]:truncate" />
           </div>
         </div>
 
-        <div className="hidden min-w-0 flex-1 items-center justify-center px-2 xl:flex">
-          <NavSearch />
-        </div>
-
-        <nav className="hidden max-w-[min(100%,40rem)] flex-wrap items-center justify-end gap-0.5 md:flex lg:max-w-none lg:gap-1">
+        {/* Desktop nav — centered, no wrap */}
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 lg:flex lg:gap-1">
           <NavLink href="/" active={pathname === '/'}>
             {t('home')}
           </NavLink>
@@ -234,7 +232,7 @@ export function Navbar() {
               </NavLink>
               <Link
                 href="/messages"
-                className="relative inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink lg:px-4"
+                className="relative inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink xl:px-4"
               >
                 {t('messages')}
                 {messageBadge}
@@ -247,7 +245,11 @@ export function Navbar() {
           )}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+        {/* Actions — never wrap into the brand */}
+        <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <div className="hidden lg:block">
+            <NavSearch compact />
+          </div>
           <button
             type="button"
             onClick={() => setDemoOpen(true)}
@@ -269,11 +271,11 @@ export function Navbar() {
           ) : user ? (
             <>
               {user.role === 'FREELANCER' ? (
-                <div className="hidden sm:block">
+                <div className="hidden xl:block">
                   <NuqatiBadge />
                 </div>
               ) : null}
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <NotificationBell />
               </div>
               <Link
@@ -285,7 +287,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => logout()}
-                className="hidden rounded-full px-3 py-2 text-sm text-ink-soft transition hover:bg-cream-deep hover:text-ink lg:inline"
+                className="hidden rounded-full px-3 py-2 text-sm text-ink-soft transition hover:bg-cream-deep hover:text-ink xl:inline"
               >
                 {t('logout')}
               </button>
@@ -294,7 +296,7 @@ export function Navbar() {
             <>
               <Link
                 href="/register?role=CLIENT&next=/dashboard/projects/new"
-                className="hidden rounded-full border border-line bg-cream px-3 py-2 text-sm font-semibold text-ink transition hover:border-ink hover:bg-cream-deep lg:inline-flex"
+                className="hidden rounded-full border border-line bg-cream px-3 py-2 text-sm font-semibold text-ink transition hover:border-ink hover:bg-cream-deep xl:inline-flex"
               >
                 {t('postProject')}
               </Link>
@@ -317,7 +319,7 @@ export function Navbar() {
 
       {isClient && mobileOpen
         ? createPortal(
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <button
                 type="button"
                 className="fixed inset-0 z-[60] bg-ink/40"
