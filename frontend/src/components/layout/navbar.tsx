@@ -218,6 +218,7 @@ export function Navbar() {
             iconClassName="size-8 sm:size-10"
             nameClassName="text-[0.95rem] sm:text-[1.05rem]"
           />
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
 
@@ -264,7 +265,6 @@ export function Navbar() {
                 {t('newBadge')}
               </span>
             </button>
-            <LanguageSwitcher />
           </div>
           {isLoading ? (
             <span className="text-sm text-ink-soft">{tCommon('loading')}</span>
@@ -334,9 +334,6 @@ export function Navbar() {
                   >
                     ✕
                   </button>
-                </div>
-                <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-line bg-cream-deep/60 px-3 py-2.5">
-                  <LanguageSwitcher />
                 </div>
                 <button
                   type="button"
