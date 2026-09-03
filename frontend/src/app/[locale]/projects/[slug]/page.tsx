@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { API_BASE_URL } from '@/lib/api';
 import ProjectDetailClient from './project-detail-client';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'}/projects/slug/${slug}`,
+      `${API_BASE_URL}/projects/slug/${slug}`,
       {
         headers: { 'X-Client-Request': 'libya-freelance' },
         next: { revalidate: 60 },

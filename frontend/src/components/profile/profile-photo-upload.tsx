@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
-import { ApiError } from '@/lib/api';
+import { API_BASE_URL, ApiError } from '@/lib/api';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 2 * 1024 * 1024;
@@ -63,7 +63,7 @@ export function ProfilePhotoUpload({
       setUploadProgress(40);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'}/profiles/me/photo`,
+        `${API_BASE_URL}/profiles/me/photo`,
         {
           method: 'POST',
           headers: {

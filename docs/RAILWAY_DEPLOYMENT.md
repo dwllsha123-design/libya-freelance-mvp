@@ -143,10 +143,10 @@ Set remaining variables from `backend/.env.railway.example`:
 | `JWT_REFRESH_SECRET` | Yes | Different from access secret |
 | `JWT_ACCESS_EXPIRES_IN` | No | Default `15m` |
 | `JWT_REFRESH_EXPIRES_IN` | No | Default `7d` |
-| `AUTH_COOKIE_SAME_SITE` | Yes (Railway) | `none` for cross-origin `*.up.railway.app` |
-| `AUTH_COOKIE_DOMAIN` | No | Leave empty on Railway staging |
-| `FRONTEND_URL` | Yes | Railway frontend public URL |
-| `CORS_ORIGINS` | Yes | Comma-separated frontend origins |
+| `AUTH_COOKIE_SAME_SITE` | Yes | `lax` on custom domains; `none` only on cross-site `*.up.railway.app` staging |
+| `AUTH_COOKIE_DOMAIN` | No | Leave **empty** — keeps the refresh cookie host-only on the API domain |
+| `FRONTEND_URL` | Yes | `https://libyanfreelance.ly` in production |
+| `CORS_ORIGINS` | Yes | Comma-separated browser origins (see [CORS](#step-j--cors-for-railway-domains)) |
 | `STORAGE_DRIVER` | Yes | Must be `s3` — **add manually**, Bucket auto-inject does not set it |
 | `AWS_ACCESS_KEY_ID` | Yes | Auto-injected by Railway Bucket |
 | `AWS_SECRET_ACCESS_KEY` | Yes | Auto-injected by Railway Bucket |
@@ -283,16 +283,18 @@ Next.js standalone respects `PORT` and `HOSTNAME=0.0.0.0`.
 
 Set at **build time** (Railway rebuilds when these change):
 
-| Variable | Example (staging) |
-|----------|-------------------|
-| `NEXT_PUBLIC_API_URL` | `https://<backend-domain>/api` |
-| `NEXT_PUBLIC_SOCKET_URL` | `https://<backend-domain>` |
-| `NEXT_PUBLIC_SITE_URL` | `https://<frontend-domain>` |
-| `NEXT_PUBLIC_ADMIN_URL` | `https://<frontend-domain>` (same host for Railway staging) |
-| `NEXT_PUBLIC_MEDIA_ORIGIN` | `https://<backend-domain>` — same scheme+host as `S3_PUBLIC_BASE_URL`, no path |
-| `NEXT_PUBLIC_IMAGE_HOSTS` | Optional extra CDN hostnames, comma-separated |
+| Variable | Staging | Production |
+|----------|---------|------------|
+| `NEXT_PUBLIC_API_URL` | `https://<backend-domain>/api` | `https://api.libyanfreelance.ly/api` |
+| `NEXT_PUBLIC_SOCKET_URL` | `https://<backend-domain>` | `https://api.libyanfreelance.ly` |
+| `NEXT_PUBLIC_SITE_URL` | `https://<frontend-domain>` | `https://libyanfreelance.ly` |
+| `NEXT_PUBLIC_ADMIN_URL` | `https://<frontend-domain>` (same host on staging) | `https://admin.libyanfreelance.ly` |
+| `NEXT_PUBLIC_MEDIA_ORIGIN` | `https://<backend-domain>` — same scheme+host as `S3_PUBLIC_BASE_URL`, no path | `https://api.libyanfreelance.ly` |
+| `NEXT_PUBLIC_IMAGE_HOSTS` | Optional extra CDN hostnames, comma-separated | same |
 
-For Railway staging, set `NEXT_PUBLIC_ADMIN_URL` equal to `NEXT_PUBLIC_SITE_URL` so `/admin` works on the same hostname (no separate admin subdomain required).
+`NEXT_PUBLIC_ADMIN_URL` is what `src/lib/site-urls.ts` uses to recognise the admin host, so on production it must be the real admin origin. On staging, set it equal to `NEXT_PUBLIC_SITE_URL` so `/admin` works on the same hostname without a separate subdomain.
+
+If `NEXT_PUBLIC_API_URL` is missing at build time, `src/lib/api.ts` falls back to `https://api.libyanfreelance.ly/api` for production builds and to `http://localhost:4000/api` otherwise, so a production image can never ship pointing at localhost. Set the variable explicitly anyway — the fallback is a safety net, not configuration.
 
 ---
 
@@ -311,15 +313,24 @@ For Railway staging, set `NEXT_PUBLIC_ADMIN_URL` equal to `NEXT_PUBLIC_SITE_URL`
 
 ## STEP J — CORS for Railway domains
 
-Backend `CORS_ORIGINS` must include every browser origin that calls the API:
+Backend `CORS_ORIGINS` must list every browser origin that calls the API — nothing more. Production:
 
 ```
-https://your-frontend.up.railway.app
+CORS_ORIGINS=https://libyanfreelance.ly,https://www.libyanfreelance.ly,https://admin.libyanfreelance.ly
 ```
 
-Add `www.` variant if used. Socket.IO uses the same `CORS_ORIGINS` list.
+Comma-separated, no spaces, no trailing slash, no trailing comma. Each entry is a scheme + host origin; a hostname alone will never match.
 
-After adding origins, redeploy backend.
+`api.libyanfreelance.ly` is **not** listed: an origin is only needed for browsers calling the API, never for the API itself.
+
+Rules enforced in code (`backend/src/bootstrap.ts`):
+
+- `credentials: true`, with the allowlist passed as an explicit array. A non-matching `Origin` receives no `Access-Control-Allow-Origin` header, so the browser blocks the response.
+- `Access-Control-Allow-Origin: *` is never emitted — it is invalid with credentials, and `test/auth-cors-cookie.spec.ts` asserts this.
+- `allowedHeaders: Content-Type, Authorization, X-Client-Request`. The custom `X-Client-Request` header is required by `ClientRequestGuard` on the auth routes, which also forces a CORS preflight and therefore doubles as CSRF protection.
+- Socket.IO (`messaging.gateway.ts`) reads the same `CORS_ORIGINS` list, so websocket and HTTP allowlists cannot drift.
+
+`CORS_ORIGINS` is read at boot, so redeploy the backend after changing it.
 
 ---
 
@@ -329,7 +340,9 @@ After adding origins, redeploy backend.
 |------|---------------|
 | Homepage | Loads on Railway frontend domain |
 | Registration | Client + freelancer signup |
-| Login | Session refresh via httpOnly cookie (`AUTH_COOKIE_SAME_SITE=none`) |
+| Login | Session refresh via httpOnly cookie (`AUTH_COOKIE_SAME_SITE=none` on staging) |
+| Logout | `refresh_token` cookie removed; a later `/api/auth/refresh` returns 401 |
+| CORS rejection | A request from an origin outside `CORS_ORIGINS` is blocked by the browser |
 | Profile image upload | Image stored in S3; URL loads |
 | Portfolio upload | Same |
 | Project creation | API persists to Postgres |
@@ -352,8 +365,10 @@ When ready:
 2. Optional admin subdomain on same frontend service → `admin.libyanfreelance.ly`  
    Set `NEXT_PUBLIC_ADMIN_URL=https://admin.libyanfreelance.ly` and `ADMIN_HOSTS=admin.libyanfreelance.ly`
 3. Backend custom domain → `api.libyanfreelance.ly`
-4. Update all `NEXT_PUBLIC_*`, `CORS_ORIGINS`, `FRONTEND_URL`, `S3_PUBLIC_BASE_URL`
-5. For VPS-style same-site cookies on custom domains: `AUTH_COOKIE_SAME_SITE=strict`, leave `AUTH_COOKIE_DOMAIN` empty (subdomains of `libyanfreelance.ly` are same-site)
+4. Update all `NEXT_PUBLIC_*`, `CORS_ORIGINS`, `FRONTEND_URL`, `S3_PUBLIC_BASE_URL`.
+   `NEXT_PUBLIC_*` values are inlined at build time — the frontend must be **rebuilt**, not just restarted.
+5. Switch `AUTH_COOKIE_SAME_SITE` from `none` to `lax` and leave `AUTH_COOKIE_DOMAIN` empty
+   (see [Auth cookies on Railway](#auth-cookies-on-railway))
 
 VPS deployment remains available via existing scripts and GitHub Actions.
 
@@ -378,13 +393,24 @@ If a migration fails partway on Railway, the deploy is aborted and the previous 
 
 ## Auth cookies on Railway
 
-| Setting | Railway staging | VPS production (custom domains) |
-|---------|-----------------|----------------------------------|
-| `AUTH_COOKIE_SAME_SITE` | `none` | `strict` (default) |
-| `AUTH_COOKIE_DOMAIN` | empty | empty |
-| `secure` | `true` (auto when `none`) | `true` |
+Access tokens live in frontend memory only and travel as `Authorization: Bearer` headers. The single cookie in the system is the refresh token, set by the API on its own hostname.
 
-Access tokens are sent as `Authorization: Bearer` headers. Refresh tokens use httpOnly cookies on the **API domain** — cross-origin Railway hosts require `AUTH_COOKIE_SAME_SITE=none`.
+| Setting | Custom domains (production) | `*.up.railway.app` (staging) |
+|---------|-----------------------------|------------------------------|
+| `AUTH_COOKIE_SAME_SITE` | `lax` | `none` (required) |
+| `AUTH_COOKIE_DOMAIN` | empty (host-only) | empty |
+| `Secure` | `true` (from `NODE_ENV=production`) | `true` (forced by `none`) |
+| `HttpOnly` | `true` | `true` |
+| `Path` | `/api/auth` | `/api/auth` |
+| `Max-Age` | follows `JWT_REFRESH_EXPIRES_IN` (`7d`) | same |
+
+**Why `lax` is enough in production.** SameSite compares registrable domains, not origins. `libyanfreelance.ly`, `www.`, `admin.` and `api.` all resolve to the registrable domain `libyanfreelance.ly`, so a `fetch` from the frontend to the API is a **same-site** request and `lax` cookies are sent. `none` is only needed on `*.up.railway.app`, where each service sits on a different registrable domain. Never set `none` on the custom domains: it would make the cookie available to genuinely cross-site requests for no benefit.
+
+**Why the cookie stays host-only.** Omitting `AUTH_COOKIE_DOMAIN` scopes the cookie to `api.libyanfreelance.ly` alone. Only the API ever reads it, so `Domain=.libyanfreelance.ly` would widen exposure to every current and future subdomain without enabling anything. Combined with `Path=/api/auth`, the cookie is not attached to ordinary API calls at all — only to `login`, `register`, `refresh` and `logout`.
+
+**Cloudflare / Railway proxy.** `Secure` is derived from `NODE_ENV=production`, not from the request scheme, so it cannot be defeated by a proxy hop that terminates TLS. `trust proxy` is set to `1` in `bootstrap.ts` before CORS and the rate limiters; it is what makes `req.ip` and `req.secure` reflect `X-Forwarded-For` / `X-Forwarded-Proto` rather than the Railway edge. Cloudflare must stay on **Full** SSL/TLS mode so the hop into Railway is HTTPS and `X-Forwarded-Proto: https` arrives intact.
+
+**Logout.** `clearRefreshCookie` reuses the exact `Path`, `Domain`, `SameSite` and `Secure` attributes of the original cookie, which is what browsers require to actually drop it, and `AuthService.logout` deletes the hashed token row so a captured cookie cannot be replayed. `refresh` is single-use: the stored row is deleted and a fresh pair issued on every call.
 
 ---
 

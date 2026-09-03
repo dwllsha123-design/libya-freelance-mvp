@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './api';
+
 export function calculateEscrowFees(amount: number, commissionPercent: number) {
   const platformFee =
     Math.round(amount * (commissionPercent / 100) * 100) / 100;
@@ -7,8 +9,7 @@ export function calculateEscrowFees(amount: number, commissionPercent: number) {
 
 export async function fetchDefaultCommissionPercent(): Promise<number> {
   try {
-    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
-    const res = await fetch(`${base}/platform/commission-config`, {
+    const res = await fetch(`${API_BASE_URL}/platform/commission-config`, {
       cache: 'no-store',
     });
     if (!res.ok) return 10;

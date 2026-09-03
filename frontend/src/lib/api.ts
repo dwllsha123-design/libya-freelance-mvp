@@ -2,8 +2,30 @@ import type { AppLocale } from '@/i18n/routing';
 import arErrors from '../../messages/ar/errors.json';
 import enErrors from '../../messages/en/errors.json';
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+const DEVELOPMENT_API_URL = 'http://localhost:4000/api';
+const PRODUCTION_API_URL = 'https://api.libyanfreelance.ly/api';
+
+/**
+ * `NEXT_PUBLIC_API_URL` is inlined at build time and should always be supplied
+ * by the deployment (Railway service variable / Docker build arg). If it is
+ * missing we must not leave a production bundle pointing at localhost, so the
+ * fallback follows the build mode instead.
+ */
+function resolveApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  return process.env.NODE_ENV === 'production'
+    ? PRODUCTION_API_URL
+    : DEVELOPMENT_API_URL;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
+
+/** API origin without the trailing `/api` (health probes, Socket.IO). */
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export const CLIENT_REQUEST_HEADER = 'X-Client-Request';
 export const CLIENT_REQUEST_VALUE = 'libya-freelance';

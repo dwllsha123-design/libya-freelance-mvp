@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AdminPageHeader, AdminPanel } from '@/components/admin/admin-layout-ui';
 import { StatusBadge } from '@/components/admin/status-badge';
+import { API_ORIGIN } from '@/lib/api';
 type HealthTone = 'success' | 'warning' | 'danger' | 'neutral';
 
 function toneFrom(status: string): HealthTone {
@@ -11,11 +12,6 @@ function toneFrom(status: string): HealthTone {
   if (status === 'Degraded') return 'warning';
   if (status === 'Unavailable') return 'danger';
   return 'neutral';
-}
-
-function apiRoot() {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
-  return raw.replace(/\/api\/?$/, '');
 }
 
 export default function AdminSystemPage() {
@@ -26,7 +22,7 @@ export default function AdminSystemPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const base = apiRoot();
+    const base = API_ORIGIN;
 
     async function ping() {
       try {

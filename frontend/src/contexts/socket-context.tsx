@@ -10,13 +10,9 @@ import {
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { useAuth } from '@/contexts/auth-context';
+import { API_ORIGIN } from '@/lib/api';
 
-const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ??
-  (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api').replace(
-    /\/api$/,
-    '',
-  );
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL?.trim() || API_ORIGIN;
 
 interface SocketContextValue {
   socket: Socket | null;
