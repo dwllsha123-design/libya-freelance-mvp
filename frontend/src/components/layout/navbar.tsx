@@ -262,9 +262,7 @@ export function Navbar() {
               {t('newBadge')}
             </span>
           </button>
-          <div className="hidden sm:block">
-            <LanguageSwitcher />
-          </div>
+          <LanguageSwitcher />
           <ThemeToggle />
           {isLoading ? (
             <span className="text-sm text-ink-soft">{tCommon('loading')}</span>
@@ -326,14 +324,17 @@ export function Navbar() {
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <Logo />
-                  <button
-                    type="button"
-                    className="grid size-9 place-items-center rounded-lg border border-line text-ink-soft"
-                    aria-label={t('closeMenu')}
-                    onClick={closeMobile}
-                  >
-                    ✕
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <LanguageSwitcher />
+                    <button
+                      type="button"
+                      className="grid size-9 place-items-center rounded-lg border border-line text-ink-soft"
+                      aria-label={t('closeMenu')}
+                      onClick={closeMobile}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
                 <NavLink href="/" onNavigate={closeMobile} active={pathname === '/'}>
                   {t('home')}

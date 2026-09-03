@@ -7,7 +7,10 @@ import type { AppLocale } from '@/i18n/routing';
 function FlagLibya({ className = '' }: { className?: string }) {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 36 24"
+      width={20}
+      height={14}
       className={className}
       aria-hidden="true"
       focusable="false"
@@ -28,7 +31,10 @@ function FlagLibya({ className = '' }: { className?: string }) {
 function FlagUk({ className = '' }: { className?: string }) {
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 36 24"
+      width={20}
+      height={14}
       className={className}
       aria-hidden="true"
       focusable="false"
@@ -63,7 +69,7 @@ export function LanguageSwitcher() {
 
   return (
     <div
-      className="flex items-center rounded-full border border-line bg-cream p-0.5"
+      className="flex shrink-0 items-center rounded-full border border-line bg-cream p-0.5"
       role="group"
       aria-label="Language"
     >
@@ -75,7 +81,7 @@ export function LanguageSwitcher() {
             key={item.code}
             type="button"
             onClick={() => switchLocale(item.code)}
-            className={`grid size-8 place-items-center rounded-full transition ${
+            className={`grid size-8 shrink-0 place-items-center rounded-full transition ${
               active
                 ? 'bg-ink/5 ring-1 ring-ember/50'
                 : 'hover:bg-cream-deep'
@@ -84,7 +90,7 @@ export function LanguageSwitcher() {
             aria-label={item.label}
             title={item.label}
           >
-            <Flag className="h-3.5 w-5 overflow-hidden rounded-[2px] shadow-sm ring-1 ring-black/10" />
+            <Flag className="block h-3.5 w-5 shrink-0 overflow-hidden rounded-[2px] shadow-sm ring-1 ring-black/10" />
           </button>
         );
       })}
