@@ -6,15 +6,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      skip_ci:
-        description: 'Skip CI validation (emergency only — not recommended)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
 
 concurrency:
   group: production-deployment
@@ -28,9 +19,6 @@ env:
 
 jobs:
   ci-backend:
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.skip_ci != 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -99,9 +87,6 @@ jobs:
         run: npm run verify:prod-boundary
 
   ci-frontend:
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.skip_ci != 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -134,8 +119,8 @@ jobs:
     needs: [ci-backend, ci-frontend]
     if: >-
       always() &&
-      needs.ci-backend.result != 'failure' &&
-      needs.ci-frontend.result != 'failure' &&
+      needs.ci-backend.result == 'success' &&
+      needs.ci-frontend.result == 'success' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     outputs:
@@ -144,7 +129,7 @@ jobs:
       - name: Decide whether to deploy
         id: evaluate
         env:
-          PRODUCTION_AUTODEPLOY: ${{ secrets.PRODUCTION_AUTODEPLOY }}
+          PRODUCTION_AUTODEPLOY: ${{ vars.PRODUCTION_AUTODEPLOY }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "deploy=true" >> "$GITHUB_OUTPUT"
@@ -156,7 +141,7 @@ jobs:
             echo "PRODUCTION_AUTODEPLOY=true — automatic push deployment enabled."
           else
             echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping deployment: set secret PRODUCTION_AUTODEPLOY=true to enable push deploys."
+            echo "Skipping deployment: set variable PRODUCTION_AUTODEPLOY=true to enable push deploys."
           fi
 
   deploy:
@@ -164,6 +149,8 @@ jobs:
     needs: [ci-backend, ci-frontend, autodeploy-gate]
     if: >-
       always() &&
+      needs.ci-backend.result == 'success' &&
+      needs.ci-frontend.result == 'success' &&
       needs.autodeploy-gate.result == 'success' &&
       needs.autodeploy-gate.outputs.deploy == 'true'
     runs-on: ubuntu-latest
