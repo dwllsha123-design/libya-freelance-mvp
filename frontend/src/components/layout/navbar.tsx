@@ -202,8 +202,8 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
-        {/* Brand */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none lg:shrink-0">
+        {/* Brand + theme (always visible beside the name) */}
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 lg:flex-none lg:shrink-0">
           <button
             type="button"
             className="grid size-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft lg:hidden"
@@ -218,6 +218,7 @@ export function Navbar() {
             iconClassName="size-8 sm:size-10"
             nameClassName="text-[0.95rem] sm:text-[1.05rem]"
           />
+          <ThemeToggle />
         </div>
 
         {/* Desktop nav — centered, no wrap */}
@@ -264,7 +265,6 @@ export function Navbar() {
               </span>
             </button>
             <LanguageSwitcher />
-            <ThemeToggle />
           </div>
           {isLoading ? (
             <span className="text-sm text-ink-soft">{tCommon('loading')}</span>
@@ -337,7 +337,6 @@ export function Navbar() {
                 </div>
                 <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-line bg-cream-deep/60 px-3 py-2.5">
                   <LanguageSwitcher />
-                  <ThemeToggle />
                 </div>
                 <button
                   type="button"
