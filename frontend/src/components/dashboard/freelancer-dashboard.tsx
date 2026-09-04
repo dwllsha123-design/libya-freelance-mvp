@@ -130,11 +130,10 @@ export function FreelancerDashboard() {
   const [escrows, setEscrows] = useState<EscrowRecord[]>([]);
   const [nuqati, setNuqati] = useState<NuqatiDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [promoDismissed, setPromoDismissed] = useState(false);
-
-  useEffect(() => {
-    setPromoDismissed(window.localStorage.getItem(PROMO_DISMISS_KEY) === '1');
-  }, []);
+  const [promoDismissed, setPromoDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(PROMO_DISMISS_KEY) === '1';
+  });
 
   useEffect(() => {
     let cancelled = false;
