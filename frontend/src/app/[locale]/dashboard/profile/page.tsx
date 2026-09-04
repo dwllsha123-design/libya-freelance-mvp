@@ -9,7 +9,7 @@ import { getLocalizedCityName } from '@/lib/locale-content';
 import { PROFILE_COUNTRIES } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function ProfileEditPage() {
   const t = useTranslations('profile');
@@ -33,6 +33,24 @@ export default function ProfileEditPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('Libya');
+  const [selectedCityId, setSelectedCityId] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    setSelectedCountry(profile.country || 'Libya');
+    setSelectedCityId(profile.city?.id ?? '');
+  }, [profile]);
+
+  const citiesForCountry = useMemo(() => {
+    if (!selectedCountry || selectedCountry === 'Other') return [];
+    return cities.filter((city) => (city.country ?? 'Libya') === selectedCountry);
+  }, [cities, selectedCountry]);
+
+  function handleCountryChange(country: string) {
+    setSelectedCountry(country);
+    setSelectedCityId('');
+  }
 
   if (authLoading || isLoading) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -125,7 +143,8 @@ export default function ProfileEditPage() {
               <label className="mb-1 block text-sm font-medium">{t('country')}</label>
               <select
                 name="country"
-                defaultValue={profile.country || 'Libya'}
+                value={selectedCountry}
+                onChange={(e) => handleCountryChange(e.target.value)}
                 className="w-full rounded-lg border px-3 py-2"
               >
                 <option value="">{tProjects('choose')}</option>
@@ -134,17 +153,23 @@ export default function ProfileEditPage() {
                     {locale === 'en' ? country.nameEn : country.nameAr}
                   </option>
                 ))}
-                {profile.country &&
-                !PROFILE_COUNTRIES.some((c) => c.value === profile.country) ? (
-                  <option value={profile.country}>{profile.country}</option>
+                {selectedCountry &&
+                !PROFILE_COUNTRIES.some((c) => c.value === selectedCountry) ? (
+                  <option value={selectedCountry}>{selectedCountry}</option>
                 ) : null}
               </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">{t('city')}</label>
-              <select name="cityId" defaultValue={profile.city?.id ?? ''} className="w-full rounded-lg border px-3 py-2">
+              <select
+                name="cityId"
+                value={selectedCityId}
+                onChange={(e) => setSelectedCityId(e.target.value)}
+                disabled={!selectedCountry || selectedCountry === 'Other'}
+                className="w-full rounded-lg border px-3 py-2 disabled:bg-slate-50 disabled:opacity-70"
+              >
                 <option value="">{tProjects('choose')}</option>
-                {cities.map((city) => (
+                {citiesForCountry.map((city) => (
                   <option key={city.id} value={city.id}>{getLocalizedCityName(city, locale)}</option>
                 ))}
               </select>

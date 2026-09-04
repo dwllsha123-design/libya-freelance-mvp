@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator.js';
 import { CitiesService } from './cities.service.js';
 
@@ -8,7 +8,7 @@ export class CitiesController {
 
   @Public()
   @Get()
-  list() {
-    return this.citiesService.listActiveCities();
+  list(@Query('country') country?: string) {
+    return this.citiesService.listActiveCities(country);
   }
 }

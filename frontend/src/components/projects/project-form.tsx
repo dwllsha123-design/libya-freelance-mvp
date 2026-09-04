@@ -152,7 +152,9 @@ export function ProjectForm({
     }
   }
 
-  const physicalCities = cities.filter((c) => !c.isRemote);
+  const physicalCities = cities.filter(
+    (c) => !c.isRemote && (c.country ?? 'Libya') === 'Libya',
+  );
   const currencyLabel = tCommon('lyd');
 
   return (

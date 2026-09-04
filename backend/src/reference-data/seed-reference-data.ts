@@ -35,19 +35,72 @@ export const REFERENCE_SKILLS = [
   'Accounting',
 ] as const;
 
-export const REFERENCE_CITIES = [
-  { nameAr: 'طرابلس', slug: 'tripoli', sortOrder: 1 },
-  { nameAr: 'بنغازي', slug: 'benghazi', sortOrder: 2 },
-  { nameAr: 'مصراتة', slug: 'misrata', sortOrder: 3 },
-  { nameAr: 'الزاوية', slug: 'zawiya', sortOrder: 4 },
-  { nameAr: 'زليتن', slug: 'zliten', sortOrder: 5 },
-  { nameAr: 'الخمس', slug: 'khoms', sortOrder: 6 },
-  { nameAr: 'سبها', slug: 'sebha', sortOrder: 7 },
-  { nameAr: 'البيضاء', slug: 'bayda', sortOrder: 8 },
-  { nameAr: 'درنة', slug: 'derna', sortOrder: 9 },
-  { nameAr: 'طبرق', slug: 'tobruk', sortOrder: 10 },
-  { nameAr: 'عن بُعد', slug: 'remote', sortOrder: 99, isRemote: true },
-] as const;
+type ReferenceCity = {
+  nameAr: string;
+  slug: string;
+  country: string;
+  sortOrder: number;
+  isRemote?: boolean;
+};
+
+export const REFERENCE_CITIES: ReferenceCity[] = [
+  // Libya
+  { nameAr: 'طرابلس', slug: 'tripoli', country: 'Libya', sortOrder: 1 },
+  { nameAr: 'بنغازي', slug: 'benghazi', country: 'Libya', sortOrder: 2 },
+  { nameAr: 'مصراتة', slug: 'misrata', country: 'Libya', sortOrder: 3 },
+  { nameAr: 'الزاوية', slug: 'zawiya', country: 'Libya', sortOrder: 4 },
+  { nameAr: 'زليتن', slug: 'zliten', country: 'Libya', sortOrder: 5 },
+  { nameAr: 'الخمس', slug: 'khoms', country: 'Libya', sortOrder: 6 },
+  { nameAr: 'سبها', slug: 'sebha', country: 'Libya', sortOrder: 7 },
+  { nameAr: 'البيضاء', slug: 'bayda', country: 'Libya', sortOrder: 8 },
+  { nameAr: 'درنة', slug: 'derna', country: 'Libya', sortOrder: 9 },
+  { nameAr: 'طبرق', slug: 'tobruk', country: 'Libya', sortOrder: 10 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Libya', sortOrder: 99, isRemote: true },
+
+  // Tunisia
+  { nameAr: 'تونس', slug: 'tunis', country: 'Tunisia', sortOrder: 1 },
+  { nameAr: 'صفاقس', slug: 'sfax', country: 'Tunisia', sortOrder: 2 },
+  { nameAr: 'سوسة', slug: 'sousse', country: 'Tunisia', sortOrder: 3 },
+  { nameAr: 'القيروان', slug: 'kairouan', country: 'Tunisia', sortOrder: 4 },
+  { nameAr: 'بنزرت', slug: 'bizerte', country: 'Tunisia', sortOrder: 5 },
+  { nameAr: 'قابس', slug: 'gabes', country: 'Tunisia', sortOrder: 6 },
+  { nameAr: 'نابل', slug: 'nabeul', country: 'Tunisia', sortOrder: 7 },
+  { nameAr: 'المنستير', slug: 'monastir', country: 'Tunisia', sortOrder: 8 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Tunisia', sortOrder: 99, isRemote: true },
+
+  // Egypt
+  { nameAr: 'القاهرة', slug: 'cairo', country: 'Egypt', sortOrder: 1 },
+  { nameAr: 'الإسكندرية', slug: 'alexandria', country: 'Egypt', sortOrder: 2 },
+  { nameAr: 'الجيزة', slug: 'giza', country: 'Egypt', sortOrder: 3 },
+  { nameAr: 'المنصورة', slug: 'mansoura', country: 'Egypt', sortOrder: 4 },
+  { nameAr: 'طنطا', slug: 'tanta', country: 'Egypt', sortOrder: 5 },
+  { nameAr: 'أسوان', slug: 'aswan', country: 'Egypt', sortOrder: 6 },
+  { nameAr: 'الأقصر', slug: 'luxor', country: 'Egypt', sortOrder: 7 },
+  { nameAr: 'بورسعيد', slug: 'port-said', country: 'Egypt', sortOrder: 8 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Egypt', sortOrder: 99, isRemote: true },
+
+  // Algeria
+  { nameAr: 'الجزائر', slug: 'algiers', country: 'Algeria', sortOrder: 1 },
+  { nameAr: 'وهران', slug: 'oran', country: 'Algeria', sortOrder: 2 },
+  { nameAr: 'قسنطينة', slug: 'constantine', country: 'Algeria', sortOrder: 3 },
+  { nameAr: 'عنابة', slug: 'annaba', country: 'Algeria', sortOrder: 4 },
+  { nameAr: 'سطيف', slug: 'setif', country: 'Algeria', sortOrder: 5 },
+  { nameAr: 'باتنة', slug: 'batna', country: 'Algeria', sortOrder: 6 },
+  { nameAr: 'تلمسان', slug: 'tlemcen', country: 'Algeria', sortOrder: 7 },
+  { nameAr: 'بجاية', slug: 'bejaia', country: 'Algeria', sortOrder: 8 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Algeria', sortOrder: 99, isRemote: true },
+
+  // Morocco
+  { nameAr: 'الرباط', slug: 'rabat', country: 'Morocco', sortOrder: 1 },
+  { nameAr: 'الدار البيضاء', slug: 'casablanca', country: 'Morocco', sortOrder: 2 },
+  { nameAr: 'مراكش', slug: 'marrakesh', country: 'Morocco', sortOrder: 3 },
+  { nameAr: 'فاس', slug: 'fez', country: 'Morocco', sortOrder: 4 },
+  { nameAr: 'طنجة', slug: 'tangier', country: 'Morocco', sortOrder: 5 },
+  { nameAr: 'أكادير', slug: 'agadir', country: 'Morocco', sortOrder: 6 },
+  { nameAr: 'مكناس', slug: 'meknes', country: 'Morocco', sortOrder: 7 },
+  { nameAr: 'وجدة', slug: 'oujda', country: 'Morocco', sortOrder: 8 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Morocco', sortOrder: 99, isRemote: true },
+];
 
 export function slugifySkillName(value: string): string {
   return value
@@ -58,7 +111,7 @@ export function slugifySkillName(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Idempotent upsert of categories, skills, and Libyan cities. */
+/** Idempotent upsert of categories, skills, and country-scoped cities. */
 export async function seedReferenceData(prisma: PrismaClient) {
   for (const category of REFERENCE_CATEGORIES) {
     await prisma.category.upsert({
@@ -88,19 +141,26 @@ export async function seedReferenceData(prisma: PrismaClient) {
 
   for (const city of REFERENCE_CITIES) {
     await prisma.city.upsert({
-      where: { slug: city.slug },
+      where: {
+        country_slug: {
+          country: city.country,
+          slug: city.slug,
+        },
+      },
       create: {
         nameAr: city.nameAr,
         slug: city.slug,
+        country: city.country,
         sortOrder: city.sortOrder,
-        isRemote: 'isRemote' in city ? Boolean(city.isRemote) : false,
+        isRemote: city.isRemote ?? false,
         isActive: true,
       },
       update: {
         nameAr: city.nameAr,
         sortOrder: city.sortOrder,
-        isRemote: 'isRemote' in city ? Boolean(city.isRemote) : false,
+        isRemote: city.isRemote ?? false,
         isActive: true,
+        country: city.country,
       },
     });
   }

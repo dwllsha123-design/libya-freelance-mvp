@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -99,6 +100,11 @@ export class ProfilesService {
 
       if (!city) {
         throw new NotFoundException('المدينة غير موجودة');
+      }
+
+      const countryForCity = dto.country ?? profile.country;
+      if (countryForCity && city.country !== countryForCity) {
+        throw new BadRequestException('المدينة لا تنتمي إلى البلد المحدد');
       }
     }
 
@@ -215,7 +221,7 @@ export class ProfilesService {
     }
 
     if (query.city) {
-      where.city = { slug: query.city.toLowerCase() };
+      where.city = { slug: query.city.toLowerCase(), country: 'Libya' };
     }
 
     if (query.q) {
@@ -314,6 +320,7 @@ export class ProfilesService {
             id: profile.city.id,
             nameAr: profile.city.nameAr,
             slug: profile.city.slug,
+            country: profile.city.country,
             isRemote: profile.city.isRemote,
           }
         : null,

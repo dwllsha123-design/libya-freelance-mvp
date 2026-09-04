@@ -544,7 +544,7 @@ export class ProjectsService {
     }
 
     if (query.city) {
-      where.city = { slug: query.city };
+      where.city = { slug: query.city, country: 'Libya' };
     }
 
     if (query.workMode) {

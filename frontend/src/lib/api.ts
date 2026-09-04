@@ -70,6 +70,7 @@ export interface City {
   id: string;
   nameAr: string;
   slug: string;
+  country?: string;
   isRemote: boolean;
 }
 

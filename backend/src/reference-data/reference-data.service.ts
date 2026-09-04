@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { seedReferenceData } from './seed-reference-data.js';
+import { REFERENCE_CITIES, seedReferenceData } from './seed-reference-data.js';
 
 /**
  * Ensures categories, skills, and cities exist after deploy.
@@ -22,19 +22,26 @@ export class ReferenceDataService implements OnModuleInit {
     }
   }
 
-  async ensureReferenceData() {
+  async ensureReferenceData(options?: { forceCities?: boolean }) {
     const [cityCount, skillCount, categoryCount] = await Promise.all([
       this.prisma.city.count(),
       this.prisma.skill.count(),
       this.prisma.category.count(),
     ]);
 
-    if (cityCount > 0 && skillCount > 0 && categoryCount > 0) {
+    const citiesIncomplete = cityCount < REFERENCE_CITIES.length;
+    const needsSeed =
+      options?.forceCities ||
+      citiesIncomplete ||
+      skillCount === 0 ||
+      categoryCount === 0;
+
+    if (!needsSeed) {
       return { seeded: false, cityCount, skillCount, categoryCount };
     }
 
     this.logger.log(
-      `Reference data incomplete (cities=${cityCount}, skills=${skillCount}, categories=${categoryCount}) — seeding`,
+      `Reference data incomplete (cities=${cityCount}/${REFERENCE_CITIES.length}, skills=${skillCount}, categories=${categoryCount}) — seeding`,
     );
     await seedReferenceData(this.prisma);
 
