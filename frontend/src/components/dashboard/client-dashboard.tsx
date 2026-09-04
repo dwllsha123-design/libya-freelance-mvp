@@ -12,37 +12,11 @@ import type { AppLocale } from '@/i18n/routing';
 import type { ManageProject } from '@/lib/schemas/project';
 import { ApiError } from '@/lib/api';
 
-function StatCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  accent: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-ink-soft">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-ink">{value}</p>
-        </div>
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}
-        >
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
+const CLIENT_PROMO_KEY = 'lf-dashboard-client-promo-dismissed';
 
-function BriefcaseIcon() {
+function BriefcaseIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
       <path d="M10 2h4a2 2 0 0 1 2 2v2h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2Zm4 4V4h-4v2h4Z" />
     </svg>
   );
@@ -80,6 +54,22 @@ function SwapIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M6 6l12 12M18 6 6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SparkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+      <path d="M12 2 9.5 8.5 3 9.3l5 4.9L6.5 21 12 17.7 17.5 21 16 14.2l5-4.9-6.5-.8Z" />
+    </svg>
+  );
+}
+
 export function ClientDashboard() {
   const t = useTranslations('dashboard');
   const tProjects = useTranslations('projects');
@@ -94,6 +84,10 @@ export function ClientDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const [promoDismissed, setPromoDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(CLIENT_PROMO_KEY) === '1';
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -157,139 +151,186 @@ export function ClientDashboard() {
     }
   }
 
+  function dismissPromo() {
+    window.localStorage.setItem(CLIENT_PROMO_KEY, '1');
+    setPromoDismissed(true);
+  }
+
   return (
-    <div className="page-gutter mx-auto max-w-6xl py-8 sm:py-10">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-ink">{t('title')}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <p className="text-ink-soft">{t('welcomeBackNameFirst', { name: firstName })}</p>
+    <div className="bg-transparent">
+      <div className="page-gutter mx-auto max-w-3xl py-8 sm:py-10">
+        {!promoDismissed ? (
+          <div className="relative mb-6 animate-fade-up overflow-hidden rounded-2xl border border-line bg-cream-deep/80 p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={dismissPromo}
+              className="absolute end-3 top-3 rounded-full p-1 text-ink-soft transition hover:bg-surface hover:text-ink"
+              aria-label={t('dismissPromo')}
+            >
+              <CloseIcon />
+            </button>
+            <div className="flex items-start gap-3 pe-6">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ember/10 text-ember">
+                <SparkIcon />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-ink">{t('clientPromoTitle')}</p>
+                <p className="mt-1 text-sm text-ink-soft">{t('clientPromoBody')}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    href="/dashboard/projects/new"
+                    className="inline-flex rounded-xl bg-ember px-4 py-2 text-sm font-bold text-white hover:bg-ember-deep"
+                  >
+                    {t('clientPromoCta')}
+                  </Link>
+                  <Link
+                    href="/freelancers"
+                    className="inline-flex rounded-xl border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-cream"
+                  >
+                    {t('clientPromoSecondary')}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <header className="animate-fade-up" style={{ animationDelay: '40ms' }}>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            {t('title')}
+          </h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="text-base text-ink-soft sm:text-lg">
+              {t('welcomeBack', { name: firstName })}
+            </p>
             <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink-soft">
               {t('clientMode')}
             </span>
           </div>
-        </div>
+        </header>
 
-        <div className="flex flex-wrap gap-3">
+        <div
+          className="mt-6 grid animate-fade-up gap-3 sm:grid-cols-[1.35fr_1fr]"
+          style={{ animationDelay: '70ms' }}
+        >
+          <Link
+            href="/dashboard/projects/new"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-ember px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-ember-deep"
+          >
+            <span className="text-lg leading-none">+</span>
+            {t('postOffer')}
+          </Link>
           <button
             type="button"
             onClick={() => void handleSwitchToFreelancer()}
             disabled={isSwitching}
-            className="inline-flex items-center gap-2 rounded-xl border border-line bg-cream-deep px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cream disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream-deep px-5 py-3.5 text-sm font-bold text-ink transition hover:border-sand hover:bg-cream disabled:opacity-60"
           >
             <SwapIcon />
             {isSwitching ? t('switchingRole') : t('switchToFreelancer')}
           </button>
-          <Link
-            href="/freelancers"
-            className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:border-sand"
-          >
-            {t('findTalent')}
-          </Link>
-          <Link
-            href="/dashboard/projects/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
-          >
-            <span className="text-lg leading-none">+</span>
-            {t('postProject')}
-          </Link>
         </div>
-      </div>
-      {switchError ? <p className="mt-3 text-sm text-error">{switchError}</p> : null}
+        {switchError ? <p className="mt-2 text-sm text-error">{switchError}</p> : null}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t('publishedProjects')}
-          value={isLoading ? tCommon('loading') : String(stats.published)}
-          accent="bg-orange-100 text-ember"
-          icon={<BriefcaseIcon />}
-        />
-        <StatCard
-          label={t('activeContracts')}
-          value={isLoading ? tCommon('loading') : String(stats.activeContracts)}
-          accent="bg-blue-100 text-blue-600"
-          icon={<ClockIcon />}
-        />
-        <StatCard
-          label={t('totalSpent')}
-          value={isLoading ? tCommon('loading') : formatCurrency(stats.totalSpend, 'LYD', locale)}
-          accent="bg-emerald-100 text-palm"
-          icon={<CoinIcon />}
-        />
-        <StatCard
-          label={t('proposalsReceived')}
-          value={isLoading ? tCommon('loading') : String(stats.proposalsReceived)}
-          accent="bg-violet-100 text-violet-600"
-          icon={<PeopleIcon />}
-        />
-      </div>
-
-      <section className="mt-10">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl font-bold text-ink">{t('myPublishedProjects')}</h2>
-          <Link
-            href="/dashboard/projects"
-            className="text-sm font-semibold text-ember hover:underline"
-          >
-            {tCommon('viewAll')}
-          </Link>
-        </div>
-
-        {isLoading ? (
-          <div className="rounded-2xl border border-line bg-surface p-10 text-center text-ink-soft">
-            {tCommon('loadingPage')}
-          </div>
-        ) : publishedProjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-line bg-surface p-12 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-deep text-ink-soft">
+        <div
+          className="mt-6 grid animate-fade-up grid-cols-2 gap-3"
+          style={{ animationDelay: '100ms' }}
+        >
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-ember">
               <BriefcaseIcon />
             </div>
-            <p className="font-semibold text-ink">{t('noPublishedYet')}</p>
-            <p className="mt-2 text-sm text-ink-soft">{t('noPublishedHint')}</p>
+            <p className="text-sm text-ink-soft">{t('publishedOffers')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
+              {isLoading ? '—' : String(stats.published)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+              <ClockIcon />
+            </div>
+            <p className="text-sm text-ink-soft">{t('activeContracts')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
+              {isLoading ? '—' : String(stats.activeContracts)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-palm">
+              <CoinIcon />
+            </div>
+            <p className="text-sm text-ink-soft">{t('totalSpent')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
+              {isLoading ? '—' : formatCurrency(stats.totalSpend, 'LYD', locale)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+              <PeopleIcon />
+            </div>
+            <p className="text-sm text-ink-soft">{t('receivedOrders')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
+              {isLoading ? '—' : String(stats.proposalsReceived)}
+            </p>
+          </div>
+        </div>
+
+        <section
+          className="mt-8 animate-fade-up rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-6"
+          style={{ animationDelay: '140ms' }}
+        >
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="font-display text-xl font-bold text-ink">{t('myPublishedOffers')}</h2>
             <Link
-              href="/dashboard/projects/new"
-              className="mt-6 inline-flex rounded-xl bg-ember px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
+              href="/dashboard/projects"
+              className="text-sm font-semibold text-ember hover:underline"
             >
-              {t('postProject')}
+              {tCommon('viewAll')}
             </Link>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {publishedProjects.slice(0, 5).map((project) => (
-              <Link
-                key={project.id}
-                href={`/dashboard/projects/${project.id}/proposals`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-ember/40"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold text-ink">{project.title}</p>
-                  <p className="mt-1 text-sm text-ink-soft">
-                    {getLocalizedCategoryName(project.category, locale)} ·{' '}
-                    {tProjects('proposalsCount', { count: project.proposalCount ?? 0 })}
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-palm-deep">
-                  {tProjects('statusOpen')}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/dashboard/escrow" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
-          <p className="font-semibold text-ink">{t('escrowLog')}</p>
-          <p className="mt-1 text-sm text-ink-soft">{t('escrowLogHint')}</p>
-        </Link>
-        <Link href="/messages" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
-          <p className="font-semibold text-ink">{t('messages')}</p>
-          <p className="mt-1 text-sm text-ink-soft">{t('messagesHintClient')}</p>
-        </Link>
-        <Link href="/dashboard/profile" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
-          <p className="font-semibold text-ink">{t('profile')}</p>
-          <p className="mt-1 text-sm text-ink-soft">{t('profileHintClient')}</p>
-        </Link>
+          {isLoading ? (
+            <div className="rounded-xl bg-cream/70 py-10 text-center text-ink-soft">
+              {tCommon('loadingPage')}
+            </div>
+          ) : publishedProjects.length === 0 ? (
+            <div className="rounded-xl bg-cream/50 px-4 py-12 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center text-ink-soft/70">
+                <BriefcaseIcon className="h-12 w-12" />
+              </div>
+              <p className="font-semibold text-ink">{t('noOffersYet')}</p>
+              <Link
+                href="/dashboard/projects/new"
+                className="mt-6 inline-flex rounded-xl bg-ember px-6 py-2.5 text-sm font-bold text-white hover:bg-ember-deep"
+              >
+                {t('postOffer')}
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {publishedProjects.slice(0, 5).map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/dashboard/projects/${project.id}/proposals`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-cream/40 p-4 transition-colors hover:border-ember/40"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink">{project.title}</p>
+                    <p className="mt-1 text-sm text-ink-soft">
+                      {getLocalizedCategoryName(project.category, locale)} ·{' '}
+                      {tProjects('proposalsCount', { count: project.proposalCount ?? 0 })}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-palm-deep">
+                    {tProjects('statusOpen')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
