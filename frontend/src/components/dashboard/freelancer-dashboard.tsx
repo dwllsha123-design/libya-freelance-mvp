@@ -236,17 +236,17 @@ export function FreelancerDashboard() {
   };
 
   return (
-    <div className="bg-[linear-gradient(180deg,#f7f6f1_0%,#f8f9fa_48%,#f8f9fa_100%)]">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="bg-transparent">
+      <div className="page-gutter mx-auto max-w-3xl py-8 sm:py-10">
         <header className="animate-fade-up">
-          <h1 className="text-3xl font-bold tracking-tight text-secondary sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             {t('title')}
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <p className="text-base text-slate-600 sm:text-lg">
+            <p className="text-base text-ink-soft sm:text-lg">
               {t('welcomeBackNameFirst', { name: firstName })}
             </p>
-            <span className="rounded-full bg-slate-200/80 px-3 py-1 text-xs font-semibold text-slate-600">
+            <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink-soft">
               {t('freelancerMode')}
             </span>
           </div>
@@ -255,14 +255,14 @@ export function FreelancerDashboard() {
         <div className="mt-6 grid animate-fade-up gap-3 sm:grid-cols-[1.4fr_1fr]" style={{ animationDelay: '50ms' }}>
           <Link
             href="/projects"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-container"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-ember px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-ember-deep"
           >
             <SearchIcon />
             {t('browseOffers')}
           </Link>
           <Link
             href="/dashboard/portfolio"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-[#efece4] px-5 py-3.5 text-sm font-bold text-secondary transition hover:border-slate-300 hover:bg-[#e8e4da]"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream-deep px-5 py-3.5 text-sm font-bold text-ink transition hover:border-sand hover:bg-cream"
           >
             <PortfolioIcon />
             {t('managePortfolioCta')}
@@ -270,53 +270,53 @@ export function FreelancerDashboard() {
         </div>
 
         <div className="mt-6 grid animate-fade-up grid-cols-2 gap-3" style={{ animationDelay: '80ms' }}>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
               <ClockIcon />
             </div>
-            <p className="text-sm text-slate-500">{t('activeContracts')}</p>
-            <p className="mt-1 text-2xl font-bold text-secondary">
+            <p className="text-sm text-ink-soft">{t('activeContracts')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
               {isLoading ? '—' : String(stats.activeContracts)}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-primary">
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-ember">
               <DocumentIcon />
             </div>
-            <p className="text-sm text-slate-500">{t('myApplications')}</p>
-            <p className="mt-1 text-2xl font-bold text-secondary">
+            <p className="text-sm text-ink-soft">{t('myApplications')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
               {isLoading ? '—' : String(stats.applications)}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
               <NuqatiIcon />
             </div>
-            <p className="text-sm text-slate-500">{t('nuqatiBalance')}</p>
-            <p className="mt-1 text-2xl font-bold text-secondary">
+            <p className="text-sm text-ink-soft">{t('nuqatiBalance')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
               {isLoading ? '—' : String(stats.nuqatiBalance)}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
-              <Link href="/dashboard/nuqati#nuqati-purchase" className="text-primary hover:underline">
+              <Link href="/dashboard/nuqati#nuqati-purchase" className="text-ember hover:underline">
                 {t('buyNuqati')}
               </Link>
-              <Link href="/dashboard/nuqati" className="text-primary hover:underline">
+              <Link href="/dashboard/nuqati" className="text-ember hover:underline">
                 {t('earnNuqati')}
               </Link>
-              <Link href="/dashboard/nuqati/history" className="text-slate-500 hover:underline">
+              <Link href="/dashboard/nuqati/history" className="text-ink-soft hover:underline">
                 {t('viewNuqatiLog')}
               </Link>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-tertiary">
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-palm">
               <CoinIcon />
             </div>
-            <p className="text-sm text-slate-500">{t('totalEarnings')}</p>
-            <p className="mt-1 text-2xl font-bold text-secondary">
+            <p className="text-sm text-ink-soft">{t('totalEarnings')}</p>
+            <p className="mt-1 text-2xl font-bold text-ink">
               {isLoading ? '—' : formatCurrency(stats.earnings, 'LYD', locale)}
             </p>
           </div>
@@ -327,15 +327,15 @@ export function FreelancerDashboard() {
             className="relative mt-5 flex animate-fade-up items-start gap-3 overflow-hidden rounded-2xl border border-orange-200/70 bg-gradient-to-l from-orange-50 to-[#fff7ed] px-4 py-3.5"
             style={{ animationDelay: '120ms' }}
           >
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ember/10 text-ember">
               <StarIcon />
             </div>
             <div className="min-w-0 flex-1 pe-6">
-              <p className="font-bold text-secondary">{t('promoTitle')}</p>
-              <p className="mt-0.5 text-sm text-slate-600">{t('promoBody')}</p>
+              <p className="font-bold text-ink">{t('promoTitle')}</p>
+              <p className="mt-0.5 text-sm text-ink-soft">{t('promoBody')}</p>
               <Link
                 href="/dashboard/nuqati"
-                className="mt-2 inline-block text-sm font-semibold text-primary hover:underline"
+                className="mt-2 inline-block text-sm font-semibold text-ember hover:underline"
               >
                 {t('promoCta')}
               </Link>
@@ -343,7 +343,7 @@ export function FreelancerDashboard() {
             <button
               type="button"
               onClick={dismissPromo}
-              className="absolute end-3 top-3 rounded-full p-1 text-slate-400 transition hover:bg-white/80 hover:text-slate-600"
+              className="absolute end-3 top-3 rounded-full p-1 text-ink-soft transition hover:bg-surface/80 hover:text-ink"
               aria-label={t('dismissPromo')}
             >
               <CloseIcon />
@@ -352,17 +352,17 @@ export function FreelancerDashboard() {
         ) : null}
 
         <section
-          className="mt-5 animate-fade-up rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
+          className="mt-5 animate-fade-up rounded-2xl border border-line bg-surface p-5 shadow-sm"
           style={{ animationDelay: '140ms' }}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ember/10 text-ember">
                 <StarIcon />
               </span>
-              <h2 className="text-lg font-bold text-secondary">{t('completeSetup')}</h2>
+              <h2 className="text-lg font-bold text-ink">{t('completeSetup')}</h2>
             </div>
-            <p className="text-sm font-semibold text-slate-500">
+            <p className="text-sm font-semibold text-ink-soft">
               {t('setupPoints', {
                 earned: setupTasks.earned,
                 total: setupTasks.total,
@@ -370,9 +370,9 @@ export function FreelancerDashboard() {
             </p>
           </div>
 
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-cream-deep">
             <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
+              className="h-full rounded-full bg-ember transition-all duration-500"
               style={{
                 width: `${Math.min(
                   100,
@@ -400,32 +400,32 @@ export function FreelancerDashboard() {
               <li key={task.key}>
                 <Link
                   href={taskHref(task)}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-3 transition hover:border-primary/30 hover:bg-orange-50/40"
+                  className="flex items-center gap-3 rounded-xl border border-line bg-cream/70 px-3 py-3 transition hover:border-ember/30 hover:bg-orange-50/40"
                 >
                   <span
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                       task.completed
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'border-2 border-primary/40 bg-white text-primary'
+                        ? 'bg-emerald-100 text-palm-deep'
+                        : 'border-2 border-ember/40 bg-surface text-ember'
                     }`}
                   >
-                    {task.completed ? <CheckIcon /> : <span className="h-2 w-2 rounded-full bg-primary" />}
+                    {task.completed ? <CheckIcon /> : <span className="h-2 w-2 rounded-full bg-ember" />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p
                       className={`font-semibold ${
-                        task.completed ? 'text-slate-400 line-through' : 'text-secondary'
+                        task.completed ? 'text-ink-soft line-through' : 'text-ink'
                       }`}
                     >
                       {task.titleAr}
                     </p>
-                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{task.descriptionAr}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-ink-soft">{task.descriptionAr}</p>
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
                       task.completed
-                        ? 'bg-slate-200 text-slate-400'
-                        : 'bg-primary text-white'
+                        ? 'bg-sand text-ink-soft'
+                        : 'bg-ember text-white'
                     }`}
                   >
                     {t('taskReward', { points: task.reward })}
@@ -435,11 +435,11 @@ export function FreelancerDashboard() {
             ))}
           </ul>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-            <p className="text-sm text-slate-500">{t('setupUnlockHint')}</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+            <p className="text-sm text-ink-soft">{t('setupUnlockHint')}</p>
             <Link
               href="/dashboard/nuqati"
-              className="text-sm font-semibold text-primary hover:underline"
+              className="text-sm font-semibold text-ember hover:underline"
             >
               {t('viewAllTasks')}
             </Link>
@@ -448,21 +448,21 @@ export function FreelancerDashboard() {
 
         <section className="mt-8 animate-fade-up" style={{ animationDelay: '180ms' }}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-bold text-secondary">{t('myApplications')}</h2>
+            <h2 className="font-display text-xl font-bold text-ink">{t('myApplications')}</h2>
             <Link
               href="/dashboard/proposals"
-              className="text-sm font-semibold text-primary hover:underline"
+              className="text-sm font-semibold text-ember hover:underline"
             >
               {tCommon('viewAll')}
             </Link>
           </div>
 
           <div className="mb-4">
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft shadow-sm">
               <BriefcaseIcon />
               {t('activeOffersFilter')}
               {!isLoading ? (
-                <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
+                <span className="rounded-full bg-cream-deep px-1.5 py-0.5 text-[10px]">
                   {displayProposals.length}
                 </span>
               ) : null}
@@ -470,16 +470,16 @@ export function FreelancerDashboard() {
           </div>
 
           {isLoading ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+            <div className="rounded-2xl border border-line bg-surface p-8 text-center text-ink-soft">
               {tCommon('loadingPage')}
             </div>
           ) : recentProposals.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
-              <p className="font-semibold text-secondary">{t('noRecentProposals')}</p>
-              <p className="mt-2 text-sm text-slate-500">{t('noRecentProposalsHint')}</p>
+            <div className="rounded-2xl border border-dashed border-line bg-surface p-10 text-center">
+              <p className="font-semibold text-ink">{t('noRecentProposals')}</p>
+              <p className="mt-2 text-sm text-ink-soft">{t('noRecentProposalsHint')}</p>
               <Link
                 href="/projects"
-                className="mt-5 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-container"
+                className="mt-5 inline-flex rounded-xl bg-ember px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
               >
                 {t('browseOffers')}
               </Link>
@@ -495,12 +495,12 @@ export function FreelancerDashboard() {
                   <Link
                     key={proposal.id}
                     href="/dashboard/proposals"
-                    className="block rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-primary/35 sm:p-5"
+                    className="block rounded-2xl border border-line bg-surface p-4 shadow-sm transition hover:border-ember/35 sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-secondary">{proposal.project.title}</p>
-                        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                        <p className="truncate font-bold text-ink">{proposal.project.title}</p>
+                        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
                           <span>
                             {formatCurrency(proposal.proposedPrice, proposal.project.currency || 'LYD', locale)}{' '}
                             ({t('proposalFixed')})
@@ -515,7 +515,7 @@ export function FreelancerDashboard() {
                         >
                           {statusLabel(proposal.status)}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-primary">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-ember">
                           <NuqatiIcon />
                           {t('proposalPoints', { count: pointsSpent })}
                         </span>
