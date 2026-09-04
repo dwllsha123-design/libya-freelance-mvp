@@ -9,7 +9,7 @@ import { getLocalizedCityName } from '@/lib/locale-content';
 import { PROFILE_COUNTRIES } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function ProfileEditPage() {
   const t = useTranslations('profile');
@@ -35,12 +35,16 @@ export default function ProfileEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('Libya');
   const [selectedCityId, setSelectedCityId] = useState('');
+  const profileLocationKey = profile
+    ? `${profile.country ?? 'Libya'}|${profile.city?.id ?? ''}`
+    : null;
+  const [appliedLocationKey, setAppliedLocationKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!profile) return;
-    setSelectedCountry(profile.country || 'Libya');
-    setSelectedCityId(profile.city?.id ?? '');
-  }, [profile]);
+  if (profileLocationKey !== null && profileLocationKey !== appliedLocationKey) {
+    setAppliedLocationKey(profileLocationKey);
+    setSelectedCountry(profile?.country || 'Libya');
+    setSelectedCityId(profile?.city?.id ?? '');
+  }
 
   const citiesForCountry = useMemo(() => {
     if (!selectedCountry || selectedCountry === 'Other') return [];

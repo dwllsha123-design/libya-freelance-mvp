@@ -265,6 +265,11 @@ async function main() {
     S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE || 'true',
     PAYMENT_DRIVER: process.env.PAYMENT_DRIVER || 'simulated',
     PAYMENT_CURRENCY: process.env.PAYMENT_CURRENCY || 'LYD',
+    SMTP_HOST: process.env.SMTP_HOST || '127.0.0.1',
+    SMTP_PORT: process.env.SMTP_PORT || '1025',
+    SMTP_USER: process.env.SMTP_USER || 'ci-boundary-smtp-user',
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD || 'ci-boundary-smtp-password',
+    EMAIL_FROM: process.env.EMAIL_FROM || 'ci-boundary@libyafreelance.local',
   };
 
   console.log('==> Boot production runtime: node dist/main.js (STORAGE_DRIVER=s3, CI dummy S3)');
