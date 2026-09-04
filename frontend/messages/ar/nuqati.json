@@ -46,5 +46,15 @@
   "noMovements": "لا توجد حركات بعد",
   "tabRewards": "مكافآت",
   "tabSpent": "منفق",
-  "tabPurchases": "مشتريات"
+  "tabPurchases": "مشتريات",
+  "checkoutTitle": "الدفع الإلكتروني",
+  "checkoutSubtitle": "أكمل شراء النقاط عبر بوابة الدفع الإلكتروني.",
+  "checkoutOrderSummary": "ملخص الطلب",
+  "checkoutPaymentMethods": "طرق الدفع",
+  "paymentMethodElectronic": "دفع إلكتروني",
+  "paymentMethodElectronicHint": "بطاقات وبوابات الدفع الليبية — قيد الربط",
+  "payNow": "ادفع الآن",
+  "comingSoon": "قريباً",
+  "comingSoonBody": "بوابة الدفع الإلكتروني قيد الإعداد. سنفعّلها فور ربط مزوّد الدفع.",
+  "checkoutPackageMissing": "الباقة غير موجودة. اختر باقة من صفحة نقاطي."
 }

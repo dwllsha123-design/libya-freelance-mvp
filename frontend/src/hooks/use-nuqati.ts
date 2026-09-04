@@ -7,6 +7,23 @@ import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
 import type { NuqatiDashboard, NuqatiTransaction } from '@/lib/nuqati';
 import type { AppLocale } from '@/i18n/routing';
 
+export interface NuqatiCheckoutResult {
+  purchaseId: string;
+  package: { id: string; points: number; priceLyd: number };
+  status: string;
+  comingSoon: boolean;
+  requiresRedirect: boolean;
+  checkoutUrl: string | null;
+  paymentMethods: {
+    id: string;
+    type: string;
+    available: boolean;
+    comingSoon: boolean;
+  }[];
+  currency: string;
+  message: string;
+}
+
 export function useNuqatiApi() {
   const { accessToken } = useAuth();
   const locale = useLocale() as AppLocale;
@@ -35,9 +52,18 @@ export function useNuqatiApi() {
           limit: number;
         }>(`/nuqati/transactions?${params}`, accessToken);
       },
+      initiateCheckout: (packageId: string) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<NuqatiCheckoutResult>(
+          '/nuqati/checkout',
+          accessToken,
+          { method: 'POST', body: JSON.stringify({ packageId }) },
+        );
+      },
+      /** @deprecated Prefer initiateCheckout */
       purchase: (packageId: string) => {
         if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
-        return authenticatedRequest<{ purchaseId: string; pointsAdded: number; balance: number }>(
+        return authenticatedRequest<NuqatiCheckoutResult>(
           '/nuqati/purchase',
           accessToken,
           { method: 'POST', body: JSON.stringify({ packageId }) },
