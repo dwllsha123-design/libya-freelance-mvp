@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useEscrowApi, type EscrowRecord } from '@/hooks/use-escrow';
@@ -10,6 +10,7 @@ import { useProposalsApi, type FreelancerProposal } from '@/hooks/use-proposals'
 import { formatCurrency } from '@/lib/currency';
 import type { NuqatiDashboard, NuqatiTask } from '@/lib/nuqati';
 import type { AppLocale } from '@/i18n/routing';
+import { ApiError } from '@/lib/api';
 
 const SETUP_TASK_KEYS = new Set(['PROFILE_COMPLETE', 'FIRST_PORTFOLIO', 'FIRST_JOB']);
 const PROMO_DISMISS_KEY = 'lf-dashboard-nuqati-promo-dismissed';
@@ -27,14 +28,6 @@ function SearchIcon() {
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PortfolioIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
-      <path d="M10 2h4a2 2 0 0 1 2 2v2h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2Zm4 4V4h-4v2h4Z" />
     </svg>
   );
 }
@@ -95,6 +88,14 @@ function BriefcaseIcon() {
   );
 }
 
+function SwapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M7 7h11M16 4l3 3-3 3M17 17H6M8 14l-3 3 3 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -120,7 +121,8 @@ export function FreelancerDashboard() {
   const tProposals = useTranslations('proposals');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, switchRole } = useAuth();
   const proposalsApi = useProposalsApi();
   const escrowApi = useEscrowApi();
   const nuqatiApi = useNuqatiApi();
@@ -130,6 +132,8 @@ export function FreelancerDashboard() {
   const [escrows, setEscrows] = useState<EscrowRecord[]>([]);
   const [nuqati, setNuqati] = useState<NuqatiDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const [promoDismissed, setPromoDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(PROMO_DISMISS_KEY) === '1';
@@ -207,6 +211,20 @@ export function FreelancerDashboard() {
     setPromoDismissed(true);
   }
 
+  async function handleSwitchToClient() {
+    setSwitchError(null);
+    setIsSwitching(true);
+    try {
+      await switchRole('CLIENT');
+      router.replace('/dashboard');
+      router.refresh();
+    } catch (err) {
+      setSwitchError(err instanceof ApiError ? err.message : tCommon('error'));
+    } finally {
+      setIsSwitching(false);
+    }
+  }
+
   const statusLabel = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -260,14 +278,19 @@ export function FreelancerDashboard() {
             <SearchIcon />
             {t('browseOffers')}
           </Link>
-          <Link
-            href="/dashboard/portfolio"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream-deep px-5 py-3.5 text-sm font-bold text-ink transition hover:border-sand hover:bg-cream"
+          <button
+            type="button"
+            onClick={() => void handleSwitchToClient()}
+            disabled={isSwitching}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream-deep px-5 py-3.5 text-sm font-bold text-ink transition hover:border-sand hover:bg-cream disabled:opacity-60"
           >
-            <PortfolioIcon />
-            {t('managePortfolioCta')}
-          </Link>
+            <SwapIcon />
+            {isSwitching ? t('switchingRole') : t('switchToClient')}
+          </button>
         </div>
+        {switchError ? (
+          <p className="mt-2 text-sm text-error">{switchError}</p>
+        ) : null}
 
         <div className="mt-6 grid animate-fade-up grid-cols-2 gap-3" style={{ animationDelay: '80ms' }}>
           <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">

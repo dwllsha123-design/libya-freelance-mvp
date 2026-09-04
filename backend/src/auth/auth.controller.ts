@@ -14,6 +14,7 @@ import { ClientRequestGuard } from '../common/guards/client-request.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { SwitchRoleDto } from './dto/switch-role.dto.js';
 import {
   ForgotPasswordDto,
   ResetPasswordDto,
@@ -114,5 +115,21 @@ export class AuthController {
   @Get('me')
   getMe(@CurrentUser() user: AuthUser) {
     return this.authService.getMe(user.id);
+  }
+
+  @Post('switch-role')
+  @HttpCode(200)
+  async switchRole(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SwitchRoleDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.switchRole(user.id, dto);
+    setRefreshCookie(res, result.tokens.refreshToken);
+
+    return {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+    };
   }
 }

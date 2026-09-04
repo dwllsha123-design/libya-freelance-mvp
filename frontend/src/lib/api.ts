@@ -54,6 +54,9 @@ export interface AuthUser {
   status: UserStatus;
   emailVerified: boolean;
   createdAt: string;
+  hasClientProfile?: boolean;
+  hasFreelancerProfile?: boolean;
+  clientDisplayName?: string | null;
   profile: {
     firstName: string;
     lastName: string;

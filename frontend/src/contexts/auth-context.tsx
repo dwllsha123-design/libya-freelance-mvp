@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { AuthResponse, AuthUser } from '@/lib/api';
+import type { AuthResponse, AuthUser, UserRole } from '@/lib/api';
 import { apiRequest, authenticatedRequest } from '@/lib/api';
 
 interface AuthContextValue {
@@ -26,6 +26,7 @@ interface AuthContextValue {
   }) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  switchRole: (role: 'FREELANCER' | 'CLIENT') => Promise<AuthUser>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -120,6 +121,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clearSession]);
 
+  const switchRole = useCallback(
+    async (role: Extract<UserRole, 'FREELANCER' | 'CLIENT'>) => {
+      if (!accessToken) {
+        throw new Error('Unauthorized');
+      }
+
+      const response = await authenticatedRequest<AuthResponse>(
+        '/auth/switch-role',
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({ role }),
+        },
+      );
+
+      applySession(response);
+      return response.user;
+    },
+    [accessToken, applySession],
+  );
+
   const value = useMemo(
     () => ({
       user,
@@ -129,8 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       logout,
       refreshSession,
+      switchRole,
     }),
-    [user, accessToken, isLoading, login, register, logout, refreshSession],
+    [user, accessToken, isLoading, login, register, logout, refreshSession, switchRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

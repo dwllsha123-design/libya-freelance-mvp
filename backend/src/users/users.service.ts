@@ -38,6 +38,8 @@ export class UsersService {
             firstName: true,
             lastName: true,
             username: true,
+            freelancerProfile: { select: { id: true } },
+            clientProfile: { select: { id: true, displayName: true } },
           },
         },
       },
@@ -59,24 +61,43 @@ export class UsersService {
             country: true,
             phone: true,
             createdAt: true,
+            freelancerProfile: { select: { id: true } },
+            clientProfile: { select: { id: true, displayName: true } },
           },
         },
       },
     });
   }
 
-  async createRoleProfile(userId: string, role: Role, profileId: string) {
+  async ensureRoleProfile(
+    userId: string,
+    role: Role,
+    profileId: string,
+  ): Promise<{ created: boolean }> {
     if (role === Role.FREELANCER) {
-      await this.prisma.freelancerProfile.create({
-        data: { profileId },
+      const existing = await this.prisma.freelancerProfile.findUnique({
+        where: { profileId },
+        select: { id: true },
       });
-      return;
+      if (existing) return { created: false };
+      await this.prisma.freelancerProfile.create({ data: { profileId } });
+      return { created: true };
     }
 
     if (role === Role.CLIENT) {
-      await this.prisma.clientProfile.create({
-        data: { profileId },
+      const existing = await this.prisma.clientProfile.findUnique({
+        where: { profileId },
+        select: { id: true },
       });
+      if (existing) return { created: false };
+      await this.prisma.clientProfile.create({ data: { profileId } });
+      return { created: true };
     }
+
+    return { created: false };
+  }
+
+  async createRoleProfile(userId: string, role: Role, profileId: string) {
+    await this.ensureRoleProfile(userId, role, profileId);
   }
 }
