@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { ProfilePhotoUpload } from '@/components/profile/profile-photo-upload';
 import { getLocalizedCityName } from '@/lib/locale-content';
+import { PROFILE_COUNTRIES } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { useState } from 'react';
@@ -60,9 +61,9 @@ export default function ProfileEditPage() {
         lastName: String(formData.get('lastName') ?? ''),
         username: String(formData.get('username') ?? ''),
         bio: String(formData.get('bio') ?? ''),
+        country: String(formData.get('country') ?? '') || undefined,
         cityId: String(formData.get('cityId') ?? '') || undefined,
         workMode: String(formData.get('workMode') ?? 'ON_SITE'),
-        phone: String(formData.get('phone') ?? ''),
         professionalTitle: String(formData.get('professionalTitle') ?? ''),
         displayName: String(formData.get('displayName') ?? ''),
       });
@@ -121,7 +122,26 @@ export default function ProfileEditPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">{t('city')}</label>
+              <label className="mb-1 block text-sm font-medium">{t('country')}</label>
+              <select
+                name="country"
+                defaultValue={profile.country || 'Libya'}
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">{tProjects('choose')}</option>
+                {PROFILE_COUNTRIES.map((country) => (
+                  <option key={country.value} value={country.value}>
+                    {locale === 'en' ? country.nameEn : country.nameAr}
+                  </option>
+                ))}
+                {profile.country &&
+                !PROFILE_COUNTRIES.some((c) => c.value === profile.country) ? (
+                  <option value={profile.country}>{profile.country}</option>
+                ) : null}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">{t('region')}</label>
               <select name="cityId" defaultValue={profile.city?.id ?? ''} className="w-full rounded-lg border px-3 py-2">
                 <option value="">{tProjects('choose')}</option>
                 {cities.map((city) => (
@@ -129,19 +149,15 @@ export default function ProfileEditPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('workMode')}</label>
-              <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
-                <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
-                <option value="REMOTE">{tProjects('workModeRemote')}</option>
-                <option value="HYBRID">{tProjects('workModeHybrid')}</option>
-              </select>
-            </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('phoneOptional')}</label>
-            <input name="phone" className="w-full rounded-lg border px-3 py-2" />
+            <label className="mb-1 block text-sm font-medium">{t('workMode')}</label>
+            <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
+              <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
+              <option value="REMOTE">{tProjects('workModeRemote')}</option>
+              <option value="HYBRID">{tProjects('workModeHybrid')}</option>
+            </select>
           </div>
 
           {user.role === 'FREELANCER' ? (
