@@ -11,6 +11,7 @@ export interface FreelancerProposal {
   coverLetter: string;
   proposedPrice: number;
   estimatedDurationDays: number;
+  boostPoints?: number;
   status: string;
   createdAt: string;
   conversationId?: string | null;
