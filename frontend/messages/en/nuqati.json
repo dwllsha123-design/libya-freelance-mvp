@@ -46,5 +46,15 @@
   "noMovements": "No transactions yet",
   "tabRewards": "Rewards",
   "tabSpent": "Spent",
-  "tabPurchases": "Purchases"
+  "tabPurchases": "Purchases",
+  "checkoutTitle": "Electronic payment",
+  "checkoutSubtitle": "Complete your points purchase via the electronic payment gateway.",
+  "checkoutOrderSummary": "Order summary",
+  "checkoutPaymentMethods": "Payment methods",
+  "paymentMethodElectronic": "Electronic payment",
+  "paymentMethodElectronicHint": "Cards and Libyan payment gateways — integration pending",
+  "payNow": "Pay now",
+  "comingSoon": "Coming soon",
+  "comingSoonBody": "The electronic payment gateway is being set up. We will enable it once a provider is connected.",
+  "checkoutPackageMissing": "Package not found. Choose a package from the Nuqati page."
 }

@@ -43,5 +43,7 @@ export default () => ({
     driver: process.env.PAYMENT_DRIVER ?? 'simulated',
     currency: process.env.PAYMENT_CURRENCY ?? 'LYD',
     simulatedFailure: process.env.PAYMENT_SIMULATED_FAILURE ?? 'false',
+    /** When true, Nuqati point purchases go through the live payment provider. */
+    pointsGatewayEnabled: process.env.PAYMENT_POINTS_GATEWAY_ENABLED === 'true',
   },
 });
