@@ -4,7 +4,6 @@
   "username": "Username",
   "city": "City",
   "country": "Country",
-  "region": "Region",
   "workMode": "Work mode",
   "photo": "Profile photo",
   "uploadPhoto": "Choose photo",

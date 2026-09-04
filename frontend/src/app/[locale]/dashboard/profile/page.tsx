@@ -141,7 +141,7 @@ export default function ProfileEditPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">{t('region')}</label>
+              <label className="mb-1 block text-sm font-medium">{t('city')}</label>
               <select name="cityId" defaultValue={profile.city?.id ?? ''} className="w-full rounded-lg border px-3 py-2">
                 <option value="">{tProjects('choose')}</option>
                 {cities.map((city) => (
