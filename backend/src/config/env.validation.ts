@@ -41,6 +41,7 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   CORS_ORIGINS!: string;
 
+  /** Optional outside production. Production completeness is enforced in validate.ts */
   @IsOptional()
   @IsString()
   SMTP_HOST?: string;
@@ -48,6 +49,11 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   SMTP_PORT?: string;
+
+  /** `true` | `false` — production should set `true` for port 465 */
+  @IsOptional()
+  @IsString()
+  SMTP_SECURE?: string;
 
   @IsOptional()
   @IsString()

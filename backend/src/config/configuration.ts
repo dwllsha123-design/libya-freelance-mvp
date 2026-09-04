@@ -11,6 +11,7 @@ function resolveForcePathStyle(): string {
 }
 
 export default () => ({
+  nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '4000', 10),
   databaseUrl: process.env.DATABASE_URL,
   jwt: {
@@ -25,9 +26,10 @@ export default () => ({
     .map((origin) => origin.trim())
     .filter(Boolean),
   email: {
-    from: process.env.EMAIL_FROM ?? 'noreply@libyanfreelance.ly',
+    from: process.env.EMAIL_FROM ?? 'support@libyanfreelance.ly',
     smtpHost: process.env.SMTP_HOST,
     smtpPort: process.env.SMTP_PORT,
+    smtpSecure: process.env.SMTP_SECURE,
     smtpUser: process.env.SMTP_USER,
     smtpPassword: process.env.SMTP_PASSWORD,
   },

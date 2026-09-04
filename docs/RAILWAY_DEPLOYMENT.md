@@ -157,7 +157,16 @@ Set remaining variables from `backend/.env.railway.example`:
 | `AWS_S3_URL_STYLE` | No | Only if the bucket's Credentials tab says path-style |
 | `PAYMENT_DRIVER` | No | `simulated` for staging |
 | `PAYMENT_CURRENCY` | No | `LYD` |
-| `EMAIL_FROM` | No | Outbound sender |
+| `EMAIL_FROM` | Yes (prod) | `support@libyanfreelance.ly` |
+| `SMTP_HOST` | Yes (prod) | `smtp.lsbox.email` |
+| `SMTP_PORT` | Yes (prod) | `465` |
+| `SMTP_SECURE` | Yes (prod) | `true` (TLS on connect; certificate validation stays enabled) |
+| `SMTP_USER` | Yes (prod) | `support@libyanfreelance.ly` |
+| `SMTP_PASSWORD` | Yes (prod) | Mailbox password — **Railway Variables only**, never commit |
+| `PASSWORD_RESET_TOKEN_EXPIRES_IN` | No | Default `1h` |
+| `EMAIL_VERIFICATION_TOKEN_EXPIRES_IN` | No | Default `24h` |
+
+Transactional mail (password reset + email verification) is sent over SMTP. In production the API **fails startup** if SMTP is missing or incomplete. Locally you may leave `SMTP_*` empty to disable outbound mail (tokens are never logged).
 
 **Never** commit filled values. Set only in Railway UI.
 

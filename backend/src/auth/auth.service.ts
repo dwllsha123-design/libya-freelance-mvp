@@ -237,7 +237,12 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendPasswordResetEmail(user.email, rawToken);
+    try {
+      await this.emailService.sendPasswordResetEmail(user.email, rawToken);
+    } catch {
+      // Preserve account-enumeration protection: always return the same message.
+      // EmailService already logged a safe generic failure (no tokens/secrets).
+    }
 
     return {
       message:
