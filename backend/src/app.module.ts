@@ -27,6 +27,7 @@ import { PlatformModule } from './platform/platform.module.js';
 import { EscrowModule } from './escrow/escrow.module.js';
 import { PaymentsModule } from './payments/payment.module.js';
 import { NuqatiModule } from './nuqati/nuqati.module.js';
+import { ReferenceDataModule } from './reference-data/reference-data.module.js';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { NuqatiModule } from './nuqati/nuqati.module.js';
       validate,
     }),
     PrismaModule,
+    ReferenceDataModule,
     StorageModule,
     UsersModule,
     AuthModule,

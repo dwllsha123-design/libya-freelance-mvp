@@ -7,17 +7,32 @@ import {
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MAX_FREELANCER_SKILLS } from '../common/constants/profile.constants.js';
+import { ReferenceDataService } from '../reference-data/reference-data.service.js';
 
 @Injectable()
 export class SkillsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly referenceData: ReferenceDataService,
+  ) {}
 
-  listSkills() {
-    return this.prisma.skill.findMany({
+  async listSkills() {
+    let skills = await this.prisma.skill.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, slug: true },
     });
+
+    if (skills.length === 0) {
+      await this.referenceData.ensureReferenceData();
+      skills = await this.prisma.skill.findMany({
+        where: { isActive: true },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, slug: true },
+      });
+    }
+
+    return skills;
   }
 
   async addSkillToFreelancer(userId: string, skillId: string) {
