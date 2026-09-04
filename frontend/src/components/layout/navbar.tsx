@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link, usePathname } from '@/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/contexts/auth-context';
@@ -99,11 +99,13 @@ export function Navbar() {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
   const pathname = usePathname();
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, switchRole } = useAuth();
   const unreadMessages = useUnreadMessageCount();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
   const isClient = useIsClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -117,6 +119,29 @@ export function Navbar() {
   function closeMobile() {
     setMobileOpen(false);
   }
+
+  async function handleSwitchRole(role: 'CLIENT' | 'FREELANCER') {
+    if (!user || user.role === role || isSwitching) return;
+    setIsSwitching(true);
+    try {
+      await switchRole(role);
+      closeMobile();
+      router.replace('/dashboard');
+      router.refresh();
+    } finally {
+      setIsSwitching(false);
+    }
+  }
+
+  const displayName = user?.profile
+    ? `${user.profile.firstName} ${user.profile.lastName}`.trim()
+    : '';
+  const clientLabel =
+    user?.clientDisplayName?.trim() ||
+    displayName ||
+    t('roleClient');
+  const canUseMarketplace =
+    user?.role === 'CLIENT' || user?.role === 'FREELANCER';
 
   const browseMenu = [
     {
@@ -366,6 +391,20 @@ export function Navbar() {
                 </NavLink>
                 {user ? (
                   <>
+                    <div className="mb-3 rounded-2xl border border-line bg-cream-deep/60 p-3">
+                      <p className="font-display text-sm font-bold text-ink">
+                        {displayName || user.email}
+                      </p>
+                      <p className="mt-0.5 text-xs text-ink-soft">{user.email}</p>
+                      <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ember">
+                        <span aria-hidden>{'<>'}</span>
+                        {user.role === 'CLIENT' ? t('roleClient') : t('roleFreelancer')}
+                      </p>
+                    </div>
+
+                    <p className="mb-1 px-1 text-[11px] font-semibold tracking-wide text-ink-soft">
+                      {t('workSection')}
+                    </p>
                     <NavLink
                       href="/dashboard"
                       onNavigate={closeMobile}
@@ -404,6 +443,10 @@ export function Navbar() {
                         </NavLink>
                       </>
                     ) : null}
+
+                    <p className="mb-1 mt-3 px-1 text-[11px] font-semibold tracking-wide text-ink-soft">
+                      {t('accountSection')}
+                    </p>
                     <NavLink href="/dashboard/profile" onNavigate={closeMobile}>
                       {t('profile')}
                     </NavLink>
@@ -414,13 +457,59 @@ export function Navbar() {
                     <div className="py-2">
                       <NotificationBell />
                     </div>
+
+                    {canUseMarketplace ? (
+                      <div className="mt-2 border-t border-line pt-3">
+                        <p className="mb-2 px-1 text-[11px] font-semibold tracking-wide text-ink-soft">
+                          {t('switchAccounts')}
+                        </p>
+                        {user.role === 'FREELANCER' ? (
+                          <button
+                            type="button"
+                            disabled={isSwitching}
+                            onClick={() => void handleSwitchRole('CLIENT')}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start transition hover:bg-cream-deep disabled:opacity-60"
+                          >
+                            <span className="grid size-10 place-items-center rounded-full bg-sand text-ink">
+                              ⌂
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold text-ink">
+                                {clientLabel}
+                              </span>
+                              <span className="block text-xs text-ink-soft">{t('roleClient')}</span>
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isSwitching}
+                            onClick={() => void handleSwitchRole('FREELANCER')}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start transition hover:bg-cream-deep disabled:opacity-60"
+                          >
+                            <span className="grid size-10 place-items-center rounded-full bg-ember/10 text-ember">
+                              {'<>'}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold text-ink">
+                                {displayName || user.email}
+                              </span>
+                              <span className="block text-xs text-ink-soft">
+                                {t('roleFreelancer')}
+                              </span>
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
+
                     <button
                       type="button"
                       onClick={() => {
                         closeMobile();
                         logout();
                       }}
-                      className="mt-2 rounded-xl px-4 py-2.5 text-start text-sm text-error transition hover:bg-cream-deep"
+                      className="mt-3 rounded-xl px-4 py-2.5 text-start text-sm font-semibold text-ember transition hover:bg-cream-deep"
                     >
                       {t('logout')}
                     </button>

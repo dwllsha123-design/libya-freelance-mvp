@@ -29,6 +29,9 @@ export interface SafeUser {
   status: UserStatus;
   emailVerified: boolean;
   createdAt: Date;
+  hasClientProfile: boolean;
+  hasFreelancerProfile: boolean;
+  clientDisplayName: string | null;
   profile: {
     firstName: string;
     lastName: string;

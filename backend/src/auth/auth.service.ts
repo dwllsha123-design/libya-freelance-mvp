@@ -24,6 +24,7 @@ import {
 } from '../common/utils/token.util.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
+import type { SwitchRoleDto } from './dto/switch-role.dto.js';
 import type {
   ResetPasswordDto,
   VerifyEmailDto,
@@ -332,6 +333,86 @@ export class AuthService {
     return this.toSafeUser(user);
   }
 
+  async switchRole(
+    userId: string,
+    dto: SwitchRoleDto,
+  ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    if (!PUBLIC_ROLES.includes(dto.role)) {
+      throw new BadRequestException('يمكن التبديل بين وضع العميل والمستقل فقط');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+            freelancerProfile: { select: { id: true } },
+            clientProfile: { select: { id: true, displayName: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('المستخدم غير موجود');
+    }
+
+    if (!PUBLIC_ROLES.includes(user.role)) {
+      throw new BadRequestException('لا يمكن تبديل وضع حسابات الإدارة');
+    }
+
+    assertUserCanAuthenticate(user.status);
+
+    if (!user.profile) {
+      throw new BadRequestException('الملف الشخصي غير مكتمل');
+    }
+
+    if (user.role !== dto.role) {
+      await this.prisma.$transaction(async (tx) => {
+        if (dto.role === Role.FREELANCER && !user.profile!.freelancerProfile) {
+          await tx.freelancerProfile.create({
+            data: { profileId: user.profile!.id },
+          });
+          await this.nuqatiService.onFreelancerRegistered(user.id, tx);
+        }
+
+        if (dto.role === Role.CLIENT && !user.profile!.clientProfile) {
+          await tx.clientProfile.create({
+            data: {
+              profileId: user.profile!.id,
+              displayName: `${user.profile!.firstName} ${user.profile!.lastName}`.trim(),
+            },
+          });
+        }
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: { role: dto.role },
+        });
+      });
+    }
+
+    const refreshed = await this.usersService.findById(userId);
+    if (!refreshed) {
+      throw new UnauthorizedException('المستخدم غير موجود');
+    }
+
+    const tokens = await this.issueTokens(refreshed);
+
+    if (dto.role === Role.FREELANCER) {
+      void this.nuqatiService.onFreelancerLogin(userId).catch(() => undefined);
+    }
+
+    return {
+      user: this.toSafeUser(refreshed),
+      tokens,
+    };
+  }
+
   private async issueTokens(user: {
     id: string;
     email: string;
@@ -413,8 +494,17 @@ export class AuthService {
       firstName: string;
       lastName: string;
       username: string;
+      freelancerProfile?: { id: string } | null;
+      clientProfile?: { id: string; displayName?: string | null } | null;
     } | null;
   }): SafeUser {
+    const hasFreelancerProfile = Boolean(
+      user.profile?.freelancerProfile ?? user.role === Role.FREELANCER,
+    );
+    const hasClientProfile = Boolean(
+      user.profile?.clientProfile ?? user.role === Role.CLIENT,
+    );
+
     return {
       id: user.id,
       email: user.email,
@@ -422,6 +512,13 @@ export class AuthService {
       status: user.status,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
+      hasClientProfile,
+      hasFreelancerProfile,
+      clientDisplayName:
+        user.profile?.clientProfile?.displayName?.trim() ||
+        (hasClientProfile && user.profile
+          ? `${user.profile.firstName} ${user.profile.lastName}`.trim()
+          : null),
       profile: user.profile
         ? {
             firstName: user.profile.firstName,

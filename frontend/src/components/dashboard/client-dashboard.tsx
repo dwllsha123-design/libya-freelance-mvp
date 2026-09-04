@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useEscrowApi, type EscrowRecord } from '@/hooks/use-escrow';
@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/currency';
 import { getLocalizedCategoryName } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
 import type { ManageProject } from '@/lib/schemas/project';
+import { ApiError } from '@/lib/api';
 
 function StatCard({
   label,
@@ -23,11 +24,11 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-on-surface">{value}</p>
+          <p className="text-sm text-ink-soft">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-ink">{value}</p>
         </div>
         <div
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}
@@ -71,17 +72,28 @@ function PeopleIcon() {
   );
 }
 
+function SwapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M7 7h11M16 4l3 3-3 3M17 17H6M8 14l-3 3 3 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ClientDashboard() {
   const t = useTranslations('dashboard');
   const tProjects = useTranslations('projects');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, switchRole } = useAuth();
   const projectsApi = useProjectsApi();
   const escrowApi = useEscrowApi();
   const [projects, setProjects] = useState<ManageProject[]>([]);
   const [escrows, setEscrows] = useState<EscrowRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,39 +143,65 @@ export function ClientDashboard() {
 
   const firstName = user?.profile?.firstName ?? user?.email ?? '';
 
+  async function handleSwitchToFreelancer() {
+    setSwitchError(null);
+    setIsSwitching(true);
+    try {
+      await switchRole('FREELANCER');
+      router.replace('/dashboard');
+      router.refresh();
+    } catch (err) {
+      setSwitchError(err instanceof ApiError ? err.message : tCommon('error'));
+    } finally {
+      setIsSwitching(false);
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="page-gutter mx-auto max-w-6xl py-8 sm:py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
-          <p className="mt-2 text-slate-600">
-            {t('welcomeBack', { name: firstName })} ·{' '}
-            <span className="text-slate-500">{t('clientMode')}</span>
-          </p>
+          <h1 className="font-display text-3xl font-bold text-ink">{t('title')}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-ink-soft">{t('welcomeBackNameFirst', { name: firstName })}</p>
+            <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink-soft">
+              {t('clientMode')}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void handleSwitchToFreelancer()}
+            disabled={isSwitching}
+            className="inline-flex items-center gap-2 rounded-xl border border-line bg-cream-deep px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cream disabled:opacity-60"
+          >
+            <SwapIcon />
+            {isSwitching ? t('switchingRole') : t('switchToFreelancer')}
+          </button>
           <Link
             href="/freelancers"
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-on-surface hover:border-slate-300"
+            className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:border-sand"
           >
             {t('findTalent')}
           </Link>
           <Link
             href="/dashboard/projects/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-container"
+            className="inline-flex items-center gap-2 rounded-xl bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
           >
             <span className="text-lg leading-none">+</span>
             {t('postProject')}
           </Link>
         </div>
       </div>
+      {switchError ? <p className="mt-3 text-sm text-error">{switchError}</p> : null}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t('publishedProjects')}
           value={isLoading ? tCommon('loading') : String(stats.published)}
-          accent="bg-orange-100 text-orange-600"
+          accent="bg-orange-100 text-ember"
           icon={<BriefcaseIcon />}
         />
         <StatCard
@@ -175,7 +213,7 @@ export function ClientDashboard() {
         <StatCard
           label={t('totalSpent')}
           value={isLoading ? tCommon('loading') : formatCurrency(stats.totalSpend, 'LYD', locale)}
-          accent="bg-emerald-100 text-emerald-600"
+          accent="bg-emerald-100 text-palm"
           icon={<CoinIcon />}
         />
         <StatCard
@@ -188,29 +226,29 @@ export function ClientDashboard() {
 
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-on-surface">{t('myPublishedProjects')}</h2>
+          <h2 className="font-display text-xl font-bold text-ink">{t('myPublishedProjects')}</h2>
           <Link
             href="/dashboard/projects"
-            className="text-sm font-semibold text-primary hover:underline"
+            className="text-sm font-semibold text-ember hover:underline"
           >
             {tCommon('viewAll')}
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
+          <div className="rounded-2xl border border-line bg-surface p-10 text-center text-ink-soft">
             {tCommon('loadingPage')}
           </div>
         ) : publishedProjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+          <div className="rounded-2xl border border-dashed border-line bg-surface p-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-deep text-ink-soft">
               <BriefcaseIcon />
             </div>
-            <p className="font-semibold text-on-surface">{t('noPublishedYet')}</p>
-            <p className="mt-2 text-sm text-slate-500">{t('noPublishedHint')}</p>
+            <p className="font-semibold text-ink">{t('noPublishedYet')}</p>
+            <p className="mt-2 text-sm text-ink-soft">{t('noPublishedHint')}</p>
             <Link
               href="/dashboard/projects/new"
-              className="mt-6 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-container"
+              className="mt-6 inline-flex rounded-xl bg-ember px-5 py-2.5 text-sm font-semibold text-white hover:bg-ember-deep"
             >
               {t('postProject')}
             </Link>
@@ -221,16 +259,16 @@ export function ClientDashboard() {
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}/proposals`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-primary/40"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-ember/40"
               >
                 <div className="min-w-0">
-                  <p className="font-semibold text-on-surface">{project.title}</p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="font-semibold text-ink">{project.title}</p>
+                  <p className="mt-1 text-sm text-ink-soft">
                     {getLocalizedCategoryName(project.category, locale)} ·{' '}
                     {tProjects('proposalsCount', { count: project.proposalCount ?? 0 })}
                   </p>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-palm-deep">
                   {tProjects('statusOpen')}
                 </span>
               </Link>
@@ -240,17 +278,17 @@ export function ClientDashboard() {
       </section>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/dashboard/escrow" className="rounded-xl border border-slate-200 bg-white p-5 hover:border-primary/40">
-          <p className="font-semibold">{t('escrowLog')}</p>
-          <p className="mt-1 text-sm text-slate-500">{t('escrowLogHint')}</p>
+        <Link href="/dashboard/escrow" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
+          <p className="font-semibold text-ink">{t('escrowLog')}</p>
+          <p className="mt-1 text-sm text-ink-soft">{t('escrowLogHint')}</p>
         </Link>
-        <Link href="/messages" className="rounded-xl border border-slate-200 bg-white p-5 hover:border-primary/40">
-          <p className="font-semibold">{t('messages')}</p>
-          <p className="mt-1 text-sm text-slate-500">{t('messagesHintClient')}</p>
+        <Link href="/messages" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
+          <p className="font-semibold text-ink">{t('messages')}</p>
+          <p className="mt-1 text-sm text-ink-soft">{t('messagesHintClient')}</p>
         </Link>
-        <Link href="/dashboard/profile" className="rounded-xl border border-slate-200 bg-white p-5 hover:border-primary/40">
-          <p className="font-semibold">{t('profile')}</p>
-          <p className="mt-1 text-sm text-slate-500">{t('profileHintClient')}</p>
+        <Link href="/dashboard/profile" className="rounded-xl border border-line bg-surface p-5 hover:border-ember/40">
+          <p className="font-semibold text-ink">{t('profile')}</p>
+          <p className="mt-1 text-sm text-ink-soft">{t('profileHintClient')}</p>
         </Link>
       </div>
     </div>

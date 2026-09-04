@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { FreelancerQueryDto } from './dto/freelancer-query.dto.js';
@@ -129,7 +129,7 @@ export class ProfilesService {
         data: profileUpdate,
       });
 
-      if (profile.user.role === Role.FREELANCER && profile.freelancerProfile) {
+      if (profile.freelancerProfile) {
         await tx.freelancerProfile.update({
           where: { profileId: profile.id },
           data: {
@@ -146,7 +146,7 @@ export class ProfilesService {
         });
       }
 
-      if (profile.user.role === Role.CLIENT && profile.clientProfile) {
+      if (profile.clientProfile) {
         await tx.clientProfile.update({
           where: { profileId: profile.id },
           data: {
@@ -204,7 +204,7 @@ export class ProfilesService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProfileWhereInput = {
-      user: { role: Role.FREELANCER, status: 'ACTIVE' },
+      user: { status: 'ACTIVE' },
       freelancerProfile: { isNot: null },
     };
 
@@ -263,7 +263,7 @@ export class ProfilesService {
     const profile = await this.prisma.profile.findFirst({
       where: {
         username: normalizeUsername(username),
-        user: { role: Role.FREELANCER, status: 'ACTIVE' },
+        user: { status: 'ACTIVE' },
         freelancerProfile: { isNot: null },
       },
       include: profileInclude,
@@ -287,7 +287,7 @@ export class ProfilesService {
     const profile = await this.prisma.profile.findFirst({
       where: {
         username: normalizeUsername(username),
-        user: { role: Role.CLIENT, status: 'ACTIVE' },
+        user: { status: 'ACTIVE' },
         clientProfile: { isNot: null },
       },
       include: profileInclude,
