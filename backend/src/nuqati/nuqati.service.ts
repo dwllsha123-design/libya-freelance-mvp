@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   PaymentStatus,
   PointsTransactionType,
@@ -44,7 +45,10 @@ function isYesterdayUtc(today: Date, previous: Date) {
 
 @Injectable()
 export class NuqatiService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getDashboard(userId: string, role: Role) {
     if (role !== Role.FREELANCER) {
@@ -123,7 +127,18 @@ export class NuqatiService {
     };
   }
 
-  async purchasePackage(userId: string, role: Role, packageId: string) {
+  /**
+   * Starts a Nuqati points purchase checkout.
+   *
+   * Until PAYMENT_POINTS_GATEWAY_ENABLED=true and a real provider is wired,
+   * returns a structured "coming soon" response without crediting points.
+   *
+   * Future gateway flow:
+   * 1. Create Payment (purpose POINTS_PURCHASE) via PaymentService
+   * 2. Return checkoutUrl / requiresRedirect
+   * 3. On webhook success → credit wallet + mark PointsPurchase SUCCEEDED
+   */
+  async initiatePurchaseCheckout(userId: string, role: Role, packageId: string) {
     if (role !== Role.FREELANCER) {
       throw new ForbiddenException('نقاطي متاح للمستقلين فقط');
     }
@@ -131,46 +146,75 @@ export class NuqatiService {
     const pkg = NUQATI_CONFIG.purchasePackages.find((p) => p.id === packageId);
     if (!pkg) throw new BadRequestException('باقة غير صالحة');
 
+    const gatewayEnabled =
+      this.configService.get<boolean>('payment.pointsGatewayEnabled') === true;
+
     const purchase = await this.prisma.pointsPurchase.create({
       data: {
         userId,
         pointsAmount: pkg.points,
         priceLyd: pkg.priceLyd,
-        status: PaymentStatus.PROCESSING,
-        provider: 'simulated',
-        providerReference: `sim_pts_${randomUUID().slice(0, 8)}`,
+        status: PaymentStatus.PENDING,
+        provider: gatewayEnabled ? 'pending' : 'coming_soon',
+        providerReference: gatewayEnabled
+          ? null
+          : `soon_pts_${randomUUID().slice(0, 8)}`,
       },
     });
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.pointsPurchase.update({
-        where: { id: purchase.id },
-        data: {
-          status: PaymentStatus.SUCCEEDED,
-          paidAt: new Date(),
+    if (!gatewayEnabled) {
+      return {
+        purchaseId: purchase.id,
+        package: {
+          id: pkg.id,
+          points: pkg.points,
+          priceLyd: pkg.priceLyd,
         },
-      });
+        status: 'COMING_SOON' as const,
+        comingSoon: true,
+        requiresRedirect: false,
+        checkoutUrl: null as string | null,
+        paymentMethods: [
+          {
+            id: 'electronic',
+            type: 'electronic',
+            available: false,
+            comingSoon: true,
+          },
+        ],
+        currency: this.configService.get<string>('payment.currency') ?? 'LYD',
+        message: 'بوابة الدفع الإلكتروني قيد الإعداد — قريباً',
+      };
+    }
 
-      await this.credit(
-        userId,
-        pkg.points,
-        PointsTransactionType.PURCHASE,
-        'PURCHASE',
-        `شراء ${pkg.points} نقطة — ${pkg.priceLyd} د.ل`,
-        purchase.id,
-        tx,
-      );
-    });
-
-    const wallet = await this.prisma.pointsWallet.findUniqueOrThrow({
-      where: { userId },
-    });
-
+    // Placeholder for live gateway integration — keep pending until provider wired.
     return {
       purchaseId: purchase.id,
-      pointsAdded: pkg.points,
-      balance: wallet.balance,
+      package: {
+        id: pkg.id,
+        points: pkg.points,
+        priceLyd: pkg.priceLyd,
+      },
+      status: 'PENDING' as const,
+      comingSoon: true,
+      requiresRedirect: false,
+      checkoutUrl: null as string | null,
+      paymentMethods: [
+        {
+          id: 'electronic',
+          type: 'electronic',
+          available: false,
+          comingSoon: true,
+        },
+      ],
+      currency: this.configService.get<string>('payment.currency') ?? 'LYD',
+      message: 'بوابة الدفع الإلكتروني قيد الإعداد — قريباً',
     };
+  }
+
+  /** @deprecated Use initiatePurchaseCheckout — kept as alias for older clients. */
+  async purchasePackage(userId: string, role: Role, packageId: string) {
+    return this.initiatePurchaseCheckout(userId, role, packageId);
   }
 
   async submitSocialShare(userId: string, role: Role, postUrl: string) {

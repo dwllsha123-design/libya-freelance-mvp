@@ -88,7 +88,6 @@ export function NuqatiDashboardView() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [socialUrl, setSocialUrl] = useState('');
-  const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
   const numberLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
   const platformName = locale === 'en' ? PLATFORM_NAME_EN : PLATFORM_NAME_AR_STYLED;
   const brand = getNuqatiBrand(locale);
@@ -129,18 +128,6 @@ export function NuqatiDashboardView() {
       cancelled = true;
     };
   }, [user, api, t]);
-
-  async function handlePurchase(packageId: string) {
-    setPurchaseLoading(packageId);
-    try {
-      await api.purchase(packageId);
-      await reload();
-    } catch {
-      setError(t('purchaseFailed'));
-    } finally {
-      setPurchaseLoading(null);
-    }
-  }
 
   async function handleSocialShare(event: React.FormEvent) {
     event.preventDefault();
@@ -211,16 +198,14 @@ export function NuqatiDashboardView() {
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {(data?.packages ?? []).map((pkg) => (
-            <button
+            <Link
               key={pkg.id}
-              type="button"
-              disabled={purchaseLoading === pkg.id}
-              onClick={() => handlePurchase(pkg.id)}
-              className="rounded-xl border border-slate-200 p-4 text-start transition hover:border-primary disabled:opacity-60"
+              href={`/dashboard/nuqati/checkout?packageId=${pkg.id}`}
+              className="rounded-xl border border-slate-200 p-4 text-start transition hover:border-primary"
             >
               <p className="text-xl font-bold text-primary">{pkg.points} {t('point')}</p>
               <p className="mt-1 text-sm text-slate-600">{pkg.priceLyd} {tCommon('lyd')}</p>
-            </button>
+            </Link>
           ))}
         </div>
       </section>

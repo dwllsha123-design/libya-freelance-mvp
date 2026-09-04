@@ -34,12 +34,29 @@ export class NuqatiController {
     });
   }
 
+  @Post('checkout')
+  checkout(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { packageId: string },
+  ) {
+    return this.nuqatiService.initiatePurchaseCheckout(
+      user.id,
+      user.role,
+      body.packageId,
+    );
+  }
+
+  /** @deprecated Prefer POST /nuqati/checkout */
   @Post('purchase')
   purchase(
     @CurrentUser() user: AuthUser,
     @Body() body: { packageId: string },
   ) {
-    return this.nuqatiService.purchasePackage(user.id, user.role, body.packageId);
+    return this.nuqatiService.initiatePurchaseCheckout(
+      user.id,
+      user.role,
+      body.packageId,
+    );
   }
 
   @Post('social-share')
