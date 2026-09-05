@@ -17,7 +17,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PortfolioService } from '../portfolio/portfolio.service.js';
-import { ProjectStateService } from '../projects/project-validation.util.js';
 import type { CreateProposalDto, MyProposalsQueryDto } from './dto/create-proposal.dto.js';
 import {
   ProposalStateService,
@@ -162,13 +161,39 @@ export class ProposalsService {
       return created;
     });
 
-    await this.notifications.create(
-      project.clientId,
-      NotificationType.NEW_PROPOSAL,
-      'عرض جديد على مشروعك',
-      `تلقيت عرضاً جديداً على مشروع "${project.title}"`,
-      `/dashboard/projects/${projectId}/proposals`,
-    );
+    const freelancerProfile = await this.prisma.profile.findUnique({
+      where: { userId: freelancerId },
+      select: { firstName: true, lastName: true },
+    });
+    const freelancerName = freelancerProfile
+      ? `${freelancerProfile.firstName} ${freelancerProfile.lastName}`.trim()
+      : undefined;
+
+    await this.notifications.notify({
+      userId: project.clientId,
+      type: NotificationType.NEW_PROPOSAL,
+      title: freelancerName ? 'وصل عرض جديد على مشروعك' : undefined,
+      message:
+        freelancerName != null
+          ? `${freelancerName} قدم عرضاً بقيمة ${dto.proposedPrice} د.ل.`
+          : undefined,
+      params: {
+        projectTitle: project.title,
+        freelancerName,
+        amount: String(dto.proposedPrice),
+      },
+      targetUrl: `/dashboard/projects/${projectId}/proposals`,
+      entityType: 'proposal',
+      entityId: proposal.id,
+      dedupeKey: `proposal-received:${proposal.id}`,
+    });
+
+    await this.notifications.notifyPointsEvent({
+      userId: freelancerId,
+      type: NotificationType.POINTS_SPENT,
+      points: NUQATI_CONFIG.proposalSubmitCost + boostPoints,
+      reason: 'تقديم عرض',
+    });
 
     return this.formatFreelancerProposal(proposal);
   }
@@ -381,6 +406,16 @@ export class ProposalsService {
       `تم قبول عرضك على مشروع "${proposal.project.title}"`,
       `/dashboard/proposals`,
     );
+
+    await this.notifications.notify({
+      userId: clientId,
+      type: NotificationType.PROJECT_STARTED,
+      params: { projectTitle: proposal.project.title },
+      targetUrl: `/dashboard/projects/${proposal.projectId}/edit`,
+      entityType: 'project',
+      entityId: proposal.projectId,
+      dedupeKey: `project-started:${proposal.projectId}`,
+    });
 
     if (result.rejectedCount > 0) {
       for (const freelancerId of pendingFreelancerIds) {

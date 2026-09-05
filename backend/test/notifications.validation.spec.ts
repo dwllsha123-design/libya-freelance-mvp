@@ -40,15 +40,11 @@ describe('notification realtime helpers', () => {
 
 describe('notification enum coverage', () => {
   it('includes all marketplace notification types', () => {
-    expect(NOTIFICATION_TYPES).toEqual([
-      NotificationType.NEW_PROPOSAL,
-      NotificationType.PROPOSAL_ACCEPTED,
-      NotificationType.PROPOSAL_REJECTED,
-      NotificationType.NEW_MESSAGE,
-      NotificationType.PROJECT_COMPLETION_REQUESTED,
-      NotificationType.PROJECT_COMPLETED,
-      NotificationType.NEW_REVIEW,
-    ]);
+    const expected = Object.values(NotificationType);
+    expect([...NOTIFICATION_TYPES].sort()).toEqual([...expected].sort());
+    expect(NOTIFICATION_TYPES).toContain(NotificationType.PROJECT_MATCHED);
+    expect(NOTIFICATION_TYPES).toContain(NotificationType.PAYMENT_SUCCESS);
+    expect(NOTIFICATION_TYPES).toContain(NotificationType.POINTS_EARNED);
   });
 });
 

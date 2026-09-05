@@ -1,21 +1,14 @@
 import type { AppLocale } from '@/i18n/routing';
 import type { AppNotificationType } from '@/lib/notification-ui';
+import { NOTIFICATION_UI } from '@/lib/notification-ui';
 
-const NOTIFICATION_LABELS: Record<AppLocale, Record<AppNotificationType, string>> = {
-  ar: {
-    NEW_PROPOSAL: 'عرض جديد',
-    PROPOSAL_ACCEPTED: 'عرض مقبول',
-    PROPOSAL_REJECTED: 'عرض مرفوض',
-    NEW_MESSAGE: 'رسالة',
-    PROJECT_COMPLETION_REQUESTED: 'طلب إتمام',
-    PROJECT_COMPLETED: 'مشروع مكتمل',
-    NEW_REVIEW: 'تقييم',
-    ESCROW_FUNDED: 'ضمان مموّل',
-    ESCROW_RELEASED: 'تحرير ضمان',
-    ESCROW_DISPUTED: 'نزاع ضمان',
-    ESCROW_DISPUTE_RESOLVED: 'حل نزاع',
-    ADMIN_BROADCAST: 'إشعار المنصة',
-  },
+const NOTIFICATION_LABELS: Record<
+  AppLocale,
+  Record<AppNotificationType, string>
+> = {
+  ar: Object.fromEntries(
+    Object.entries(NOTIFICATION_UI).map(([type, meta]) => [type, meta.label]),
+  ) as Record<AppNotificationType, string>,
   en: {
     NEW_PROPOSAL: 'New proposal',
     PROPOSAL_ACCEPTED: 'Proposal accepted',
@@ -29,11 +22,30 @@ const NOTIFICATION_LABELS: Record<AppLocale, Record<AppNotificationType, string>
     ESCROW_DISPUTED: 'Escrow dispute',
     ESCROW_DISPUTE_RESOLVED: 'Dispute resolved',
     ADMIN_BROADCAST: 'Platform notice',
+    PROJECT_MATCHED: 'Matching project',
+    PROJECT_MATCHED_DIGEST: 'Matching projects',
+    PROPOSAL_WITHDRAWN: 'Proposal withdrawn',
+    PROJECT_STARTED: 'Project started',
+    PROJECT_DEADLINE_APPROACHING: 'Deadline soon',
+    PROJECT_DEADLINE_6H: '6 hours left',
+    PROJECT_OVERDUE: 'Overdue',
+    PAYMENT_SUCCESS: 'Payment success',
+    PAYMENT_FAILED: 'Payment failed',
+    ESCROW_REFUNDED: 'Escrow refunded',
+    POINTS_EARNED: 'Points earned',
+    POINTS_SPENT: 'Points spent',
+    LOW_POINTS: 'Low points',
+    INSUFFICIENT_POINTS: 'Insufficient points',
+    PROFILE_COMPLETED: 'Profile completed',
+    ACCOUNT_SECURITY_ALERT: 'Security alert',
+    SYSTEM_ANNOUNCEMENT: 'Announcement',
+    MAINTENANCE: 'Maintenance',
+    IMPORTANT_UPDATE: 'Important update',
   },
 };
 
 export function getNotificationLabel(type: AppNotificationType, locale: AppLocale) {
-  return NOTIFICATION_LABELS[locale][type];
+  return NOTIFICATION_LABELS[locale][type] ?? NOTIFICATION_UI[type]?.label ?? type;
 }
 
 export function formatRelativeTime(iso: string, locale: AppLocale) {

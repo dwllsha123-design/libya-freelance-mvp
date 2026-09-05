@@ -4,7 +4,7 @@ import { useLocale } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useSocketEvent } from '@/contexts/socket-context';
-import { authenticatedRequest, getApiErrorMessage } from '@/lib/api';
+import { authenticatedRequest, apiRequest, getApiErrorMessage } from '@/lib/api';
 import type { NotificationItem } from '@/lib/notification-ui';
 import type { AppLocale } from '@/i18n/routing';
 
@@ -16,6 +16,13 @@ interface PaginatedNotifications {
   totalPages: number;
   unreadCount: number;
 }
+
+export type PreferenceRow = {
+  notificationType: string;
+  inAppEnabled: boolean;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+};
 
 export function useNotificationsApi() {
   const { accessToken } = useAuth();
@@ -58,12 +65,82 @@ export function useNotificationsApi() {
         );
       },
 
+      markUnread: (id: string) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<NotificationItem>(
+          `/notifications/${id}/unread`,
+          accessToken,
+          { method: 'PATCH' },
+        );
+      },
+
       markAllRead: () => {
         if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
         return authenticatedRequest<{ affected: number }>(
           '/notifications/read-all',
           accessToken,
           { method: 'POST' },
+        );
+      },
+
+      deleteOne: (id: string) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<{ deleted: boolean }>(
+          `/notifications/${id}`,
+          accessToken,
+          { method: 'DELETE' },
+        );
+      },
+
+      clearAll: () => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<{ deleted: number }>(
+          '/notifications',
+          accessToken,
+          { method: 'DELETE' },
+        );
+      },
+
+      getPreferences: () => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<PreferenceRow[]>(
+          '/notifications/preferences',
+          accessToken,
+        );
+      },
+
+      updatePreferences: (preferences: PreferenceRow[]) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest<PreferenceRow[]>(
+          '/notifications/preferences',
+          accessToken,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ preferences }),
+          },
+        );
+      },
+
+      pushPublicKey: () =>
+        apiRequest<{ publicKey: string | null }>(
+          '/notifications/push/public-key',
+          {},
+          locale,
+        ),
+
+      subscribePush: (body: {
+        endpoint: string;
+        p256dh: string;
+        auth: string;
+        deviceType?: string;
+        browser?: string;
+        userAgent?: string;
+      }) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        return authenticatedRequest(
+          '/notifications/push-subscriptions',
+          accessToken,
+          { method: 'POST', body: JSON.stringify(body) },
         );
       },
     }),

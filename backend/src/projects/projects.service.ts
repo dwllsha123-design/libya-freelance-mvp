@@ -297,6 +297,9 @@ export class ProjectsService {
       include: projectInclude,
     });
 
+    // Fan-out PROJECT_MATCHED via background queue (never blocks publish)
+    this.notifications.enqueueProjectMatch(projectId);
+
     return this.formatManageProject(updated);
   }
 

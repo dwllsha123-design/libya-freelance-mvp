@@ -13,6 +13,7 @@ export interface NotificationRealtimePayload {
   targetUrl: string | null;
   isRead: boolean;
   createdAt: string;
+  priority?: string;
 }
 
 @Injectable()

@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EscrowModule } from '../escrow/escrow.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PaymentController } from './payment.controller.js';
 import { PaymentWebhookController } from './payment-webhook.controller.js';
 import { PAYMENT_PROVIDER } from './payment.types.js';
@@ -25,7 +26,11 @@ export function resolvePaymentDriver(configService: ConfigService): PaymentDrive
 }
 
 @Module({
-  imports: [ConfigModule, forwardRef(() => EscrowModule)],
+  imports: [
+    ConfigModule,
+    NotificationsModule,
+    forwardRef(() => EscrowModule),
+  ],
   controllers: [PaymentController, PaymentWebhookController],
   providers: [
     PaymentService,

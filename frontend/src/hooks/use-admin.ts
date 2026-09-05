@@ -130,6 +130,17 @@ export function useAdminApi() {
           requireToken(),
         ),
 
+      notificationStats: (days = 30) =>
+        authenticatedRequest<{
+          totalNotifications: number;
+          unread: number;
+          read: number;
+          readRate: number;
+          pushDeliveryRate: number;
+          emailDeliveryRate: number;
+          failed: number;
+        }>(`/admin/notifications/stats?days=${days}`, requireToken()),
+
       sendBroadcast: (body: {
         audience: BroadcastAudience;
         title: string;

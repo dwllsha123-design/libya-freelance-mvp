@@ -28,6 +28,7 @@ import { EscrowModule } from './escrow/escrow.module.js';
 import { PaymentsModule } from './payments/payment.module.js';
 import { NuqatiModule } from './nuqati/nuqati.module.js';
 import { ReferenceDataModule } from './reference-data/reference-data.module.js';
+import { EmailModule } from './common/services/email.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ReferenceDataModule } from './reference-data/reference-data.module.js';
       validate,
     }),
     PrismaModule,
+    EmailModule,
     ReferenceDataModule,
     StorageModule,
     UsersModule,

@@ -115,6 +115,7 @@ Never `migrate dev` or `db push` on production.
 ## Documentation
 
 - [Deployment](docs/DEPLOYMENT.md)
+- [Notifications](docs/notifications.md)
 - [Beta readiness](docs/BETA_READINESS.md)
 - [Auth session invalidation](backend/docs/AUTH_SESSION_INVALIDATION.md)
 - [Admin security](backend/docs/ADMIN_SECURITY.md)

@@ -72,6 +72,45 @@ enum NotificationType {
   ESCROW_DISPUTED
   ESCROW_DISPUTE_RESOLVED
   ADMIN_BROADCAST
+  PROJECT_MATCHED
+  PROJECT_MATCHED_DIGEST
+  PROPOSAL_WITHDRAWN
+  PROJECT_STARTED
+  PROJECT_DEADLINE_APPROACHING
+  PROJECT_DEADLINE_6H
+  PROJECT_OVERDUE
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  ESCROW_REFUNDED
+  POINTS_EARNED
+  POINTS_SPENT
+  LOW_POINTS
+  INSUFFICIENT_POINTS
+  PROFILE_COMPLETED
+  ACCOUNT_SECURITY_ALERT
+  SYSTEM_ANNOUNCEMENT
+  MAINTENANCE
+  IMPORTANT_UPDATE
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  EMAIL
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
 }
 
 enum AdminAuditAction {
@@ -277,6 +316,9 @@ model User {
   reviewsGiven            Review[]                 @relation("ReviewsGiven")
   reviewsReceived         Review[]                 @relation("ReviewsReceived")
   notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
+  notificationLogs        NotificationLog[]
   adminAuditLogs          AdminAuditLog[]
   escrowsAsClient         Escrow[]                 @relation("EscrowClient")
   escrowsAsFreelancer     Escrow[]                 @relation("EscrowFreelancer")
@@ -395,19 +437,21 @@ model City {
 }
 
 model Profile {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  firstName    String
-  lastName     String
-  username     String   @unique
-  profilePhoto String?
-  bio          String?
-  cityId       String?
-  country      String   @default("Libya")
-  workMode     WorkMode @default(ON_SITE)
-  phone        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  firstName       String
+  lastName        String
+  username        String   @unique
+  profilePhoto    String?
+  bio             String?
+  cityId          String?
+  country         String   @default("Libya")
+  workMode        WorkMode @default(ON_SITE)
+  phone           String?
+  /// Preferred UI/email locale: ar | en
+  preferredLocale String   @default("ar")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   city              City?              @relation(fields: [cityId], references: [id], onDelete: SetNull)
@@ -704,19 +748,101 @@ model AdminAuditLog {
 }
 
 model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String
-  targetUrl String?
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
+  id         String               @id @default(uuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  /// Structured payload (entity refs, template params). Never store secrets.
+  data       Json?
+  entityType String?
+  entityId   String?
+  targetUrl  String?
+  priority   NotificationPriority @default(NORMAL)
+  /// Idempotency key within a user (e.g. projectId:PROJECT_MATCHED)
+  dedupeKey  String?
+  isRead     Boolean              @default(false)
+  readAt     DateTime?
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs NotificationLog[]
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([entityType, entityId])
+  @@index([priority, createdAt])
+}
+
+model NotificationPreference {
+  id               String   @id @default(uuid())
+  userId           String
+  /// NotificationType value or category key (PROJECTS, MESSAGES, PAYMENTS, POINTS, SYSTEM)
+  notificationType String
+  inAppEnabled     Boolean  @default(true)
+  pushEnabled      Boolean  @default(true)
+  emailEnabled     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
+  @@unique([userId, notificationType])
+  @@index([userId])
+}
+
+/// Web Push (VAPID) subscriptions — mobile tokens remain on UserDevice
+model PushSubscription {
+  id         String    @id @default(uuid())
+  userId     String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  deviceType String?
+  browser    String?
+  userAgent  String?
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
+model NotificationLog {
+  id             String                      @id @default(uuid())
+  notificationId String?
+  userId         String?
+  channel        NotificationChannel
+  status         NotificationDeliveryStatus  @default(PENDING)
+  errorMessage   String?
+  sentAt         DateTime?
+  retryCount     Int                         @default(0)
+  createdAt      DateTime                    @default(now())
+
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([notificationId])
+  @@index([userId, channel])
+  @@index([status, createdAt])
+  @@index([channel, status])
+}
+
+/// Idempotent deadline / scheduled reminder tracking
+model NotificationReminder {
+  id           String   @id @default(uuid())
+  projectId    String
+  reminderType String
+  sentAt       DateTime @default(now())
+
+  @@unique([projectId, reminderType])
+  @@index([reminderType, sentAt])
 }
 
 model Escrow {
