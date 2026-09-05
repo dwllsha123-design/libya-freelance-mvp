@@ -38,6 +38,12 @@ export default () => ({
     emailVerificationExpiresIn:
       process.env.EMAIL_VERIFICATION_TOKEN_EXPIRES_IN ?? '24h',
   },
+  push: {
+    vapidPublicKey: process.env.PUSH_VAPID_PUBLIC_KEY,
+    vapidPrivateKey: process.env.PUSH_VAPID_PRIVATE_KEY,
+    vapidSubject:
+      process.env.PUSH_VAPID_SUBJECT ?? 'mailto:support@libyanfreelance.ly',
+  },
   storage: {
     driver: process.env.STORAGE_DRIVER ?? 'local',
     localDir: process.env.STORAGE_LOCAL_DIR,

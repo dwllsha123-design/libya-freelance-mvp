@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
 import { SocketProvider } from '@/contexts/socket-context';
 import { AppChrome } from '@/components/layout/app-chrome';
+import { WebPushEnabler } from '@/components/notifications/web-push-enabler';
 import { routing, type AppLocale } from '@/i18n/routing';
 
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
@@ -90,6 +91,7 @@ export default async function LocaleLayout({
           <ThemeProvider>
             <AuthProvider>
               <SocketProvider>
+                <WebPushEnabler />
                 <AppChrome>{children}</AppChrome>
               </SocketProvider>
             </AuthProvider>

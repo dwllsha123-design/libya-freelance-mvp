@@ -3,9 +3,10 @@ import { NotificationsController } from './notifications.controller.js';
 import { NotificationsRealtimeService } from './notifications-realtime.service.js';
 import { NotificationsService } from './notifications.service.js';
 import { PushNotificationService } from './push-notification.service.js';
+import { WebPushController } from './web-push.controller.js';
 
 @Module({
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, WebPushController],
   providers: [
     NotificationsService,
     NotificationsRealtimeService,

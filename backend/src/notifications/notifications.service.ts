@@ -4,12 +4,18 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { assertInternalTargetUrl } from './notification-url.util.js';
 import type { NotificationsQueryDto } from './dto/notifications-query.dto.js';
 import { NotificationsRealtimeService } from './notifications-realtime.service.js';
+import { PushNotificationService } from './push-notification.service.js';
+import {
+  sanitizeInternalPushPath,
+  sanitizePushPreview,
+} from './web-push-subscription.util.js';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly realtime: NotificationsRealtimeService,
+    private readonly push: PushNotificationService,
   ) {}
 
   async create(
@@ -35,6 +41,7 @@ export class NotificationsService {
 
     if (!tx) {
       this.emitRealtime(notification);
+      this.fanOutPush(notification);
     }
 
     return notification;
@@ -72,6 +79,7 @@ export class NotificationsService {
       count += created.length;
       for (const notification of created) {
         this.emitRealtime(notification);
+        this.fanOutPush(notification);
       }
     }
 
@@ -106,6 +114,7 @@ export class NotificationsService {
       });
 
       this.emitRealtime(updated);
+      this.fanOutPush(updated);
       return updated;
     }
 
@@ -257,5 +266,24 @@ export class NotificationsService {
       isRead: notification.isRead,
       createdAt: notification.createdAt.toISOString(),
     });
+  }
+
+  /** Fire-and-forget Web Push; must never throw into the request path */
+  private fanOutPush(notification: {
+    id: string;
+    userId: string;
+    title: string;
+    message: string;
+    targetUrl: string | null;
+  }) {
+    const safeUrl = sanitizeInternalPushPath(notification.targetUrl);
+    void this.push
+      .notifyUser(notification.userId, {
+        title: sanitizePushPreview(notification.title, 80),
+        body: sanitizePushPreview(notification.message),
+        notificationId: notification.id,
+        data: { url: safeUrl },
+      })
+      .catch(() => undefined);
   }
 }
