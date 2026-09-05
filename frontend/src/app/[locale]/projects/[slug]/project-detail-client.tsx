@@ -165,7 +165,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
   ];
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className="min-h-screen overflow-x-hidden pb-28">
       <div className="page-gutter mx-auto max-w-4xl py-8 sm:py-10">
         <BackLink href="/projects">{t('browseTitle')}</BackLink>
 
@@ -176,7 +176,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           </span>
         </div>
 
-        <h1 className="mt-4 font-display text-3xl font-bold leading-tight text-ink md:text-4xl">
+        <h1 className="mt-4 max-w-full break-words font-display text-3xl font-bold leading-tight text-ink [overflow-wrap:anywhere] md:text-4xl">
           {project.title}
         </h1>
         {project.publishedAt ? (
@@ -189,9 +189,9 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
 
         <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-4">
           {meta.map((m) => (
-            <div key={m.l} className="bg-cream px-4 py-5 sm:px-5">
+            <div key={m.l} className="min-w-0 bg-cream px-4 py-5 sm:px-5">
               <div className="text-lg text-ember">{m.icon}</div>
-              <div className="mt-2 font-display text-sm font-semibold text-ink sm:text-base">
+              <div className="mt-2 break-words font-display text-sm font-semibold text-ink [overflow-wrap:anywhere] sm:text-base">
                 {m.v}
               </div>
               <div className="text-xs text-ink-soft">{m.l}</div>
@@ -199,12 +199,12 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           ))}
         </div>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-[1fr_260px]">
-          <div>
+        <div className="mt-8 grid min-w-0 gap-8 md:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="min-w-0">
             <h2 className="font-display text-xl font-semibold text-ink">
               {t('offerDetailsCard')}
             </h2>
-            <p className="mt-3 whitespace-pre-wrap leading-loose text-ink-soft">
+            <p className="mt-3 max-w-full whitespace-pre-wrap break-words leading-loose text-ink-soft [overflow-wrap:anywhere]">
               {project.description}
             </p>
 
@@ -275,7 +275,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
             ) : null}
           </div>
 
-          <aside className="h-fit space-y-4 md:sticky md:top-24">
+          <aside className="h-fit w-full shrink-0 space-y-4 md:sticky md:top-24">
             <div className="rounded-2xl border border-line bg-cream p-6">
               <div className="text-sm text-ink-soft">{t('applyCostLabel')}</div>
               <div className="mt-1 font-display text-3xl font-bold text-ink">
@@ -297,13 +297,28 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
                 >
                   {t('applyNow')}
                 </button>
-              ) : (
+              ) : !user ? (
                 <Link
                   href={buildAuthHref('/login', { next: pathname })}
                   className="mt-5 block w-full rounded-xl bg-ember py-3 text-center text-sm font-semibold text-white transition-all hover:bg-ember-deep"
                 >
                   {t('applyNow')}
                 </Link>
+              ) : user.role === 'FREELANCER' && myProposal ? (
+                <Link
+                  href="/dashboard/proposals"
+                  className="mt-5 block w-full rounded-xl border border-line bg-cream py-3 text-center text-sm font-semibold text-ink hover:border-ink"
+                >
+                  {t('viewMyProposal')}
+                </Link>
+              ) : isOwner ? (
+                <p className="mt-5 text-center text-sm text-ink-soft">
+                  {t('ownerCannotPropose')}
+                </p>
+              ) : (
+                <p className="mt-5 text-center text-sm text-ink-soft">
+                  {t('freelancersOnlySubmit')}
+                </p>
               )}
             </div>
           </aside>
