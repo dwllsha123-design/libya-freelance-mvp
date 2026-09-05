@@ -67,6 +67,19 @@ export class EnvironmentVariables {
   @IsString()
   EMAIL_FROM?: string;
 
+  /** Web Push VAPID — optional; when set, both public + private are required */
+  @IsOptional()
+  @IsString()
+  PUSH_VAPID_PUBLIC_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  PUSH_VAPID_PRIVATE_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  PUSH_VAPID_SUBJECT?: string;
+
   @IsString()
   PASSWORD_RESET_TOKEN_EXPIRES_IN: string = '1h';
 

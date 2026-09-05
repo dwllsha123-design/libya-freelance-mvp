@@ -165,6 +165,11 @@ Set remaining variables from `backend/.env.railway.example`:
 | `SMTP_PASSWORD` | Yes (prod) | Mailbox password — **Railway Variables only**, never commit |
 | `PASSWORD_RESET_TOKEN_EXPIRES_IN` | No | Default `1h` |
 | `EMAIL_VERIFICATION_TOKEN_EXPIRES_IN` | No | Default `24h` |
+| `PUSH_VAPID_PUBLIC_KEY` | Yes (for Web Push) | Public VAPID key (`npx web-push generate-vapid-keys`) |
+| `PUSH_VAPID_PRIVATE_KEY` | Yes (for Web Push) | Private VAPID key — **Railway backend only**, never frontend |
+| `PUSH_VAPID_SUBJECT` | No | Default `mailto:support@libyanfreelance.ly` |
+
+Web Push is optional: if VAPID is unset, inbox + Socket.IO still work. When VAPID is set, both public and private keys are required. The frontend fetches **only** the public key from `GET /api/notifications/push/vapid-public-key`.
 
 Transactional mail (password reset + email verification) is sent over SMTP. In production the API **fails startup** if SMTP is missing or incomplete. Locally you may leave `SMTP_*` empty to disable outbound mail (tokens are never logged).
 

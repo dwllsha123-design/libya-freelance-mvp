@@ -33,6 +33,11 @@ id_ed25519
 id_ed25519.*
 known_hosts.local
 
+# Local VAPID material — never commit
+**/.vapid.keys.local
+**/*.vapid.local
+backend/.vapid.keys.local
+
 # Reverse proxy — managed on server, not by app deploy
 Caddyfile
 Caddyfile.*

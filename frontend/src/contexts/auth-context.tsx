@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { AuthResponse, AuthUser, UserRole } from '@/lib/api';
 import { apiRequest, authenticatedRequest } from '@/lib/api';
+import { unlinkWebPushOnLogout } from '@/lib/web-push';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -114,12 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    const token = accessToken;
     try {
+      await unlinkWebPushOnLogout(token);
       await apiRequest('/auth/logout', { method: 'POST' });
     } finally {
       clearSession();
     }
-  }, [clearSession]);
+  }, [accessToken, clearSession]);
 
   const switchRole = useCallback(
     async (role: Extract<UserRole, 'FREELANCER' | 'CLIENT'>) => {

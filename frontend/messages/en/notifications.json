@@ -29,5 +29,8 @@
   "tabUnread": "Unread",
   "noUnread": "No unread notifications",
   "loginRequired": "You must be logged in to view notifications",
-  "new": "New"
+  "new": "New",
+  "enablePushHint": "Enable browser notifications to get updates even when this tab is closed.",
+  "enablePushCta": "Enable notifications",
+  "enablePushLater": "Later"
 }

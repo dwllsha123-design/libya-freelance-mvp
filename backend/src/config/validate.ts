@@ -65,5 +65,21 @@ export function validate(config: Record<string, unknown>) {
     }
   }
 
+  const vapidPublic = validatedConfig.PUSH_VAPID_PUBLIC_KEY?.trim() ?? '';
+  const vapidPrivate = validatedConfig.PUSH_VAPID_PRIVATE_KEY?.trim() ?? '';
+  // Incomplete VAPID does not fail boot — Web Push stays disabled with a runtime warning.
+  if (
+    validatedConfig.PUSH_VAPID_SUBJECT &&
+    validatedConfig.PUSH_VAPID_SUBJECT.trim() &&
+    !validatedConfig.PUSH_VAPID_SUBJECT.trim().startsWith('mailto:') &&
+    !validatedConfig.PUSH_VAPID_SUBJECT.trim().startsWith('https://')
+  ) {
+    throw new Error(
+      'PUSH_VAPID_SUBJECT must be a mailto: or https: contact URI',
+    );
+  }
+  void vapidPublic;
+  void vapidPrivate;
+
   return validatedConfig;
 }
