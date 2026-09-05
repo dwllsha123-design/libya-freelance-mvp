@@ -2,10 +2,11 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  NotificationType,
   PaymentStatus,
   PointsTransactionType,
   Prisma,
@@ -13,6 +14,7 @@ import {
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import {
   NUQATI_CONFIG,
   NUQATI_REASON_LABELS,
@@ -48,6 +50,7 @@ export class NuqatiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    @Optional() private readonly notifications?: NotificationsService,
   ) {}
 
   async getDashboard(userId: string, role: Role) {
@@ -368,6 +371,12 @@ export class NuqatiService {
 
     const wallet = await this.ensureWallet(userId, tx);
     if (wallet.balance < total) {
+      void this.notifications?.notifyPointsEvent({
+        userId,
+        type: NotificationType.INSUFFICIENT_POINTS,
+        points: wallet.balance,
+        balanceAfter: wallet.balance,
+      });
       throw new BadRequestException(
         boost > 0
           ? `رصيد نقاطي غير كافٍ. تحتاج ${total} نقاط (تقديم ${submitCost} + تعزيز ${boost}).`
@@ -691,6 +700,19 @@ export class NuqatiService {
         balanceAfter,
       },
     });
+
+    if (!tx && this.notifications) {
+      void this.notifications.notifyPointsEvent({
+        userId,
+        type:
+          amount >= 0
+            ? NotificationType.POINTS_EARNED
+            : NotificationType.POINTS_SPENT,
+        points: Math.abs(amount),
+        reason: descriptionAr,
+        balanceAfter,
+      });
+    }
 
     return transaction;
   }

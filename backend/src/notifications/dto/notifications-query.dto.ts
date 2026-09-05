@@ -24,4 +24,8 @@ export class NotificationsQueryDto {
   @IsOptional()
   @IsEnum(NotificationType)
   type?: NotificationType;
+
+  @IsOptional()
+  @IsIn(['all', 'PROJECTS', 'MESSAGES', 'PAYMENTS', 'POINTS', 'SYSTEM'])
+  category?: 'all' | 'PROJECTS' | 'MESSAGES' | 'PAYMENTS' | 'POINTS' | 'SYSTEM';
 }

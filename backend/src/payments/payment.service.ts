@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  NotificationType,
   PaymentPurpose,
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { PAYMENT_PROVIDER } from './payment.types.js';
 import type {
   EscrowFundingCaptureResult,
@@ -29,6 +31,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly notifications: NotificationsService,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
   ) {}
 
@@ -130,6 +133,12 @@ export class PaymentService {
           paidAt: new Date(),
         },
       });
+      await this.notifyPaymentFinal(
+        clientId,
+        'SUCCEEDED',
+        Number(escrow.amount),
+        payment.purpose,
+      );
       return {
         paymentId: updated.id,
         status: updated.status,
@@ -146,6 +155,12 @@ export class PaymentService {
           failureMessage: 'فشل إنشاء عملية الدفع لدى مزود الخدمة',
         },
       });
+      await this.notifyPaymentFinal(
+        clientId,
+        'FAILED',
+        Number(escrow.amount),
+        payment.purpose,
+      );
       throw new BadRequestException('تعذر بدء عملية الدفع');
     }
 
@@ -289,6 +304,13 @@ export class PaymentService {
         },
       });
 
+      await this.notifyPaymentFinal(
+        payment.clientId,
+        'SUCCEEDED',
+        Number(payment.amount),
+        payment.purpose,
+      );
+
       return { handled: true, paymentId: payment.id, escrowId: payment.escrowId };
     }
 
@@ -301,6 +323,12 @@ export class PaymentService {
           failureMessage: event.failureMessage ?? 'فشل الدفع',
         },
       });
+      await this.notifyPaymentFinal(
+        payment.clientId,
+        'FAILED',
+        Number(payment.amount),
+        payment.purpose,
+      );
       return { handled: true, paymentId: payment.id };
     }
 
@@ -393,6 +421,29 @@ export class PaymentService {
       return 'إيداع في الضمان (محاكاة — استبدل PAYMENT_DRIVER ببوابة حقيقية)';
     }
     return `إيداع في الضمان عبر ${provider}`;
+  }
+
+  private async notifyPaymentFinal(
+    userId: string,
+    status: 'SUCCEEDED' | 'FAILED',
+    amount: number,
+    purpose: PaymentPurpose | string,
+  ) {
+    try {
+      await this.notifications.notify({
+        userId,
+        type:
+          status === 'SUCCEEDED'
+            ? NotificationType.PAYMENT_SUCCESS
+            : NotificationType.PAYMENT_FAILED,
+        params: { amount: String(amount) },
+        targetUrl: '/dashboard/escrow',
+        entityType: 'payment',
+        data: { purpose, amount, status },
+      });
+    } catch {
+      // Never fail payment flow due to notification errors
+    }
   }
 
   private formatPayment(payment: {

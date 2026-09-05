@@ -139,6 +139,13 @@ export class AdminOpsController {
     return this.ops.reorderFeatured(user.id, dto.orderedIds);
   }
 
+  @Get('notifications/stats')
+  @RequireAdminPermission(AdminPermission.SEND_NOTIFICATIONS, AdminPermission.SEND_BROADCASTS, AdminPermission.VIEW_SYSTEM)
+  notificationStats(@Query('days') days?: string) {
+    const parsed = days ? Number(days) : 30;
+    return this.ops.getNotificationStats(Number.isFinite(parsed) ? parsed : 30);
+  }
+
   @Get('notifications/broadcasts')
   @RequireAdminPermission(AdminPermission.SEND_NOTIFICATIONS, AdminPermission.SEND_BROADCASTS)
   listBroadcasts(@Query('limit') limit?: string) {

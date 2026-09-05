@@ -110,6 +110,17 @@ export class EmailService implements OnModuleInit {
     await this.dispatch('email_verification', email, content);
   }
 
+  /**
+   * Platform notification emails. Failures are logged and rethrown so the
+   * notification retry queue can attempt again — never includes secrets.
+   */
+  async sendNotificationEmail(
+    email: string,
+    content: { subject: string; text: string; html: string },
+  ): Promise<void> {
+    await this.dispatch('notification', email, content);
+  }
+
   private humanizeExpiry(raw: string): string {
     const trimmed = raw.trim().toLowerCase();
     const match = /^(\d+)([smhd])$/.exec(trimmed);
@@ -131,7 +142,7 @@ export class EmailService implements OnModuleInit {
   }
 
   private async dispatch(
-    kind: 'password_reset' | 'email_verification',
+    kind: 'password_reset' | 'email_verification' | 'notification',
     to: string,
     content: { subject: string; text: string; html: string },
   ): Promise<void> {

@@ -72,4 +72,10 @@ export default () => ({
     /** When true, Nuqati point purchases go through the live payment provider. */
     pointsGatewayEnabled: process.env.PAYMENT_POINTS_GATEWAY_ENABLED === 'true',
   },
+  push: {
+    vapidPublicKey: process.env.PUSH_VAPID_PUBLIC_KEY ?? '',
+    vapidPrivateKey: process.env.PUSH_VAPID_PRIVATE_KEY ?? '',
+    vapidSubject:
+      process.env.PUSH_VAPID_SUBJECT ?? 'mailto:support@libyanfreelance.ly',
+  },
 });

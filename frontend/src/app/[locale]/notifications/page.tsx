@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import {
@@ -12,11 +12,17 @@ import {
   useNotificationsApi,
   useUnreadNotificationCount,
 } from '@/hooks/use-notifications';
+import { useSocketEvent } from '@/contexts/socket-context';
 import type { NotificationItem } from '@/lib/notification-ui';
 import { ApiError } from '@/lib/api';
 
 const TABS = [
   { key: 'all', labelKey: 'tabAll' },
+  { key: 'PROJECTS', labelKey: 'tabProjects' },
+  { key: 'MESSAGES', labelKey: 'tabMessages' },
+  { key: 'PAYMENTS', labelKey: 'tabPayments' },
+  { key: 'POINTS', labelKey: 'tabPoints' },
+  { key: 'SYSTEM', labelKey: 'tabSystem' },
   { key: 'unread', labelKey: 'tabUnread' },
 ] as const;
 
@@ -51,6 +57,7 @@ export default function NotificationsPage() {
           limit: '20',
         };
         if (tab === 'unread') params.status = 'unread';
+        else if (tab !== 'all') params.category = tab;
 
         const data = await api.list(params);
         if (!cancelled) {
@@ -73,6 +80,13 @@ export default function NotificationsPage() {
       cancelled = true;
     };
   }, [api, page, refreshUnread, reloadKey, tab, user, t]);
+
+  useSocketEvent<NotificationItem>('notification:new', (payload) => {
+    setItems((current) => {
+      if (current.some((n) => n.id === payload.id)) return current;
+      return [payload, ...current].slice(0, 40);
+    });
+  });
 
   async function reloadList() {
     setReloadKey((value) => value + 1);
@@ -113,6 +127,16 @@ export default function NotificationsPage() {
     }
   }
 
+  async function handleDelete(item: NotificationItem) {
+    try {
+      await api.deleteOne(item.id);
+      setItems((current) => current.filter((n) => n.id !== item.id));
+      if (!item.isRead) decrement();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('updateFailed'));
+    }
+  }
+
   if (authLoading) {
     return <div className="p-8 text-center">{tCommon('loadingPage')}</div>;
   }
@@ -125,23 +149,34 @@ export default function NotificationsPage() {
     );
   }
 
-  const emptyMessage = tab === 'unread' ? t('noUnread') : t('noNotifications');
+  const emptyMessage = tab === 'unread' ? t('noUnread') : t('emptyTitle');
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
-        <button
-          type="button"
-          disabled={isMarkingAll}
-          onClick={() => void handleMarkAllRead()}
-          className="rounded-lg border px-4 py-2 text-sm text-primary disabled:opacity-50"
-        >
-          {isMarkingAll ? tCommon('processing') : t('markAllRead')}
-        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t('emptyHint')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/settings/notifications"
+            className="rounded-lg border px-4 py-2 text-sm text-slate-700"
+          >
+            {t('preferences')}
+          </Link>
+          <button
+            type="button"
+            disabled={isMarkingAll}
+            onClick={() => void handleMarkAllRead()}
+            className="rounded-lg border px-4 py-2 text-sm text-primary disabled:opacity-50"
+          >
+            {isMarkingAll ? tCommon('processing') : t('markAllRead')}
+          </button>
+        </div>
       </div>
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex flex-wrap gap-2">
         {TABS.map((item) => (
           <button
             key={item.key}
@@ -176,15 +211,20 @@ export default function NotificationsPage() {
         {isLoading ? (
           <NotificationListSkeleton />
         ) : items.length === 0 ? (
-          <p className="rounded-xl border bg-white p-8 text-center text-slate-500">
-            {emptyMessage}
-          </p>
+          <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+            <p className="text-3xl" aria-hidden>
+              🔔
+            </p>
+            <p className="mt-3 font-medium text-on-surface">{emptyMessage}</p>
+            <p className="mt-1 text-sm">{t('emptyHint')}</p>
+          </div>
         ) : (
           items.map((item) => (
             <NotificationCard
               key={item.id}
               item={item}
               onOpen={(n) => void handleOpen(n)}
+              onDelete={(n) => void handleDelete(n)}
             />
           ))
         )}

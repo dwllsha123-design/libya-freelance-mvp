@@ -42,6 +42,13 @@ export default function AdminNotificationsPage() {
   const [resultMsg, setResultMsg] = useState('');
   const [history, setHistory] = useState<AdminBroadcastItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [stats, setStats] = useState<{
+    totalNotifications: number;
+    readRate: number;
+    pushDeliveryRate: number;
+    emailDeliveryRate: number;
+    failed: number;
+  } | null>(null);
 
   const refreshHistory = useCallback(() => {
     setHistoryLoading(true);
@@ -64,6 +71,14 @@ export default function AdminNotificationsPage() {
       })
       .finally(() => {
         if (!cancelled) setHistoryLoading(false);
+      });
+    api
+      .notificationStats(30)
+      .then((data) => {
+        if (!cancelled) setStats(data);
+      })
+      .catch(() => {
+        if (!cancelled) setStats(null);
       });
     return () => {
       cancelled = true;
@@ -146,6 +161,33 @@ export default function AdminNotificationsPage() {
       />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {resultMsg ? <p className="text-sm text-emerald-700">{resultMsg}</p> : null}
+
+      {stats ? (
+        <AdminPanel title={t('notificationStats')}>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-xl border p-3 text-sm">
+              <p className="text-slate-500">{t('statTotal')}</p>
+              <p className="mt-1 text-xl font-bold">{stats.totalNotifications}</p>
+            </div>
+            <div className="rounded-xl border p-3 text-sm">
+              <p className="text-slate-500">{t('statReadRate')}</p>
+              <p className="mt-1 text-xl font-bold">{stats.readRate}%</p>
+            </div>
+            <div className="rounded-xl border p-3 text-sm">
+              <p className="text-slate-500">{t('statPushRate')}</p>
+              <p className="mt-1 text-xl font-bold">{stats.pushDeliveryRate}%</p>
+            </div>
+            <div className="rounded-xl border p-3 text-sm">
+              <p className="text-slate-500">{t('statEmailRate')}</p>
+              <p className="mt-1 text-xl font-bold">{stats.emailDeliveryRate}%</p>
+            </div>
+            <div className="rounded-xl border p-3 text-sm">
+              <p className="text-slate-500">{t('statFailed')}</p>
+              <p className="mt-1 text-xl font-bold">{stats.failed}</p>
+            </div>
+          </div>
+        </AdminPanel>
+      ) : null}
 
       <AdminPanel title={t('composeNotification')}>
         <form onSubmit={onSubmit} className="space-y-3">

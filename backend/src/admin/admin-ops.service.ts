@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import {
   AdminAuditAction,
-  AdminPermission,
   BroadcastAudience,
   FeaturedEntityType,
   InvestorPayoutStatus,
@@ -23,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AdminAuditService } from './admin-audit.service.js';
 import { assertInternalTargetUrl } from '../notifications/notification-url.util.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationLogService } from '../notifications/notification-log.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import {
@@ -58,6 +58,7 @@ export class AdminOpsService {
     private readonly policy: PlatformPolicyService,
     private readonly realtimeSessions: RealtimeSessionService,
     private readonly notifications: NotificationsService,
+    private readonly notificationLogs: NotificationLogService,
   ) {}
 
   async getSettings() {
@@ -325,6 +326,12 @@ export class AdminOpsService {
           }
         : null,
     }));
+  }
+
+  async getNotificationStats(days = 30) {
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - Math.min(Math.max(days, 1), 365));
+    return this.notificationLogs.getAdminStats(since);
   }
 
   async sendBroadcast(actorId: string, dto: BroadcastSendDto) {
