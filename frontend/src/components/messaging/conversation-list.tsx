@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import type { ConversationSummary } from '@/hooks/use-messaging';
+import { previewMessageContent } from '@/lib/message-attachment';
 import type { AppLocale } from '@/i18n/routing';
 
 export function ConversationList({
@@ -52,7 +53,7 @@ export function ConversationList({
                   </p>
                   {c.lastMessage ? (
                     <p className="mt-1 truncate text-sm text-slate-600">
-                      {c.lastMessage.content}
+                      {previewMessageContent(c.lastMessage.content, t('attachFile'))}
                     </p>
                   ) : null}
                 </div>

@@ -19,6 +19,17 @@ export const PORTFOLIO_MIME_TYPES = new Set([
 
 export const PROFILE_MAX_SIZE = 2 * 1024 * 1024;
 export const PORTFOLIO_MAX_SIZE = 5 * 1024 * 1024;
+export const CHAT_MAX_SIZE = 10 * 1024 * 1024;
+
+export const CHAT_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/zip',
+]);
 
 export function validateImageUpload(
   file: Express.Multer.File,
@@ -52,6 +63,29 @@ export function buildPortfolioObjectKey(
   assertSafePathSegment(portfolioItemId, 'portfolioItemId');
   const id = cryptoRandomId();
   return `portfolio/${userId}/${portfolioItemId}/${id}${WEBP_EXTENSION}`;
+}
+
+export function validateChatUpload(file: Express.Multer.File) {
+  if (!CHAT_MIME_TYPES.has(file.mimetype)) {
+    throw new BadRequestException('نوع الملف غير مدعوم');
+  }
+
+  if (file.size > CHAT_MAX_SIZE) {
+    throw new BadRequestException('حجم الملف يتجاوز الحد المسموح (10MB)');
+  }
+}
+
+const SAFE_CHAT_EXT = /^\.(pdf|doc|docx|jpg|jpeg|png|webp|zip)$/i;
+
+export function buildChatObjectKey(
+  userId: string,
+  originalName: string,
+): string {
+  assertSafePathSegment(userId, 'userId');
+  const id = cryptoRandomId();
+  const extMatch = originalName.match(/(\.[A-Za-z0-9]{1,8})$/);
+  const ext = extMatch?.[1] && SAFE_CHAT_EXT.test(extMatch[1]) ? extMatch[1].toLowerCase() : '';
+  return `chat/${userId}/${id}${ext}`;
 }
 
 export function assertSafePathSegment(value: string, label: string) {

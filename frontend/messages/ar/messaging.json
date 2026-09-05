@@ -6,6 +6,8 @@
   "unread": "غير مقروء",
   "startConversation": "ابدأ محادثة من صفحة المشروع",
   "attachFile": "إرفاق ملف",
+  "attachHint": "PDF، Word، صور، أو ZIP — حتى 10MB",
+  "attachFailed": "فشل رفع الملف",
   "online": "متصل",
   "offline": "غير متصل",
   "loading": "جاري التحميل...",
@@ -17,5 +19,10 @@
   "browseProjects": "تصفح المشاريع",
   "loginRequired": "يجب تسجيل الدخول",
   "proposalLabel": "العرض: {price} · {status}",
+  "agreementTitle": "اتفاق العمل والضمان",
+  "agreementDays": "{count} يوم عمل",
+  "agreementEscrowHint": "ضمان الدفع عبر حساب الضمان عند تمويل العميل. بدون بوابة دفع محلية يبقى التمويل محاكى حتى ربط مزوّد الدفع.",
+  "agreementEscrowCta": "سجل الضمان",
+  "agreementHowCta": "كيف يعمل الضمان",
   "unknownUser": "مستخدم"
 }

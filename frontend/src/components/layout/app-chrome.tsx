@@ -10,6 +10,10 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     pathname === '/admin' ||
     pathname.startsWith('/admin/') ||
     /^\/(ar|en)\/admin(\/|$)/.test(pathname);
+  const isMessages =
+    pathname === '/messages' ||
+    pathname.startsWith('/messages/') ||
+    /^\/(ar|en)\/messages(\/|$)/.test(pathname);
 
   if (isAdmin) {
     return <>{children}</>;
@@ -19,7 +23,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     <>
       <Navbar />
       <main className="flex min-h-0 flex-1 flex-col">{children}</main>
-      <SiteFooter />
+      {isMessages ? null : <SiteFooter />}
     </>
   );
 }

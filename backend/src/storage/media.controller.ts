@@ -19,9 +19,10 @@ import { STORAGE_SERVICE, type StorageService } from './storage.interface.js';
  * resolve here, which keeps stored URLs stable and permanent (unlike presigned
  * links) and needs no change to upload, delete, or any read path.
  *
- * Routes mirror the two key builders in `storage-upload.util.ts` at fixed
- * depth, so only the `profile-images/` and `portfolio/` prefixes are reachable
- * — arbitrary keys in the bucket cannot be read through this endpoint.
+ * Routes mirror the key builders in `storage-upload.util.ts` at fixed
+ * depth, so only the `profile-images/`, `portfolio/`, and `chat/` prefixes
+ * are reachable — arbitrary keys in the bucket cannot be read through this
+ * endpoint.
  */
 
 const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
@@ -54,7 +55,21 @@ export class MediaController {
     return this.streamObject(['portfolio', userId, itemId, filename], res);
   }
 
-  private async streamObject(segments: string[], res: Response) {
+  @Public()
+  @Get('chat/:userId/:filename')
+  chatFile(
+    @Param('userId') userId: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    return this.streamObject(['chat', userId, filename], res, true);
+  }
+
+  private async streamObject(
+    segments: string[],
+    res: Response,
+    asAttachment = false,
+  ) {
     // Local driver serves /uploads statically and implements no reader.
     if (!this.storage.getObject) {
       throw new NotFoundException();
@@ -75,6 +90,13 @@ export class MediaController {
     );
     res.setHeader('Cache-Control', IMMUTABLE_CACHE);
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (asAttachment) {
+      const filename = segments[segments.length - 1] ?? 'file';
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename.replace(/"/g, '')}"`,
+      );
+    }
     if (object.contentLength !== undefined) {
       res.setHeader('Content-Length', String(object.contentLength));
     }

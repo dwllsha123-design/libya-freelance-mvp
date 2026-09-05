@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
+import { StorageModule } from '../storage/storage.module.js';
 import { MessagingController } from './messaging.controller.js';
 import { MessagingGateway } from './messaging.gateway.js';
 import { MessagingService } from './messaging.service.js';
@@ -11,6 +12,7 @@ import { MessagingService } from './messaging.service.js';
   imports: [
     NotificationsModule,
     PlatformModule,
+    StorageModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -9,7 +9,11 @@ import type { AppLocale } from '@/i18n/routing';
 export interface ConversationSummary {
   conversationId: string;
   project: { title: string; slug: string } | null;
-  proposal: { status: string; proposedPrice: number } | null;
+  proposal: {
+    status: string;
+    proposedPrice: number;
+    estimatedDurationDays?: number;
+  } | null;
   otherParticipant: {
     name: string;
     username: string;
@@ -83,6 +87,19 @@ export function useMessagingApi() {
           `/conversations/${id}/messages`,
           accessToken,
           { method: 'POST', body: JSON.stringify({ content }) },
+          locale,
+        );
+      },
+
+      sendAttachment: (id: string, file: File) => {
+        if (!accessToken) throw new Error(getApiErrorMessage(locale, 'unauthorized'));
+        const body = new FormData();
+        body.append('file', file);
+        return authenticatedRequest<MessageItem>(
+          `/conversations/${id}/attachments`,
+          accessToken,
+          { method: 'POST', body },
+          locale,
         );
       },
 

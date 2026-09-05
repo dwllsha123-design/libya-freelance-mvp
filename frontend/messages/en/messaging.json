@@ -6,6 +6,8 @@
   "unread": "Unread",
   "startConversation": "Start a conversation from the project page",
   "attachFile": "Attach file",
+  "attachHint": "PDF, Word, images, or ZIP — up to 10MB",
+  "attachFailed": "Failed to upload file",
   "online": "Online",
   "offline": "Offline",
   "loading": "Loading...",
@@ -17,5 +19,10 @@
   "browseProjects": "Browse projects",
   "loginRequired": "You must be logged in",
   "proposalLabel": "Proposal: {price} · {status}",
+  "agreementTitle": "Work agreement & escrow",
+  "agreementDays": "{count} work days",
+  "agreementEscrowHint": "Payment is held in escrow when the client funds it. Without a local payment gateway, funding stays simulated until a provider is connected.",
+  "agreementEscrowCta": "Escrow ledger",
+  "agreementHowCta": "How escrow works",
   "unknownUser": "User"
 }

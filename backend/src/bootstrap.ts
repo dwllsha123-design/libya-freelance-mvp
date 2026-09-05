@@ -60,6 +60,10 @@ export function configureApp(app: NestExpressApplication) {
   app.useStaticAssets(join(process.cwd(), 'uploads', 'portfolio'), {
     prefix: '/uploads/portfolio/',
   });
+
+  app.useStaticAssets(join(process.cwd(), 'uploads', 'chat'), {
+    prefix: '/uploads/chat/',
+  });
 }
 
 export async function createApp() {

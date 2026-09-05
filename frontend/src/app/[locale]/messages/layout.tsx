@@ -6,7 +6,7 @@ export default function MessagesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 py-4 sm:py-6">
+    <div className="flex min-h-0 flex-1 flex-col lg:px-4 lg:py-6">
       <MessagesLayoutClient>{children}</MessagesLayoutClient>
     </div>
   );

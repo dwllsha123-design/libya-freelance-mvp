@@ -40,6 +40,15 @@ export class TestStorageService implements StorageService {
     return url;
   }
 
+  async uploadChatFile(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<string> {
+    const url = `http://test.storage/chat/${userId}/${file.originalname}`;
+    this.uploadedUrls.push(url);
+    return url;
+  }
+
   async deleteFile(url: string): Promise<void> {
     this.deletedUrls.push(url);
   }

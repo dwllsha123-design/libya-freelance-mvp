@@ -1,10 +1,4 @@
-import {
-  ForbiddenException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
@@ -26,6 +20,10 @@ import {
 } from './conversation-eligibility.util.js';
 import { validateMessageContent } from './message-validation.util.js';
 import {
+  encodeChatAttachment,
+  previewMessageContent,
+} from './message-attachment.util.js';
+import {
   MESSAGE_RATE_LIMIT,
   MESSAGE_RATE_WINDOW_MS,
   TYPING_RATE_LIMIT,
@@ -33,6 +31,7 @@ import {
 } from './messaging.constants.js';
 import type { ConversationsQueryDto, MessagesQueryDto } from './dto/messaging.dto.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 
 const participantInclude = {
   profile: {
@@ -65,6 +64,7 @@ export class MessagingService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly platformPolicy: PlatformPolicyService,
+    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}
 
   async verifySocketToken(token: string): Promise<AuthUser> {
@@ -393,10 +393,34 @@ export class MessagingService {
       recipientId,
       conversationId,
       senderName,
-      trimmed.slice(0, 120),
+      previewMessageContent(trimmed).slice(0, 120),
     );
 
     return this.formatMessage(message);
+  }
+
+  async uploadAndSendAttachment(
+    userId: string,
+    conversationId: string,
+    file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('الملف مطلوب');
+    }
+
+    const url = await this.storage.uploadChatFile(userId, file);
+    const safeName = (file.originalname || 'file')
+      .replace(/[\r\n\0]/g, '')
+      .slice(0, 120);
+    const content = encodeChatAttachment({
+      v: 1,
+      name: safeName,
+      url,
+      mime: file.mimetype,
+      size: file.size,
+    });
+
+    return this.sendMessage(userId, conversationId, content);
   }
 
   async markRead(userId: string, conversationId: string) {
@@ -515,6 +539,7 @@ export class MessagingService {
           id: true,
           status: true,
           proposedPrice: true,
+          estimatedDurationDays: true,
           freelancerId: true,
           projectId: true,
         },
@@ -561,6 +586,7 @@ export class MessagingService {
         ? {
             status: conversation.proposal.status,
             proposedPrice: Number(conversation.proposal.proposedPrice),
+            estimatedDurationDays: conversation.proposal.estimatedDurationDays,
           }
         : null,
       otherParticipant: otherUser
@@ -568,7 +594,7 @@ export class MessagingService {
         : null,
       lastMessage: lastMessage
         ? {
-            content: lastMessage.content.slice(0, 120),
+            content: previewMessageContent(lastMessage.content).slice(0, 120),
             createdAt: lastMessage.createdAt,
             senderId: lastMessage.senderId,
           }

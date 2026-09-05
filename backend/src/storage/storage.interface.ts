@@ -17,6 +17,7 @@ export interface StorageService {
     portfolioItemId: string,
     file: Express.Multer.File,
   ): Promise<string>;
+  uploadChatFile(userId: string, file: Express.Multer.File): Promise<string>;
   deleteFile(url: string): Promise<void>;
   /**
    * Read an object back out of the store. Only implemented by drivers whose

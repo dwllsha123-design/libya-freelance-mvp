@@ -20,9 +20,11 @@ import {
   PORTFOLIO_MIME_TYPES,
   PROFILE_MAX_SIZE,
   PROFILE_MIME_TYPES,
+  buildChatObjectKey,
   buildPortfolioObjectKey,
   buildProfileObjectKey,
   objectKeyFromPublicUrl,
+  validateChatUpload,
   validateImageUpload,
 } from './storage-upload.util.js';
 
@@ -116,6 +118,16 @@ export class S3StorageService implements StorageService {
     const webp = await toPortfolioWebp(file.buffer);
     const key = buildPortfolioObjectKey(userId, portfolioItemId);
     await this.putObject(key, webp, WEBP_CONTENT_TYPE);
+    return this.publicUrlForKey(key);
+  }
+
+  async uploadChatFile(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<string> {
+    validateChatUpload(file);
+    const key = buildChatObjectKey(userId, file.originalname);
+    await this.putObject(key, file.buffer, file.mimetype);
     return this.publicUrlForKey(key);
   }
 

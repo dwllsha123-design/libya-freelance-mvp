@@ -5,7 +5,11 @@ import {
   Param,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
 import {
@@ -16,6 +20,7 @@ import {
 import { conversationRoom } from './messaging.constants.js';
 import { MessagingGateway } from './messaging.gateway.js';
 import { MessagingService } from './messaging.service.js';
+import { CHAT_MAX_SIZE } from '../storage/storage-upload.util.js';
 
 @Controller()
 export class MessagingController {
@@ -62,12 +67,43 @@ export class MessagingController {
   }
 
   @Post('conversations/:id/messages')
-  sendMessage(
+  async sendMessage(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.messagingService.sendMessage(user.id, id, dto.content);
+    const message = await this.messagingService.sendMessage(
+      user.id,
+      id,
+      dto.content,
+    );
+    this.messagingGateway.server
+      .to(conversationRoom(id))
+      .emit('message:new', message);
+    return message;
+  }
+
+  @Post('conversations/:id/attachments')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: CHAT_MAX_SIZE },
+    }),
+  )
+  async sendAttachment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const message = await this.messagingService.uploadAndSendAttachment(
+      user.id,
+      id,
+      file,
+    );
+    this.messagingGateway.server
+      .to(conversationRoom(id))
+      .emit('message:new', message);
+    return message;
   }
 
   @Post('conversations/:id/read')
