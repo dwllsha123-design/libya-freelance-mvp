@@ -15,6 +15,7 @@ import {
 import { formatRelativeTime } from '@/lib/i18n/notification-ui';
 import { ApiError } from '@/lib/api';
 import type { AppLocale } from '@/i18n/routing';
+import { resolveNotificationHref } from '@/lib/notification-href';
 
 function NotificationRow({
   item,
@@ -31,7 +32,7 @@ function NotificationRow({
     <button
       type="button"
       onClick={() => onRead(item)}
-      className={`flex w-full gap-3 rounded-lg px-3 py-2 text-right transition hover:bg-slate-50 ${
+      className={`flex w-full max-w-full min-w-0 gap-3 rounded-lg px-3 py-2 text-start transition hover:bg-slate-50 ${
         item.isRead ? 'opacity-80' : 'bg-emerald-50/40'
       }`}
     >
@@ -45,7 +46,7 @@ function NotificationRow({
         <span className="block truncate text-sm font-semibold text-on-surface">
           {item.title}
         </span>
-        <span className="mt-0.5 block line-clamp-2 text-xs text-slate-600">
+        <span className="mt-0.5 block line-clamp-2 break-words text-xs text-slate-600 [overflow-wrap:anywhere]">
           {item.message}
         </span>
         <span className="mt-1 block text-[11px] text-slate-400">
@@ -128,14 +129,16 @@ export function NotificationBell() {
     }
 
     setOpen(false);
-
-    if (item.targetUrl) {
-      router.push(item.targetUrl);
-    }
+    router.push(resolveNotificationHref(item));
   }
 
-  function handleMobileNavigate() {
-    router.push('/notifications');
+  function handleBellClick() {
+    // Match navbar drawer breakpoint (lg = 1024): phones/tablets go to full list
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      router.push('/notifications');
+      return;
+    }
+    setOpen((value) => !value);
   }
 
   const ariaLabel = badge
@@ -143,20 +146,16 @@ export function NotificationBell() {
     : t('ariaLabel');
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative shrink-0" ref={panelRef}>
       <button
         type="button"
         aria-label={ariaLabel}
-        onClick={() => {
-          if (window.innerWidth < 768) {
-            handleMobileNavigate();
-            return;
-          }
-          setOpen((value) => !value);
-        }}
-        className="relative rounded-lg p-2 text-slate-700 hover:bg-slate-100"
+        onClick={handleBellClick}
+        className="relative grid size-9 place-items-center rounded-lg border border-line text-ink-soft transition hover:bg-cream-deep hover:text-ink"
       >
-        <span aria-hidden>🔔</span>
+        <span aria-hidden className="text-base leading-none">
+          🔔
+        </span>
         {badge ? (
           <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
             {badge}
@@ -166,14 +165,16 @@ export function NotificationBell() {
 
       {open ? (
         <div
-          className="absolute end-0 top-full z-50 mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-xl border bg-white p-3 shadow-xl md:block"
+          className="absolute end-0 top-full z-50 mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-xl border border-line bg-cream p-3 shadow-xl lg:block"
           role="menu"
           aria-label={t('latest')}
         >
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-bold text-on-surface">{t('title')}</p>
             {badge ? (
-              <span className="text-xs text-slate-500">{t('unreadCount', { count: badge })}</span>
+              <span className="shrink-0 text-xs text-slate-500">
+                {t('unreadCount', { count: badge })}
+              </span>
             ) : null}
           </div>
 
@@ -200,7 +201,7 @@ export function NotificationBell() {
 
           <Link
             href="/notifications"
-            className="mt-3 block rounded-lg border-t pt-3 text-center text-sm font-medium text-primary"
+            className="mt-3 block rounded-lg border-t border-line pt-3 text-center text-sm font-medium text-primary"
             onClick={() => setOpen(false)}
           >
             {t('viewAll')}

@@ -227,7 +227,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
-        {/* Brand + theme (always visible beside the name) */}
+        {/* Brand — tools (lang/theme) move to drawer on small screens to free the bar */}
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 lg:flex-none lg:shrink-0">
           <button
             type="button"
@@ -241,10 +241,12 @@ export function Navbar() {
           <Logo
             compact
             iconClassName="size-8 sm:size-10"
-            nameClassName="text-[0.95rem] sm:text-[1.05rem]"
+            nameClassName="hidden min-[380px]:inline-block max-w-[7.5rem] truncate text-[0.95rem] sm:max-w-none sm:text-[1.05rem]"
           />
-          <LanguageSwitcher />
-          <ThemeToggle />
+          <div className="hidden items-center gap-1.5 lg:flex">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Desktop nav — centered, no wrap */}
@@ -274,8 +276,8 @@ export function Navbar() {
           )}
         </nav>
 
-        {/* Actions — mobile keeps CTA only; tools live in the drawer */}
-        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+        {/* Actions — bell stays in the bar on all sizes; lang/theme live in the drawer on mobile */}
+        <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <div className="hidden items-center gap-1.5 lg:flex">
             <NavSearch compact />
             <button
@@ -300,14 +302,13 @@ export function Navbar() {
                   <NuqatiBadge />
                 </div>
               ) : null}
-              <div className="hidden lg:block">
-                <NotificationBell />
-              </div>
+              <NotificationBell />
               <Link
                 href="/dashboard"
-                className="rounded-full bg-ember px-3 py-2 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(234,88,12,0.55)] transition hover:bg-ember-deep sm:px-4 sm:text-sm"
+                className="rounded-full bg-ember px-2.5 py-2 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(234,88,12,0.55)] transition hover:bg-ember-deep sm:px-4 sm:text-sm"
               >
-                {t('dashboard')}
+                <span className="sm:hidden">{t('dashboardShort')}</span>
+                <span className="hidden sm:inline">{t('dashboard')}</span>
               </Link>
               <button
                 type="button"
@@ -359,6 +360,10 @@ export function Navbar() {
                   >
                     ✕
                   </button>
+                </div>
+                <div className="mb-3 flex items-center gap-2 rounded-2xl border border-line bg-cream-deep/40 px-3 py-2">
+                  <LanguageSwitcher />
+                  <ThemeToggle />
                 </div>
                 <button
                   type="button"
@@ -454,9 +459,13 @@ export function Navbar() {
                       {t('messages')}
                       {messageBadge}
                     </NavLink>
-                    <div className="py-2">
-                      <NotificationBell />
-                    </div>
+                    <NavLink
+                      href="/notifications"
+                      onNavigate={closeMobile}
+                      active={pathname.startsWith('/notifications')}
+                    >
+                      {t('notifications')}
+                    </NavLink>
 
                     {canUseMarketplace ? (
                       <div className="mt-2 border-t border-line pt-3">

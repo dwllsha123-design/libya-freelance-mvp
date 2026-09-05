@@ -59,9 +59,11 @@ function SectionCard({
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-line/40 py-2.5 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="text-sm font-medium text-ink">{value}</dd>
+    <div className="flex min-w-0 flex-col gap-0.5 border-b border-line/40 py-2.5 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <dt className="shrink-0 text-sm text-ink-soft">{label}</dt>
+      <dd className="min-w-0 break-words text-sm font-medium text-ink [overflow-wrap:anywhere]">
+        {value}
+      </dd>
     </div>
   );
 }
@@ -195,7 +197,7 @@ function ProposalFormModalBody({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col">
+    <div className="fixed inset-0 z-50 flex max-w-[100vw] flex-col overflow-x-hidden">
       <button
         type="button"
         className="absolute inset-0 bg-ink/50"
@@ -207,18 +209,18 @@ function ProposalFormModalBody({
         role="dialog"
         aria-modal="true"
         aria-labelledby="proposal-submit-title"
-        className="relative z-10 mx-auto flex h-full w-full max-w-3xl flex-col bg-cream-deep/80 shadow-2xl sm:my-4 sm:h-[min(96vh,920px)] sm:rounded-3xl"
+        className="relative z-10 mx-auto flex h-full w-full min-w-0 max-w-3xl flex-col overflow-x-hidden bg-cream-deep/80 shadow-2xl sm:my-4 sm:h-[min(96vh,920px)] sm:rounded-3xl"
       >
-        <header className="shrink-0 border-b border-line bg-cream px-4 py-4 sm:rounded-t-3xl sm:px-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+        <header className="shrink-0 border-b border-line bg-cream px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] sm:rounded-t-3xl sm:px-6 sm:pt-4">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <h2
                 id="proposal-submit-title"
                 className="font-display text-xl font-bold text-ink"
               >
                 {t('submit')}
               </h2>
-              <p className="mt-1 line-clamp-2 text-sm text-ink-soft">
+              <p className="mt-1 line-clamp-2 break-words text-sm text-ink-soft [overflow-wrap:anywhere]">
                 {project.title}
               </p>
             </div>
@@ -566,20 +568,20 @@ function ProposalFormModalBody({
           </div>
 
           {/* Sticky footer */}
-          <div className="shrink-0 border-t border-line bg-cream px-4 py-3 sm:rounded-b-2xl sm:px-6">
-            <div className="flex items-center justify-between gap-3">
+          <div className="shrink-0 border-t border-line bg-cream px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:rounded-b-2xl sm:px-6">
+            <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                className="shrink-0 px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
               >
                 {tCommon('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || insufficient}
-                className="rounded-lg bg-ember px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-ember-deep disabled:opacity-50"
+                className="min-w-0 max-w-full truncate rounded-lg bg-ember px-3 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-ember-deep disabled:opacity-50 sm:px-5"
               >
                 {isSubmitting
                   ? t('submitting')

@@ -57,9 +57,9 @@ export function SiteFooter() {
         }}
         aria-hidden
       />
-      <div className="page-gutter relative mx-auto max-w-6xl py-10 sm:py-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div>
+      <div className="page-gutter relative mx-auto w-full min-w-0 max-w-6xl overflow-x-hidden py-10 sm:py-14">
+        <div className="grid min-w-0 gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="min-w-0">
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-soft">
               {tBrand('tagline')}

@@ -13,6 +13,7 @@ import {
   useUnreadNotificationCount,
 } from '@/hooks/use-notifications';
 import type { NotificationItem } from '@/lib/notification-ui';
+import { resolveNotificationHref } from '@/lib/notification-href';
 import { ApiError } from '@/lib/api';
 
 const TABS = [
@@ -93,9 +94,7 @@ export default function NotificationsPage() {
       }
     }
 
-    if (item.targetUrl) {
-      router.push(item.targetUrl);
-    }
+    router.push(resolveNotificationHref(item));
   }
 
   async function handleMarkAllRead() {
@@ -128,9 +127,9 @@ export default function NotificationsPage() {
   const emptyMessage = tab === 'unread' ? t('noUnread') : t('noNotifications');
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="page-gutter mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden py-8 sm:py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
+        <h1 className="text-2xl font-bold text-on-surface sm:text-3xl">{t('title')}</h1>
         <button
           type="button"
           disabled={isMarkingAll}

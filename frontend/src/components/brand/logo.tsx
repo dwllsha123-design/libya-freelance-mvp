@@ -36,7 +36,7 @@ function BrandName({
     const rest = parts.slice(1).join(' ');
     return (
       <span
-        className={`font-display whitespace-nowrap text-[1.05rem] font-bold leading-none tracking-tight ${className}`}
+        className={`font-display max-w-full truncate text-[1.05rem] font-bold leading-none tracking-tight ${className}`}
       >
         <span className="text-ink">{first}</span>
         {rest ? <span className="text-ember"> {rest}</span> : null}
@@ -46,7 +46,7 @@ function BrandName({
 
   return (
     <span
-      className={`font-display whitespace-nowrap text-[1.05rem] font-bold leading-none tracking-tight text-ink ${className}`}
+      className={`font-display max-w-full truncate text-[1.05rem] font-bold leading-none tracking-tight text-ink ${className}`}
     >
       {label}
     </span>

@@ -23,7 +23,7 @@ export function NotificationCard({
     <button
       type="button"
       onClick={() => onOpen(item)}
-      className={`flex w-full gap-4 rounded-xl border bg-white p-4 text-right transition hover:shadow-sm ${
+      className={`flex w-full max-w-full min-w-0 gap-3 overflow-hidden rounded-xl border bg-white p-4 text-start transition hover:shadow-sm sm:gap-4 ${
         item.isRead ? 'border-slate-200' : 'border-primary/30 bg-emerald-50/30'
       }`}
     >
@@ -35,14 +35,18 @@ export function NotificationCard({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <span className="font-semibold text-on-surface">{item.title}</span>
+          <span className="break-words font-semibold text-on-surface [overflow-wrap:anywhere]">
+            {item.title}
+          </span>
           {!item.isRead ? (
             <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] text-white">
               {t('new')}
             </span>
           ) : null}
         </span>
-        <span className="mt-1 block text-sm text-slate-600">{item.message}</span>
+        <span className="mt-1 block break-words text-sm text-slate-600 [overflow-wrap:anywhere] line-clamp-3">
+          {item.message}
+        </span>
         <span className="mt-2 block text-xs text-slate-400">
           {formatRelativeTime(item.createdAt, locale)}
         </span>

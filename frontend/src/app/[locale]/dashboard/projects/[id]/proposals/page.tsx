@@ -39,9 +39,15 @@ export default function ProjectProposalsPage() {
   const [acceptProposal, setAcceptProposal] = useState<ClientProposal | null>(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'CLIENT') return;
+    if (authLoading) return;
+
+    if (!user || user.role !== 'CLIENT') {
+      setIsLoading(false);
+      return;
+    }
 
     let cancelled = false;
+    setIsLoading(true);
 
     (async () => {
       try {
@@ -57,7 +63,7 @@ export default function ProjectProposalsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, params.id, api, t]);
+  }, [authLoading, user, params.id, api, t]);
 
   async function reload() {
     setIsLoading(true);
@@ -123,9 +129,9 @@ export default function ProjectProposalsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="page-gutter mx-auto w-full min-w-0 max-w-4xl overflow-x-hidden py-8 sm:py-10">
       <BackLink href="/dashboard/projects">{tDashboard('myProjects')}</BackLink>
-      <h1 className="mt-4 text-3xl font-bold text-on-surface">{t('projectProposals')}</h1>
+      <h1 className="mt-4 text-2xl font-bold text-on-surface sm:text-3xl">{t('projectProposals')}</h1>
       <p className="mt-2 text-sm text-on-surface-variant">
         {t('escrowAcceptHint')}
       </p>
@@ -138,7 +144,7 @@ export default function ProjectProposalsPage() {
 
       <div className="mt-8 grid gap-4">
         {proposals.map((proposal) => (
-          <div key={proposal.id} className="rounded-xl border bg-white p-6">
+          <div key={proposal.id} className="min-w-0 overflow-hidden rounded-xl border bg-white p-4 sm:p-6">
             <div className="flex gap-4">
               {proposal.freelancer?.profilePhoto ? (
                 <Image
@@ -153,9 +159,11 @@ export default function ProjectProposalsPage() {
                   {proposal.freelancer?.displayName?.[0] ?? '?'}
                 </div>
               )}
-              <div className="flex-1">
-                <p className="font-bold">{proposal.freelancer?.displayName}</p>
-                <p className="text-sm text-slate-500">
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-bold [overflow-wrap:anywhere]">
+                  {proposal.freelancer?.displayName}
+                </p>
+                <p className="break-words text-sm text-slate-500 [overflow-wrap:anywhere]">
                   {proposal.freelancer?.professionalTitle ?? tFreelancers('defaultTitle')}
                 </p>
                 {proposal.freelancer?.rating ? (
@@ -166,7 +174,7 @@ export default function ProjectProposalsPage() {
               </div>
             </div>
 
-            <p className="mt-4 whitespace-pre-wrap text-sm text-slate-700">
+            <p className="mt-4 break-words whitespace-pre-wrap text-sm text-slate-700 [overflow-wrap:anywhere]">
               {proposal.coverLetter}
             </p>
 
