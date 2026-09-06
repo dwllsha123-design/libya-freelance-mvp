@@ -52,4 +52,23 @@ export class TestStorageService implements StorageService {
   async deleteFile(url: string): Promise<void> {
     this.deletedUrls.push(url);
   }
+
+  async putPrivateObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    void body;
+    void contentType;
+    this.uploadedUrls.push(key);
+    return key;
+  }
+
+  async deletePrivateObject(key: string): Promise<void> {
+    this.deletedUrls.push(key);
+  }
+
+  async getObject(): Promise<null> {
+    return null;
+  }
 }

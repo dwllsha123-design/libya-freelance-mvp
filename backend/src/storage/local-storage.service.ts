@@ -1,8 +1,9 @@
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdir, unlink, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { StorageService } from './storage.interface.js';
+import type { StorageObject, StorageService } from './storage.interface.js';
 import { toPortfolioWebp, toProfileWebp } from './image-webp.util.js';
 import {
   PORTFOLIO_MAX_SIZE,
@@ -22,6 +23,7 @@ export class LocalStorageService implements StorageService {
   private readonly profileDir: string;
   private readonly portfolioDir: string;
   private readonly chatDir: string;
+  private readonly verificationDir: string;
   private readonly profileBaseUrl: string;
   private readonly portfolioBaseUrl: string;
   private readonly chatBaseUrl: string;
@@ -32,6 +34,7 @@ export class LocalStorageService implements StorageService {
       join(process.cwd(), 'uploads', 'profiles');
     this.portfolioDir = join(process.cwd(), 'uploads', 'portfolio');
     this.chatDir = join(process.cwd(), 'uploads', 'chat');
+    this.verificationDir = join(process.cwd(), 'uploads', 'verification');
     const apiBase =
       configService.get<string>('storage.publicBaseUrl') ??
       'http://localhost:4000/uploads/profiles';
@@ -110,6 +113,42 @@ export class LocalStorageService implements StorageService {
       const relative = chatKey.replace(/^chat\//, '');
       await this.safeUnlink(join(this.chatDir, ...relative.split('/')));
     }
+  }
+
+  async putPrivateObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    if (!key.startsWith('verification/')) {
+      throw new Error('Private object key must use verification/ prefix');
+    }
+    void contentType;
+    const relative = key.replace(/^verification\//, '');
+    const parts = relative.split('/');
+    const filename = parts[parts.length - 1]!;
+    const dir = join(this.verificationDir, ...parts.slice(0, -1));
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, filename), body);
+    return key;
+  }
+
+  async deletePrivateObject(key: string): Promise<void> {
+    if (!key.startsWith('verification/')) return;
+    const relative = key.replace(/^verification\//, '');
+    await this.safeUnlink(join(this.verificationDir, ...relative.split('/')));
+  }
+
+  async getObject(key: string): Promise<StorageObject | null> {
+    if (!key.startsWith('verification/')) return null;
+    const relative = key.replace(/^verification\//, '');
+    const filePath = join(this.verificationDir, ...relative.split('/'));
+    try {
+      await access(filePath);
+    } catch {
+      return null;
+    }
+    return { body: createReadStream(filePath) };
   }
 
   private async safeUnlink(filePath: string) {

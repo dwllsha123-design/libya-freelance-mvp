@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { FreelancerSubscriptionStatus, IdentityVerificationStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { FreelancerQueryDto } from './dto/freelancer-query.dto.js';
@@ -18,6 +18,7 @@ import { PortfolioService } from '../portfolio/portfolio.service.js';
 import { ReviewsService } from '../reviews/reviews.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { isFreelancerVerified } from './freelancer-verification.util.js';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 
 const profileInclude = {
   city: true,
@@ -37,6 +38,17 @@ const profileInclude = {
       status: true,
       emailVerified: true,
       createdAt: true,
+      identityVerification: {
+        select: { status: true, expiresAt: true },
+      },
+      freelancerSubscriptions: {
+        where: {
+          status: FreelancerSubscriptionStatus.ACTIVE,
+        },
+        select: { status: true, expiresAt: true },
+        orderBy: { expiresAt: 'desc' },
+        take: 3,
+      },
     },
   },
 } satisfies Prisma.ProfileInclude;
@@ -49,6 +61,7 @@ export class ProfilesService {
     private readonly portfolio: PortfolioService,
     private readonly reviews: ReviewsService,
     private readonly nuqatiService: NuqatiService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   async getMyProfile(userId: string) {
@@ -243,7 +256,12 @@ export class ProfilesService {
         include: profileInclude,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { freelancerProfile: { averageRating: 'desc' } },
+          { freelancerProfile: { completedProjects: 'desc' } },
+          { freelancerProfile: { proBoostScore: 'desc' } },
+          { createdAt: 'desc' },
+        ],
       }),
       this.prisma.profile.count({ where }),
     ]);
@@ -275,6 +293,8 @@ export class ProfilesService {
 
     const portfolio = await this.portfolio.listForFreelancerUsername(username);
     const reviews = await this.reviews.getRatingSummary(profile.userId);
+
+    void this.subscriptions.recordProfileView(profile.userId).catch(() => undefined);
 
     return {
       ...this.formatProfile(profile, false),
@@ -352,6 +372,7 @@ export class ProfilesService {
                 name: fs.skill.name,
                 slug: fs.skill.slug,
               })),
+              ...this.freelancerTrustAndBadges(profile),
             }
           : null,
         client: profile.clientProfile
@@ -392,6 +413,7 @@ export class ProfilesService {
       name: fs.skill.name,
       slug: fs.skill.slug,
     }));
+    const badges = this.freelancerTrustAndBadges(profile);
 
     return {
       professionalTitle: fp.professionalTitle,
@@ -400,14 +422,41 @@ export class ProfilesService {
       completedProjects: fp.completedProjects,
       averageRating: fp.averageRating,
       skills,
+      isVerified: badges.isVerified,
+      identityVerified: badges.identityVerified,
+      isPro: badges.isPro,
+    };
+  }
+
+  private freelancerTrustAndBadges(
+    profile: Prisma.ProfileGetPayload<{ include: typeof profileInclude }>,
+  ) {
+    const fp = profile.freelancerProfile!;
+    const skillCount = fp.skills.length;
+    const now = new Date();
+    const iv = profile.user.identityVerification;
+    const identityVerified =
+      !!iv &&
+      iv.status === IdentityVerificationStatus.VERIFIED &&
+      (!iv.expiresAt || iv.expiresAt > now);
+    const isPro = (profile.user.freelancerSubscriptions ?? []).some(
+      (s) =>
+        s.status === FreelancerSubscriptionStatus.ACTIVE &&
+        s.expiresAt &&
+        s.expiresAt > now,
+    );
+
+    return {
       isVerified: isFreelancerVerified({
         emailVerified: profile.user.emailVerified,
         profilePhoto: profile.profilePhoto,
         bio: profile.bio,
         completedProjects: fp.completedProjects,
         averageRating: fp.averageRating,
-        skillCount: skills.length,
+        skillCount,
       }),
+      identityVerified,
+      isPro,
     };
   }
 }

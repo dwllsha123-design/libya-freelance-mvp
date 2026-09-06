@@ -7,8 +7,8 @@ import { PlatformModule } from '../platform/platform.module.js';
 import { RealtimeModule } from '../realtime/realtime.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AgreementsModule } from '../agreements/agreements.module.js';
+import { AdminAuditModule } from './admin-audit.module.js';
 import { AdminAuditController } from './admin-audit.controller.js';
-import { AdminAuditService } from './admin-audit.service.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
@@ -35,6 +35,7 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     RealtimeModule,
     UsersModule,
     AgreementsModule,
+    AdminAuditModule,
   ],
   controllers: [
     AdminController,
@@ -43,7 +44,6 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     AdminOpsController,
   ],
   providers: [
-    AdminAuditService,
     AdminDashboardService,
     AdminUsersService,
     AdminProjectsService,
@@ -57,6 +57,6 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     SuperAdminGuard,
     AdminPermissionGuard,
   ],
-  exports: [AdminOpsService, AdminAuditService],
+  exports: [AdminOpsService, AdminAuditModule],
 })
 export class AdminModule {}

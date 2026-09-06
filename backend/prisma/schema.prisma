@@ -80,6 +80,16 @@ enum NotificationType {
   AGREEMENT_CHANGE_REQUESTED
   AGREEMENT_FUNDED
   AGREEMENT_CANCELLED
+  VERIFICATION_SUBMITTED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  PRO_PAYMENT_PENDING
+  PRO_ACTIVATED
+  PRO_EXPIRING_7_DAYS
+  PRO_EXPIRING_3_DAYS
+  PRO_EXPIRING_1_DAY
+  PRO_EXPIRED
+  PRO_RENEWED
 }
 
 enum AdminAuditAction {
@@ -129,6 +139,12 @@ enum AdminAuditAction {
   INVESTOR_PAYOUT_CANCELLED
   INVESTOR_STATEMENT_FINALIZED
   FEATURED_UPDATED
+  IDENTITY_VERIFICATION_APPROVED
+  IDENTITY_VERIFICATION_REJECTED
+  IDENTITY_VERIFICATION_SUSPENDED
+  SUBSCRIPTION_EXTENDED
+  SUBSCRIPTION_SUSPENDED
+  SUBSCRIPTION_CANCELLED
 }
 
 enum CommissionPolicyStatus {
@@ -170,6 +186,8 @@ enum AdminPermission {
   VIEW_SYSTEM
   VIEW_FINANCE
   SEND_BROADCASTS
+  MANAGE_VERIFICATIONS
+  MANAGE_SUBSCRIPTIONS
 }
 
 enum PlatformSettingType {
@@ -253,6 +271,7 @@ enum PaymentPurpose {
   ESCROW_FUNDING
   ESCROW_REFUND
   POINTS_PURCHASE
+  SUBSCRIPTION
 }
 
 enum PointsTransactionType {
@@ -325,6 +344,12 @@ model User {
   agreementAcceptances          AgreementAcceptance[]
   agreementChangeRequests       AgreementChangeRequest[] @relation("AgreementChangeRequester")
   agreementAuditLogs            AgreementAuditLog[]      @relation("AgreementAuditActor")
+  identityVerification          FreelancerIdentityVerification?
+  identityVerificationsReviewed FreelancerIdentityVerification[] @relation("IdentityVerificationReviewer")
+  freelancerSubscriptions       FreelancerSubscription[]
+  subscriptionAdminActions      SubscriptionAdminAction[] @relation("SubscriptionAdminActor")
+  profileViewsAsSubject         ProfileViewDaily[]        @relation("ProfileViewSubject")
+  productAnalyticsEvents        ProductAnalyticsEvent[]
 
   @@index([role])
   @@index([status])
@@ -440,12 +465,17 @@ model FreelancerProfile {
   hourlyRate        Decimal?               @db.Decimal(12, 2)
   completedProjects Int                    @default(0)
   averageRating     Float                  @default(0)
+  /// Limited Pro listing tie-breaker (0 or 1). Quality ranking stays primary.
+  proBoostScore     Int                    @default(0)
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
 
   profile   Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
   skills    FreelancerSkill[]
   portfolio PortfolioItem[]
+
+  @@index([proBoostScore])
+  @@index([averageRating])
 }
 
 model ClientProfile {
@@ -800,6 +830,7 @@ model Payment {
 
   escrow Escrow? @relation(fields: [escrowId], references: [id], onDelete: Cascade)
   client User   @relation("PaymentClient", fields: [clientId], references: [id], onDelete: Cascade)
+  freelancerSubscription FreelancerSubscription?
 
   @@index([escrowId])
   @@index([clientId])
@@ -1483,4 +1514,161 @@ model AgreementAuditLog {
 
   @@index([agreementId, createdAt])
   @@index([action])
+}
+
+/// Document-based identity verification (separate from computed trust badge)
+enum IdentityVerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  EXPIRED
+}
+
+model FreelancerIdentityVerification {
+  id              String                     @id @default(uuid())
+  userId          String                     @unique
+  status          IdentityVerificationStatus @default(NOT_SUBMITTED)
+  fullNameAsOnId  String?
+  /// Last 4 digits only — never store full national ID
+  nationalIdLast4 String?
+  freelancerNote  String?
+  rejectionReason String?
+  adminNote       String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  expiresAt       DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  user      User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User?                         @relation("IdentityVerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  documents IdentityVerificationDocument[]
+
+  @@index([status, submittedAt])
+  @@index([reviewedById])
+}
+
+model IdentityVerificationDocument {
+  id             String   @id @default(uuid())
+  verificationId String
+  storageKey     String
+  mimeType       String
+  sizeBytes      Int
+  createdAt      DateTime @default(now())
+
+  verification FreelancerIdentityVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  @@index([verificationId])
+}
+
+enum FreelancerSubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  REFUNDED
+  SUSPENDED
+}
+
+model SubscriptionPlan {
+  id                 String   @id @default(uuid())
+  code               String   @unique
+  nameAr             String
+  nameEn             String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("LYD")
+  durationDays       Int
+  isActive           Boolean  @default(true)
+  portfolioItemLimit Int      @default(40)
+  /// Tie-breaker weight only (0 or 1 applied on FreelancerProfile.proBoostScore)
+  rankingBoostWeight Float    @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subscriptions FreelancerSubscription[]
+}
+
+model FreelancerSubscription {
+  id         String                       @id @default(uuid())
+  userId     String
+  planId     String
+  status     FreelancerSubscriptionStatus @default(PENDING_PAYMENT)
+  startedAt  DateTime?
+  expiresAt  DateTime?
+  cancelledAt DateTime?
+  paymentId  String?                      @unique
+  createdAt  DateTime                     @default(now())
+  updatedAt  DateTime                     @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan    SubscriptionPlan @relation(fields: [planId], references: [id])
+  payment Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  adminActions SubscriptionAdminAction[]
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+  @@index([planId])
+}
+
+enum SubscriptionAdminActionType {
+  EXTEND
+  SUSPEND
+  CANCEL
+  REACTIVATE
+}
+
+model SubscriptionAdminAction {
+  id             String                      @id @default(uuid())
+  subscriptionId String
+  actorId        String
+  action         SubscriptionAdminActionType
+  reason         String
+  oldExpiresAt   DateTime?
+  newExpiresAt   DateTime?
+  createdAt      DateTime                    @default(now())
+
+  subscription FreelancerSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  actor        User                   @relation("SubscriptionAdminActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, createdAt])
+  @@index([actorId])
+}
+
+model ProfileViewDaily {
+  id            String   @id @default(uuid())
+  profileUserId String
+  day           DateTime @db.Date
+  viewCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  profileUser User @relation("ProfileViewSubject", fields: [profileUserId], references: [id], onDelete: Cascade)
+
+  @@unique([profileUserId, day])
+  @@index([profileUserId, day])
+}
+
+enum ProductAnalyticsEventType {
+  PRO_PAGE_VIEW
+  PRO_CHECKOUT_STARTED
+  PRO_PAYMENT_SUCCESS
+  PRO_ACTIVATED
+  PRO_RENEWED
+  PRO_EXPIRED
+}
+
+model ProductAnalyticsEvent {
+  id        String                    @id @default(uuid())
+  userId    String?
+  eventType ProductAnalyticsEventType
+  metadata  Json?
+  createdAt DateTime                  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
 }

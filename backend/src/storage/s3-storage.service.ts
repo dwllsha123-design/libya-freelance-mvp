@@ -184,6 +184,32 @@ export class S3StorageService implements StorageService {
     }
   }
 
+  async putPrivateObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    if (!key.startsWith('verification/')) {
+      throw new Error('Private object key must use verification/ prefix');
+    }
+    await this.putObject(key, body, contentType);
+    return key;
+  }
+
+  async deletePrivateObject(key: string): Promise<void> {
+    if (!key.startsWith('verification/')) return;
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      this.logger.warn(`Failed to delete private S3 object ${key}: ${String(error)}`);
+    }
+  }
+
   publicUrlForKey(key: string): string {
     return `${this.config.publicBaseUrl}/${key}`;
   }

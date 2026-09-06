@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -9,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import type {
   CreatePortfolioDto,
   ReorderPortfolioDto,
@@ -36,6 +38,7 @@ export class PortfolioService {
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   async listMine(userId: string) {
@@ -158,6 +161,16 @@ export class PortfolioService {
     const profile = await this.requireFreelancerProfile(userId);
     const skillIds = validateSkillIds(dto.skillIds);
     await this.assertSkillsExist(skillIds);
+
+    const limit = await this.subscriptions.getPortfolioItemLimit(userId);
+    const currentCount = await this.prisma.portfolioItem.count({
+      where: { freelancerProfileId: profile.id },
+    });
+    if (currentCount >= limit) {
+      throw new BadRequestException(
+        `وصلت إلى الحد الأقصى لعناصر المعرض (${limit}). اشترك في Pro لزيادة الحد.`,
+      );
+    }
 
     const maxSort = await this.prisma.portfolioItem.aggregate({
       where: { freelancerProfileId: profile.id },

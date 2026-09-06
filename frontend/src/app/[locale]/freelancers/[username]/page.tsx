@@ -8,6 +8,7 @@ import { apiRequest, type PublicPortfolioItem, type PublicProfile } from '@/lib/
 import { BackLink } from '@/components/ui/back-link';
 import { ProfileReviewsSection } from '@/components/rating/profile-reviews-section';
 import { VerifiedBadge } from '@/components/trust/verified-badge';
+import { IdentityVerifiedBadge, ProBadge } from '@/components/trust/identity-pro-badges';
 import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
 import { isFreelancerVerified, getVerificationCriteria } from '@/lib/freelancer-trust';
 import { formatCurrency } from '@/lib/currency';
@@ -92,6 +93,10 @@ export default function FreelancerProfilePage() {
                 {profile.firstName} {profile.lastName}
               </h1>
               {verified ? <VerifiedBadge className="!text-xs" /> : null}
+              {profile.freelancer?.identityVerified ? (
+                <IdentityVerifiedBadge className="!text-xs" />
+              ) : null}
+              {profile.freelancer?.isPro ? <ProBadge className="!text-xs" /> : null}
             </div>
             <p className="mt-2 text-lg text-on-surface-variant">
               {profile.freelancer?.professionalTitle ?? t('defaultTitle')}

@@ -37,6 +37,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/projects', labelKey: 'projects' },
       { href: '/admin/proposals', labelKey: 'proposals' },
       { href: '/admin/agreements', labelKey: 'projectAgreements' },
+      { href: '/admin/verifications', labelKey: 'identityVerifications' },
+      { href: '/admin/subscriptions', labelKey: 'proSubscriptions' },
       { href: '/admin/reviews', labelKey: 'reviews' },
       { href: '/admin/portfolio', labelKey: 'portfolioModeration' },
       { href: '/admin/disputes', labelKey: 'disputes' },

@@ -29,6 +29,8 @@ import { PaymentsModule } from './payments/payment.module.js';
 import { NuqatiModule } from './nuqati/nuqati.module.js';
 import { ReferenceDataModule } from './reference-data/reference-data.module.js';
 import { AgreementsModule } from './agreements/agreements.module.js';
+import { VerificationModule } from './verification/verification.module.js';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { AgreementsModule } from './agreements/agreements.module.js';
     EscrowModule,
     NuqatiModule,
     AgreementsModule,
+    VerificationModule,
+    SubscriptionsModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -119,6 +119,8 @@ export interface PublicProfile {
     completedProjects: number;
     averageRating: number;
     isVerified?: boolean;
+    identityVerified?: boolean;
+    isPro?: boolean;
     skills: Skill[];
     portfolio?: {
       count: number;

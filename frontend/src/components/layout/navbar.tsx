@@ -186,6 +186,18 @@ export function Navbar() {
                 desc: t('nuqatiDesc'),
                 icon: '◈',
               },
+              {
+                href: '/dashboard/verification',
+                label: t('verification'),
+                desc: t('verificationDesc'),
+                icon: '✓',
+              },
+              {
+                href: '/dashboard/pro',
+                label: t('pro'),
+                desc: t('proDesc'),
+                icon: '★',
+              },
             ]
           : [
               {

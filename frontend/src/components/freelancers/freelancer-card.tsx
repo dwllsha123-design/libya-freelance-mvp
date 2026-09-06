@@ -9,6 +9,7 @@ import { getLocalizedCityName } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
 import { isFreelancerVerified } from '@/lib/freelancer-trust';
 import { VerifiedBadge } from '@/components/trust/verified-badge';
+import { IdentityVerifiedBadge, ProBadge } from '@/components/trust/identity-pro-badges';
 import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
 
 function initials(first: string, last: string) {
@@ -58,6 +59,8 @@ export function FreelancerCard({
               {freelancer.firstName} {freelancer.lastName}
             </h3>
             {verified ? <VerifiedBadge /> : null}
+            {freelancer.freelancer?.identityVerified ? <IdentityVerifiedBadge /> : null}
+            {freelancer.freelancer?.isPro ? <ProBadge /> : null}
           </div>
           <p className="truncate text-sm text-on-surface-variant">
             {freelancer.freelancer?.professionalTitle ?? t('defaultTitle')}
