@@ -43,7 +43,8 @@ export const brandColors = {
   success: '#059669',
 } as const;
 
-export const LOGO_ICON_PATH = '/logo-icon.png';
+export const LOGO_ICON_PATH = '/brand/logo-transparent.png';
+export const LOGO_MARK_SVG_PATH = '/brand/logo-transparent.svg';
 
 /** خلفية خريطة ليبيا في قسم البطل */
 export const HERO_MAP_BG_PATH = '/images/libya-map-hero.jpg';
@@ -52,7 +53,8 @@ export const HERO_MAP_BG_PATH = '/images/libya-map-hero.jpg';
 export const DESIGN_HERO_SMOKE_PATH = '/images/design/hero-smoke.jpg';
 export const DESIGN_MARBLE_PATH = '/images/design/marble.jpg';
 export const DESIGN_GLOW_PATH = '/images/design/glow.jpg';
-export const DESIGN_LOGO_MARK_PATH = '/images/design/logo-mark.jpeg';
+/** @deprecated use LOGO_ICON_PATH / LOGO_MARK_SVG_PATH — kept as alias */
+export const DESIGN_LOGO_MARK_PATH = LOGO_MARK_SVG_PATH;
 
 /** للاستخدام في الروابط العامة (Open Graph، إلخ) */
 export const LOGO_PUBLIC_URL = LOGO_ICON_PATH;

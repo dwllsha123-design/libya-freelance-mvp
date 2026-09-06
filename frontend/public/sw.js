@@ -54,8 +54,8 @@ self.addEventListener('push', (event) => {
       data: payload.data,
       dir: 'rtl',
       lang: 'ar',
-      icon: '/images/design/logo-mark.jpeg',
-      badge: '/images/design/logo-mark.jpeg',
+      icon: '/brand/logo-transparent.png',
+      badge: '/favicon-32x32.png',
     }),
   );
 });

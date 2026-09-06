@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { DESIGN_LOGO_MARK_PATH, LOGO_ICON_PATH } from '@/lib/branding';
+import { LOGO_ICON_PATH, LOGO_MARK_SVG_PATH } from '@/lib/branding';
 
 const LOGO_ICON_SIZE = 40;
 
@@ -15,7 +15,7 @@ type LogoProps = {
   nameClassName?: string;
   iconClassName?: string;
   href?: string;
-  /** Use Figma design circular mark when available */
+  /** Prefer SVG mark for sharp UI; png for raster fallbacks */
   variant?: 'default' | 'mark';
 };
 
@@ -63,7 +63,7 @@ export function Logo({
   variant = 'mark',
 }: LogoProps) {
   const t = useTranslations('brand');
-  const src = variant === 'mark' ? DESIGN_LOGO_MARK_PATH : LOGO_ICON_PATH;
+  const src = variant === 'mark' ? LOGO_MARK_SVG_PATH : LOGO_ICON_PATH;
 
   const content = (
     <span className={`inline-flex max-w-full items-center gap-2 ${className}`}>
@@ -73,7 +73,7 @@ export function Logo({
         width={LOGO_ICON_SIZE}
         height={LOGO_ICON_SIZE}
         sizes="40px"
-        className={`size-10 shrink-0 rounded-full object-cover ring-1 ring-line shadow-[0_4px_12px_-4px_rgba(29,24,17,0.25)] ${iconClassName}`}
+        className={`size-10 shrink-0 object-contain ${iconClassName}`}
         priority
         unoptimized
       />
