@@ -31,6 +31,7 @@ import {
 } from './dto/admin.dto.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
+import { AgreementsService } from '../agreements/agreements.service.js';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
@@ -44,6 +45,7 @@ export class AdminController {
     private readonly categories: AdminCategoriesService,
     private readonly skills: AdminSkillsService,
     private readonly escrow: EscrowService,
+    private readonly agreements: AgreementsService,
   ) {}
 
   @Get('dashboard')
@@ -199,5 +201,25 @@ export class AdminController {
     @Body() dto: ResolveDisputeDto,
   ) {
     return this.escrow.resolveDispute(admin.id, id, dto.resolution, dto.outcome);
+  }
+
+  @Get('project-agreements')
+  listProjectAgreements(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.agreements.adminList({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      status,
+      q,
+    });
+  }
+
+  @Get('project-agreements/:id')
+  getProjectAgreement(@Param('id') id: string) {
+    return this.agreements.adminGet(id);
   }
 }

@@ -2,13 +2,19 @@ import { Module, forwardRef } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PaymentsModule } from '../payments/payment.module.js';
 import { CommercialModule } from '../commercial/commercial.module.js';
+import { AgreementsModule } from '../agreements/agreements.module.js';
 import { EscrowController } from './escrow.controller.js';
 import { EscrowService } from './escrow.service.js';
 import { EscrowPaymentCompletionHandler } from './escrow-payment-completion.handler.js';
 import { PAYMENT_COMPLETION_HANDLER } from '../payments/payment-completion.handler.js';
 
 @Module({
-  imports: [NotificationsModule, forwardRef(() => PaymentsModule), CommercialModule],
+  imports: [
+    NotificationsModule,
+    forwardRef(() => PaymentsModule),
+    CommercialModule,
+    forwardRef(() => AgreementsModule),
+  ],
   controllers: [EscrowController],
   providers: [
     EscrowService,

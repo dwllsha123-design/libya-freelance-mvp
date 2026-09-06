@@ -6,6 +6,7 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
 import { RealtimeModule } from '../realtime/realtime.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { AgreementsModule } from '../agreements/agreements.module.js';
 import { AdminAuditController } from './admin-audit.controller.js';
 import { AdminAuditService } from './admin-audit.service.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
@@ -33,6 +34,7 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     PlatformModule,
     RealtimeModule,
     UsersModule,
+    AgreementsModule,
   ],
   controllers: [
     AdminController,

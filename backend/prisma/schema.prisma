@@ -72,6 +72,14 @@ enum NotificationType {
   ESCROW_DISPUTED
   ESCROW_DISPUTE_RESOLVED
   ADMIN_BROADCAST
+  AGREEMENT_CREATED
+  AGREEMENT_APPROVAL_REQUIRED
+  AGREEMENT_ACCEPTED_BY_CLIENT
+  AGREEMENT_ACCEPTED_BY_FREELANCER
+  AGREEMENT_APPROVED
+  AGREEMENT_CHANGE_REQUESTED
+  AGREEMENT_FUNDED
+  AGREEMENT_CANCELLED
 }
 
 enum AdminAuditAction {
@@ -311,6 +319,12 @@ model User {
   contentReportsResolved  ContentReport[]          @relation("ContentReportResolver")
   blocksCreated           UserBlock[]              @relation("UserBlocker")
   blocksReceived          UserBlock[]              @relation("UserBlocked")
+  projectAgreementsAsClient     ProjectAgreement[] @relation("ProjectAgreementClient")
+  projectAgreementsAsFreelancer ProjectAgreement[] @relation("ProjectAgreementFreelancer")
+  agreementVersionsCreated      AgreementVersion[] @relation("AgreementVersionCreator")
+  agreementAcceptances          AgreementAcceptance[]
+  agreementChangeRequests       AgreementChangeRequest[] @relation("AgreementChangeRequester")
+  agreementAuditLogs            AgreementAuditLog[]      @relation("AgreementAuditActor")
 
   @@index([role])
   @@index([status])
@@ -525,6 +539,7 @@ model Project {
   conversations    Conversation[]
   escrow           Escrow?
   commissionOverrides ProjectCommissionOverride[]
+  projectAgreements ProjectAgreement[]
 
   @@index([status])
   @@index([publishedAt])
@@ -566,6 +581,7 @@ model Proposal {
   acceptedForProject Project?       @relation("AcceptedProposal")
   conversations      Conversation[]
   escrow             Escrow?
+  projectAgreement   ProjectAgreement?
 
   @@unique([projectId, freelancerId])
   @@index([freelancerId])
@@ -1272,4 +1288,199 @@ model UserBlock {
 
   @@unique([blockerId, blockedUserId])
   @@index([blockedUserId])
+}
+
+/// Marketplace project agreement (اتفاق المشروع) — separate from InvestmentAgreement
+enum ProjectAgreementStatus {
+  PENDING_APPROVAL
+  APPROVED
+  PAYMENT_PENDING
+  FUNDED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum AgreementPartyRole {
+  CLIENT
+  FREELANCER
+}
+
+enum AgreementChangeType {
+  PRICE
+  DEADLINE
+  SCOPE
+  DELIVERABLES
+  REVISIONS
+  OTHER
+}
+
+enum AgreementChangeRequestStatus {
+  PENDING
+  APPLIED
+  CANCELLED
+}
+
+enum AgreementMilestoneStatus {
+  PENDING
+  FUNDED
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  RELEASED
+  DISPUTED
+  CANCELLED
+}
+
+enum AgreementAuditAction {
+  AGREEMENT_CREATED
+  VERSION_CREATED
+  CLIENT_ACCEPTED
+  FREELANCER_ACCEPTED
+  AGREEMENT_APPROVED
+  CHANGE_REQUESTED
+  PAYMENT_PENDING
+  FUNDED
+  ACTIVATED
+  DISPUTE_OPENED
+  CANCELLED
+  COMPLETED
+}
+
+model ProjectAgreement {
+  id               String                 @id @default(uuid())
+  projectId        String
+  proposalId       String                 @unique
+  clientId         String
+  freelancerId     String
+  currentVersionId String?                @unique
+  status           ProjectAgreementStatus @default(PENDING_APPROVAL)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  approvedAt       DateTime?
+  fundedAt         DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  proposal       Proposal          @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  client         User              @relation("ProjectAgreementClient", fields: [clientId], references: [id], onDelete: Cascade)
+  freelancer     User              @relation("ProjectAgreementFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
+  currentVersion AgreementVersion? @relation("CurrentAgreementVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       AgreementVersion[] @relation("AgreementVersions")
+  changeRequests AgreementChangeRequest[]
+  auditLogs      AgreementAuditLog[]
+
+  @@index([projectId, status])
+  @@index([clientId, status])
+  @@index([freelancerId, status])
+  @@index([status, createdAt])
+}
+
+model AgreementVersion {
+  id                 String   @id @default(uuid())
+  agreementId        String
+  versionNumber      Int
+  title              String
+  scope              String
+  deliverables       String
+  currency           String   @default("LYD")
+  grossAmount        Decimal  @db.Decimal(12, 2)
+  platformFee        Decimal  @db.Decimal(12, 2)
+  freelancerNet      Decimal  @db.Decimal(12, 2)
+  durationDays       Int
+  deliveryDate       DateTime?
+  revisionCount      Int      @default(2)
+  paymentTerms       String
+  cancellationTerms  String
+  disputeTerms       String
+  snapshotJson       Json
+  createdByUserId    String
+  createdAt          DateTime @default(now())
+
+  agreement          ProjectAgreement      @relation("AgreementVersions", fields: [agreementId], references: [id], onDelete: Cascade)
+  currentForAgreement ProjectAgreement?    @relation("CurrentAgreementVersion")
+  createdBy          User                  @relation("AgreementVersionCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  acceptances        AgreementAcceptance[]
+  milestones         AgreementMilestone[]
+
+  @@unique([agreementId, versionNumber])
+  @@index([agreementId, createdAt])
+}
+
+model AgreementAcceptance {
+  id                 String             @id @default(uuid())
+  agreementVersionId String
+  userId             String
+  role               AgreementPartyRole
+  acceptedAt         DateTime           @default(now())
+  userAgent          String?
+  ipHash             String?
+
+  version AgreementVersion @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementVersionId, userId])
+  @@index([userId])
+}
+
+model AgreementMilestone {
+  id                 String                   @id @default(uuid())
+  agreementVersionId String
+  title              String
+  description        String?
+  amount             Decimal                  @db.Decimal(12, 2)
+  sortOrder          Int                      @default(0)
+  dueDate            DateTime?
+  status             AgreementMilestoneStatus @default(PENDING)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  version AgreementVersion @relation(fields: [agreementVersionId], references: [id], onDelete: Cascade)
+
+  @@index([agreementVersionId, sortOrder])
+}
+
+model AgreementChangeRequest {
+  id                    String                       @id @default(uuid())
+  agreementId           String
+  requestedById         String
+  changeType            AgreementChangeType
+  reason                String
+  status                AgreementChangeRequestStatus @default(PENDING)
+  proposedTitle         String?
+  proposedScope         String?
+  proposedDeliverables  String?
+  proposedGrossAmount   Decimal?                     @db.Decimal(12, 2)
+  proposedDurationDays  Int?
+  proposedRevisionCount Int?
+  proposedDeliveryDate  DateTime?
+  resultingVersionId    String?
+  createdAt             DateTime                     @default(now())
+  appliedAt             DateTime?
+
+  agreement   ProjectAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  requestedBy User             @relation("AgreementChangeRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@index([agreementId, createdAt])
+  @@index([requestedById])
+  @@index([status])
+}
+
+model AgreementAuditLog {
+  id          String               @id @default(uuid())
+  agreementId String
+  actorId     String?
+  action      AgreementAuditAction
+  versionId   String?
+  metadata    Json?
+  createdAt   DateTime             @default(now())
+
+  agreement ProjectAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  actor     User?            @relation("AgreementAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId, createdAt])
+  @@index([action])
 }

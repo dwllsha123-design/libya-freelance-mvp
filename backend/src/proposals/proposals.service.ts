@@ -25,6 +25,7 @@ import {
 } from './proposal-validation.util.js';
 import { acceptProposalInTransaction } from './proposal-acceptance.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
+import { AgreementsService } from '../agreements/agreements.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import {
@@ -85,6 +86,7 @@ export class ProposalsService {
     private readonly portfolio: PortfolioService,
     @Inject(forwardRef(() => EscrowService))
     private readonly escrowService: EscrowService,
+    private readonly agreements: AgreementsService,
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
   ) {}
@@ -357,6 +359,7 @@ export class ProposalsService {
 
     ProposalStateService.assertCanAccept(proposal.status);
 
+    await this.agreements.assertApprovedForFunding(proposalId);
     await this.escrowService.assertFundedForAccept(proposalId);
 
     const pendingFreelancerIds = (
@@ -370,9 +373,17 @@ export class ProposalsService {
       })
     ).map((p) => p.freelancerId);
 
-    const result = await this.prisma.$transaction((tx) =>
-      acceptProposalInTransaction(tx, proposalId, proposal.projectId),
-    );
+    const result = await this.prisma.$transaction(async (tx) => {
+      const accepted = await acceptProposalInTransaction(
+        tx,
+        proposalId,
+        proposal.projectId,
+      );
+      await this.agreements.markFundedAndActive(proposalId, clientId, tx);
+      return accepted;
+    });
+
+    await this.agreements.notifyFunded(proposalId);
 
     await this.notifications.create(
       proposal.freelancerId,

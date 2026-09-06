@@ -4,6 +4,7 @@ import { PortfolioModule } from '../portfolio/portfolio.module.js';
 import { EscrowModule } from '../escrow/escrow.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
+import { AgreementsModule } from '../agreements/agreements.module.js';
 import { ProposalsController } from './proposals.controller.js';
 import { ProposalsService } from './proposals.service.js';
 
@@ -12,6 +13,7 @@ import { ProposalsService } from './proposals.service.js';
     NotificationsModule,
     PortfolioModule,
     forwardRef(() => EscrowModule),
+    forwardRef(() => AgreementsModule),
     NuqatiModule,
     PlatformModule,
   ],

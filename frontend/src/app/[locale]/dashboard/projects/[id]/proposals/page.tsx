@@ -7,11 +7,10 @@ import { BackLink } from '@/components/ui/back-link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/projects/confirm-dialog';
-import { EscrowFundDialog } from '@/components/escrow/escrow-fund-dialog';
 import { useAuth } from '@/contexts/auth-context';
 import { useMessagingApi } from '@/hooks/use-messaging';
 import { useProposalsApi, type ClientProposal } from '@/hooks/use-proposals';
-import { useEscrowApi } from '@/hooks/use-escrow';
+import { useAgreementsApi } from '@/hooks/use-agreements';
 import { ApiError } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
@@ -19,6 +18,7 @@ import type { AppLocale } from '@/i18n/routing';
 export default function ProjectProposalsPage() {
   const t = useTranslations('projects');
   const tProposals = useTranslations('proposals');
+  const tAgreements = useTranslations('agreements');
   const tFreelancers = useTranslations('freelancers');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
@@ -27,27 +27,21 @@ export default function ProjectProposalsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const api = useProposalsApi();
-  const escrowApi = useEscrowApi();
+  const agreementsApi = useAgreementsApi();
   const messagingApi = useMessagingApi();
   const [messagingId, setMessagingId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<ClientProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<'accept' | 'reject' | null>(null);
+  const [actionType, setActionType] = useState<'reject' | null>(null);
   const [isActing, setIsActing] = useState(false);
-  const [acceptProposal, setAcceptProposal] = useState<ClientProposal | null>(null);
+  const [selectingId, setSelectingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    if (!user || user.role !== 'CLIENT') {
-      setIsLoading(false);
-      return;
-    }
+    if (authLoading || !user || user.role !== 'CLIENT') return;
 
     let cancelled = false;
-    setIsLoading(true);
 
     (async () => {
       try {
@@ -93,18 +87,25 @@ export default function ProjectProposalsPage() {
     }
   }
 
-  async function executeFundAndAccept() {
-    if (!acceptProposal) return;
-    setIsActing(true);
+  async function executeSelectAgreement(proposalId: string) {
+    setSelectingId(proposalId);
     setError(null);
     try {
-      await escrowApi.fundAndAccept(acceptProposal.id);
-      setAcceptProposal(null);
-      await reload();
+      const agreement = await agreementsApi.create(proposalId);
+      router.push(`/dashboard/agreements/${agreement.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : tProposals('fundAcceptFailed'));
+      if (err instanceof ApiError) {
+        const body = err.details as { agreementId?: string; code?: string } | undefined;
+        if (body?.agreementId) {
+          router.push(`/dashboard/agreements/${body.agreementId}`);
+          return;
+        }
+        setError(err.message);
+      } else {
+        setError(tAgreements('actionFailed'));
+      }
     } finally {
-      setIsActing(false);
+      setSelectingId(null);
     }
   }
 
@@ -120,7 +121,7 @@ export default function ProjectProposalsPage() {
     }
   }
 
-  if (authLoading || isLoading) {
+  if (authLoading || (user?.role === 'CLIENT' && isLoading)) {
     return <div className="p-8 text-center">{tCommon('loadingPage')}</div>;
   }
 
@@ -133,7 +134,7 @@ export default function ProjectProposalsPage() {
       <BackLink href="/dashboard/projects">{tDashboard('myProjects')}</BackLink>
       <h1 className="mt-4 text-2xl font-bold text-on-surface sm:text-3xl">{t('projectProposals')}</h1>
       <p className="mt-2 text-sm text-on-surface-variant">
-        {t('escrowAcceptHint')}
+        {tAgreements('clientPrompt')}
       </p>
 
       {error ? <p className="mt-4 text-red-600">{error}</p> : null}
@@ -231,10 +232,13 @@ export default function ProjectProposalsPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => setAcceptProposal(proposal)}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm text-white"
+                    disabled={selectingId === proposal.id}
+                    onClick={() => void executeSelectAgreement(proposal.id)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50"
                   >
-                    {t('fundEscrowAndAccept')}
+                    {selectingId === proposal.id
+                      ? tAgreements('creating')
+                      : tAgreements('selectFreelancer')}
                   </button>
                   <button
                     type="button"
@@ -254,14 +258,6 @@ export default function ProjectProposalsPage() {
           </div>
         ))}
       </div>
-
-      <EscrowFundDialog
-        open={Boolean(acceptProposal)}
-        proposedPrice={acceptProposal?.proposedPrice ?? 0}
-        isLoading={isActing}
-        onConfirm={() => void executeFundAndAccept()}
-        onCancel={() => setAcceptProposal(null)}
-      />
 
       <ConfirmDialog
         open={actionType === 'reject'}

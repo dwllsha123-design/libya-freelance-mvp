@@ -23,6 +23,7 @@ import arNuqati from '../../../messages/ar/nuqati.json';
 import arSearch from '../../../messages/ar/search.json';
 import arAdmin from '../../../messages/ar/admin.json';
 import arMarketing from '../../../messages/ar/marketing.json';
+import arAgreements from '../../../messages/ar/agreements.json';
 
 import enCommon from '../../../messages/en/common.json';
 import enBrand from '../../../messages/en/brand.json';
@@ -47,6 +48,7 @@ import enNuqati from '../../../messages/en/nuqati.json';
 import enSearch from '../../../messages/en/search.json';
 import enAdmin from '../../../messages/en/admin.json';
 import enMarketing from '../../../messages/en/marketing.json';
+import enAgreements from '../../../messages/en/agreements.json';
 
 const MESSAGES = {
   ar: {
@@ -73,6 +75,7 @@ const MESSAGES = {
     search: arSearch,
     admin: arAdmin,
     marketing: arMarketing,
+    agreements: arAgreements,
   },
   en: {
     common: enCommon,
@@ -98,6 +101,7 @@ const MESSAGES = {
     search: enSearch,
     admin: enAdmin,
     marketing: enMarketing,
+    agreements: enAgreements,
   },
 } as const;
 

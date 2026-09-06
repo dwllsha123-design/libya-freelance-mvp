@@ -23,6 +23,7 @@ import { ProposalStateService } from '../proposals/proposal-validation.util.js';
 import { acceptProposalInTransaction } from '../proposals/proposal-acceptance.util.js';
 import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
 import { ESCROW_CURRENCY } from './escrow.constants.js';
+import { AgreementsService } from '../agreements/agreements.service.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -33,6 +34,7 @@ export class EscrowService {
     private readonly notifications: NotificationsService,
     private readonly paymentService: PaymentService,
     private readonly commission: CommissionResolutionService,
+    private readonly agreements: AgreementsService,
   ) {}
 
   async getByProposal(proposalId: string, userId: string) {
@@ -73,6 +75,9 @@ export class EscrowService {
   }
 
   async prepare(clientId: string, proposalId: string) {
+    await this.agreements.assertApprovedForFunding(proposalId);
+    await this.agreements.markPaymentPending(proposalId, clientId);
+
     const proposal = await this.loadProposalForClient(clientId, proposalId);
     const amount = Number(proposal.proposedPrice);
     const resolved = await this.commission.resolveForProject(
@@ -117,6 +122,9 @@ export class EscrowService {
     const escrow = await this.prisma.escrow.findUnique({ where: { id: escrowId } });
     if (!escrow) throw new NotFoundException('الضمان غير موجود');
     if (escrow.clientId !== clientId) throw new ForbiddenException('غير مصرح');
+
+    await this.agreements.assertApprovedForFunding(escrow.proposalId);
+    await this.agreements.markPaymentPending(escrow.proposalId, clientId);
     if (escrow.status !== EscrowStatus.PENDING_FUNDING) {
       throw new ConflictException('الضمان مموّل مسبقاً أو غير قابل للتمويل');
     }
@@ -148,6 +156,8 @@ export class EscrowService {
           createdById: clientId,
         },
       });
+
+      await this.agreements.markFunded(escrow.proposalId, clientId, tx);
 
       return tx.escrow.findUniqueOrThrow({ where: { id: escrowId } });
     });
@@ -205,6 +215,8 @@ export class EscrowService {
           },
         });
       }
+
+      await this.agreements.markFunded(escrow.proposalId, payment.clientId, tx);
     });
 
     const fundedEscrow = await this.prisma.escrow.findUniqueOrThrow({
@@ -221,6 +233,9 @@ export class EscrowService {
   }
 
   async fundAndAccept(clientId: string, proposalId: string) {
+    await this.agreements.assertApprovedForFunding(proposalId);
+    await this.agreements.markPaymentPending(proposalId, clientId);
+
     const proposal = await this.loadProposalForClient(clientId, proposalId);
 
     const pendingFreelancerIds = (
@@ -236,8 +251,16 @@ export class EscrowService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       await this.ensureFundedEscrowInTx(tx, clientId, proposal);
-      return acceptProposalInTransaction(tx, proposalId, proposal.projectId);
+      const accepted = await acceptProposalInTransaction(
+        tx,
+        proposalId,
+        proposal.projectId,
+      );
+      await this.agreements.markFundedAndActive(proposalId, clientId, tx);
+      return accepted;
     });
+
+    await this.agreements.notifyFunded(proposalId);
 
     await this.notifications.create(
       proposal.freelancerId,
