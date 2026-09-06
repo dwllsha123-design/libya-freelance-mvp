@@ -28,6 +28,7 @@ function BrandName({
 }) {
   const t = useTranslations('brand');
   const locale = useLocale();
+  // Navbar/compact: plain name — kashida (nameStyled) looks muddy at ~16px.
   const label = compact ? t('name') : t('nameStyled');
 
   if (locale === 'ar') {
@@ -36,7 +37,7 @@ function BrandName({
     const rest = parts.slice(1).join(' ');
     return (
       <span
-        className={`font-display max-w-full truncate text-[1.05rem] font-bold leading-none tracking-tight ${className}`}
+        className={`font-sans max-w-full whitespace-nowrap text-[1.05rem] font-bold leading-none [text-rendering:geometricPrecision] [-webkit-font-smoothing:auto] [font-synthesis:none] ${className}`}
       >
         <span className="text-ink">{first}</span>
         {rest ? <span className="text-ember"> {rest}</span> : null}
@@ -46,7 +47,7 @@ function BrandName({
 
   return (
     <span
-      className={`font-display max-w-full truncate text-[1.05rem] font-bold leading-none tracking-tight text-ink ${className}`}
+      className={`font-sans max-w-full whitespace-nowrap text-[1.05rem] font-bold leading-none tracking-tight [text-rendering:geometricPrecision] [-webkit-font-smoothing:auto] ${className}`}
     >
       {label}
     </span>

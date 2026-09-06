@@ -236,7 +236,7 @@ export function Navbar() {
     ) : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur-md supports-[backdrop-filter]:bg-cream/90">
       <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
         {/* Brand — tools (lang/theme) move to drawer on small screens to free the bar */}
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 lg:flex-none lg:shrink-0">
@@ -252,7 +252,7 @@ export function Navbar() {
           <Logo
             compact
             iconClassName="size-8 sm:size-10"
-            nameClassName="hidden min-[380px]:inline-block max-w-[7.5rem] truncate text-[0.95rem] sm:max-w-none sm:text-[1.05rem]"
+            nameClassName="hidden min-[380px]:inline-block text-[0.98rem] sm:text-[1.08rem]"
           />
           <div className="hidden items-center gap-1.5 lg:flex">
             <LanguageSwitcher />
