@@ -466,6 +466,13 @@ export interface AdminDashboardOverview {
     suspended: number;
     banned: number;
   };
+  presence?: {
+    onlineNow: number;
+    freelancersOnline: number;
+    clientsOnline: number;
+    activeToday: number;
+    activeLast7Days: number;
+  };
   projects: {
     total: number;
     open: number;

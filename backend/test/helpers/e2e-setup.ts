@@ -4,7 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module.js';
-import { configureApp, createApp } from '../../src/bootstrap.js';
+import { attachRealtimeAdapter, configureApp, createApp } from '../../src/bootstrap.js';
 import { STORAGE_SERVICE } from '../../src/storage/storage.interface.js';
 import { TestStorageService } from './test-storage.service.js';
 import { isE2eRequired } from './e2e-require.js';
@@ -63,6 +63,7 @@ export async function createTestApp(options?: {
 
     const app = moduleRef.createNestApplication<NestExpressApplication>();
     configureApp(app);
+    await attachRealtimeAdapter(app);
     await app.init();
 
     const testApp = app as TestApp;

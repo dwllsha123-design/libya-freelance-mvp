@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import { join } from 'node:path';
 import { AppModule } from './app.module.js';
 import { authRateLimiters, isRateLimitDisabled } from './common/middleware/auth-rate-limit.js';
+import { RedisService } from './redis/redis.service.js';
+import { RedisIoAdapter } from './realtime/redis-io.adapter.js';
 
 export function configureApp(app: NestExpressApplication) {
   const expressApp = app.getHttpAdapter().getInstance();
@@ -66,8 +68,22 @@ export function configureApp(app: NestExpressApplication) {
   });
 }
 
+/** Prefer Redis Socket.IO adapter when RedisModule is present and REDIS_URL works. */
+export async function attachRealtimeAdapter(app: NestExpressApplication) {
+  try {
+    const redis = app.get(RedisService, { strict: false });
+    if (!redis) return;
+    const adapter = new RedisIoAdapter(app, redis);
+    await adapter.connect();
+    app.useWebSocketAdapter(adapter);
+  } catch {
+    // Probe apps without RedisModule keep the default in-memory adapter.
+  }
+}
+
 export async function createApp() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   configureApp(app);
+  await attachRealtimeAdapter(app);
   return app;
 }

@@ -8,12 +8,16 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PresenceService } from '../presence/presence.service.js';
 
 export type DashboardRange = '7d' | '30d' | '3m' | '6m' | '12m';
 
 @Injectable()
 export class AdminDashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly presence: PresenceService,
+  ) {}
 
   async getOverview(range: DashboardRange = '6m') {
     const now = new Date();
@@ -170,6 +174,35 @@ export class AdminDashboardService {
 
     const trends = await this.getTrends(range, rangeStart);
 
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [
+      onlineTotal,
+      onlineFreelancers,
+      onlineClients,
+      activeTodayDb,
+      activeLast7DaysDb,
+    ] = await Promise.all([
+      this.presence.countOnline(),
+      this.presence.countOnline(Role.FREELANCER),
+      this.presence.countOnline(Role.CLIENT),
+      this.prisma.user.count({
+        where: {
+          status: UserStatus.ACTIVE,
+          lastSeenAt: { gte: startOfToday },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          status: UserStatus.ACTIVE,
+          lastSeenAt: { gte: sevenDaysAgo },
+        },
+      }),
+    ]);
+
     return {
       range,
       rangeStart: rangeStart.toISOString(),
@@ -180,6 +213,13 @@ export class AdminDashboardService {
         admins,
         suspended: suspendedUsers,
         banned: bannedUsers,
+      },
+      presence: {
+        onlineNow: onlineTotal,
+        freelancersOnline: onlineFreelancers,
+        clientsOnline: onlineClients,
+        activeToday: Math.max(activeTodayDb, onlineTotal),
+        activeLast7Days: Math.max(activeLast7DaysDb, onlineTotal),
       },
       projects: {
         total: totalProjects,

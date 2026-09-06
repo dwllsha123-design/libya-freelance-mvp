@@ -11,6 +11,9 @@ import { isFreelancerVerified } from '@/lib/freelancer-trust';
 import { VerifiedBadge } from '@/components/trust/verified-badge';
 import { IdentityVerifiedBadge, ProBadge } from '@/components/trust/identity-pro-badges';
 import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
+import { PresenceDot } from '@/components/presence/presence-indicator';
+import { PresenceText } from '@/components/presence/presence-text';
+import { usePresenceStore } from '@/hooks/use-presence';
 
 function initials(first: string, last: string) {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
@@ -31,6 +34,11 @@ export function FreelancerCard({
   const hourlyRate = freelancer.freelancer?.hourlyRate;
   const verified = isFreelancerVerified(freelancer);
   const reviewCount = freelancer.reviews?.reviewCount;
+  const { getPresence } = usePresenceStore();
+  const presence =
+    (freelancer.userId ? getPresence(freelancer.userId) : null) ??
+    freelancer.presence ??
+    null;
 
   return (
     <Link
@@ -40,19 +48,24 @@ export function FreelancerCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        {freelancer.profilePhoto ? (
-          <Image
-            src={freelancer.profilePhoto}
-            alt=""
-            width={56}
-            height={56}
-            className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-surface-container"
-          />
-        ) : (
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-surface-container text-sm font-bold text-secondary">
-            {initials(freelancer.firstName, freelancer.lastName)}
+        <div className="relative shrink-0">
+          {freelancer.profilePhoto ? (
+            <Image
+              src={freelancer.profilePhoto}
+              alt=""
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-full object-cover ring-2 ring-surface-container"
+            />
+          ) : (
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-container text-sm font-bold text-secondary">
+              {initials(freelancer.firstName, freelancer.lastName)}
+            </span>
+          )}
+          <span className="absolute bottom-0 end-0">
+            <PresenceDot presence={presence} className="ring-surface" />
           </span>
-        )}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="truncate font-semibold text-on-surface">
@@ -65,6 +78,7 @@ export function FreelancerCard({
           <p className="truncate text-sm text-on-surface-variant">
             {freelancer.freelancer?.professionalTitle ?? t('defaultTitle')}
           </p>
+          <PresenceText presence={presence} className="mt-1" />
           {freelancer.city ? (
             <p className="mt-1 text-xs text-on-surface-variant">
               📍 {getLocalizedCityName(freelancer.city, locale)}

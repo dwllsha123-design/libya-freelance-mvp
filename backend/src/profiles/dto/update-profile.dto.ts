@@ -6,7 +6,11 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { FreelancerAvailability, WorkMode } from '@prisma/client';
+import {
+  FreelancerAvailability,
+  PresenceVisibility,
+  WorkMode,
+} from '@prisma/client';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -76,4 +80,8 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(50)
   organizationSize?: string;
+
+  @IsOptional()
+  @IsEnum(PresenceVisibility)
+  presenceVisibility?: PresenceVisibility;
 }

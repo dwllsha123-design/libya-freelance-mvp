@@ -88,6 +88,7 @@ export default function ProfileEditPage() {
         workMode: String(formData.get('workMode') ?? 'ON_SITE'),
         professionalTitle: String(formData.get('professionalTitle') ?? ''),
         displayName: String(formData.get('displayName') ?? ''),
+        presenceVisibility: String(formData.get('presenceVisibility') ?? 'EVERYONE'),
       });
       setSaveSuccess(true);
     } catch (err) {
@@ -210,6 +211,20 @@ export default function ProfileEditPage() {
               />
             </div>
           ) : null}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('presenceVisibility')}</label>
+            <select
+              name="presenceVisibility"
+              defaultValue={profile.presenceVisibility ?? 'EVERYONE'}
+              className="w-full rounded-lg border px-3 py-2"
+            >
+              <option value="EVERYONE">{t('presenceEveryone')}</option>
+              <option value="CLIENTS_ONLY">{t('presenceClientsOnly')}</option>
+              <option value="NOBODY">{t('presenceNobody')}</option>
+            </select>
+            <p className="mt-1 text-xs text-on-surface-variant">{t('presenceHint')}</p>
+          </div>
 
           <button
             type="submit"

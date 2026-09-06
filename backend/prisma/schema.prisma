@@ -20,6 +20,12 @@ enum UserStatus {
   BANNED
 }
 
+enum PresenceVisibility {
+  EVERYONE
+  CLIENTS_ONLY
+  NOBODY
+}
+
 enum WorkMode {
   ON_SITE
   REMOTE
@@ -289,6 +295,8 @@ model User {
   status        UserStatus @default(ACTIVE)
   emailVerified Boolean    @default(false)
   mustChangePassword Boolean @default(false)
+  lastSeenAt    DateTime?
+  presenceVisibility PresenceVisibility @default(EVERYONE)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -353,6 +361,7 @@ model User {
 
   @@index([role])
   @@index([status])
+  @@index([lastSeenAt])
 }
 
 model UserAdminPermission {
@@ -654,6 +663,7 @@ model Message {
   conversationId String
   senderId       String
   content        String
+  deliveredAt    DateTime?
   readAt         DateTime?
   createdAt      DateTime  @default(now())
 

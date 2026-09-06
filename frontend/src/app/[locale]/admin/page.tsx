@@ -116,6 +116,31 @@ export default function AdminDashboardPage() {
             />
           </div>
 
+          {stats.presence ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <AdminKpiCard
+                label={t('statOnlineNow')}
+                value={stats.presence.onlineNow}
+              />
+              <AdminKpiCard
+                label={t('statFreelancersOnline')}
+                value={stats.presence.freelancersOnline}
+              />
+              <AdminKpiCard
+                label={t('statClientsOnline')}
+                value={stats.presence.clientsOnline}
+              />
+              <AdminKpiCard
+                label={t('statActiveToday')}
+                value={stats.presence.activeToday}
+              />
+              <AdminKpiCard
+                label={t('statActiveLast7Days')}
+                value={stats.presence.activeLast7Days}
+              />
+            </div>
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <AdminKpiCard
               label={t('statTotalProjectValue')}

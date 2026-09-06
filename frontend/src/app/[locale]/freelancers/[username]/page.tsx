@@ -10,6 +10,9 @@ import { ProfileReviewsSection } from '@/components/rating/profile-reviews-secti
 import { VerifiedBadge } from '@/components/trust/verified-badge';
 import { IdentityVerifiedBadge, ProBadge } from '@/components/trust/identity-pro-badges';
 import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats';
+import { PresenceText } from '@/components/presence/presence-text';
+import { PresenceDot } from '@/components/presence/presence-indicator';
+import { usePresence } from '@/hooks/use-presence';
 import { isFreelancerVerified, getVerificationCriteria } from '@/lib/freelancer-trust';
 import { formatCurrency } from '@/lib/currency';
 import { getLocalizedCityName } from '@/lib/locale-content';
@@ -30,6 +33,8 @@ export default function FreelancerProfilePage() {
   const [selectedItem, setSelectedItem] = useState<PublicPortfolioItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const livePresence = usePresence(profile?.userId);
+  const presence = livePresence ?? profile?.presence ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -72,20 +77,25 @@ export default function FreelancerProfilePage() {
 
       <div className="mt-6 rounded-2xl border border-outline-variant/40 bg-surface p-8 shadow-sm">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          {profile.profilePhoto ? (
-            <Image
-              src={profile.profilePhoto}
-              alt=""
-              width={96}
-              height={96}
-              className="h-24 w-24 shrink-0 rounded-full object-cover ring-4 ring-surface-container"
-            />
-          ) : (
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-surface-container text-2xl font-bold text-secondary">
-              {profile.firstName.charAt(0)}
-              {profile.lastName.charAt(0)}
-            </div>
-          )}
+          <div className="relative shrink-0">
+            {profile.profilePhoto ? (
+              <Image
+                src={profile.profilePhoto}
+                alt=""
+                width={96}
+                height={96}
+                className="h-24 w-24 rounded-full object-cover ring-4 ring-surface-container"
+              />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-surface-container text-2xl font-bold text-secondary">
+                {profile.firstName.charAt(0)}
+                {profile.lastName.charAt(0)}
+              </div>
+            )}
+            <span className="absolute bottom-1 end-1">
+              <PresenceDot presence={presence} className="size-3 ring-surface" />
+            </span>
+          </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -98,6 +108,7 @@ export default function FreelancerProfilePage() {
               ) : null}
               {profile.freelancer?.isPro ? <ProBadge className="!text-xs" /> : null}
             </div>
+            <PresenceText presence={presence} className="mt-1 text-sm" />
             <p className="mt-2 text-lg text-on-surface-variant">
               {profile.freelancer?.professionalTitle ?? t('defaultTitle')}
             </p>

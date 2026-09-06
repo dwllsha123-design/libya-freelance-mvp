@@ -2,6 +2,13 @@
   "title": "Freelancers",
   "subtitle": "Profiles with ratings and completed projects — find the right Libyan talent for your project",
   "searchPlaceholder": "Search by name or professional title...",
+  "activityLabel": "Status:",
+  "activity": {
+    "all": "All",
+    "online": "Online now",
+    "active_today": "Active today",
+    "active_week": "Active this week"
+  },
   "noFreelancers": "No freelancers found",
   "loadError": "Failed to load freelancers",
   "viewProfile": "View profile",

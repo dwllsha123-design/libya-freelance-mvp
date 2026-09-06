@@ -10,10 +10,10 @@ import {
   type MessageItem,
 } from '@/hooks/use-messaging';
 import { useMessagingSocket } from '@/hooks/use-messaging-socket';
+import { usePresence } from '@/hooks/use-presence';
+import { PresenceText } from '@/components/presence/presence-text';
 import { ApiError } from '@/lib/api';
-import {
-  parseChatAttachment,
-} from '@/lib/message-attachment';
+import { parseChatAttachment } from '@/lib/message-attachment';
 import type { AppLocale } from '@/i18n/routing';
 
 function PaperclipIcon({ className = '' }: { className?: string }) {
@@ -35,6 +35,15 @@ function PaperclipIcon({ className = '' }: { className?: string }) {
   );
 }
 
+function receiptLabel(
+  message: MessageItem,
+  t: (key: string) => string,
+): string {
+  if (message.readAt) return t('receiptRead');
+  if (message.deliveredAt) return t('receiptDelivered');
+  return t('receiptSent');
+}
+
 export function ChatPanel({ conversationId }: { conversationId: string }) {
   const t = useTranslations('messaging');
   const tCommon = useTranslations('common');
@@ -49,21 +58,82 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimerRef = useRef<number | null>(null);
+  const peerTypingClearRef = useRef<number | null>(null);
+  const emitDeliveredRef = useRef<
+    ((conversationId: string, messageIds?: string[]) => void) | null
+  >(null);
   const timeLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
   const numberLocale = timeLocale;
 
-  const { joinConversation, sendMessage: sendSocket } = useMessagingSocket(
+  const otherId = conversation?.otherParticipant?.id;
+  const presence = usePresence(otherId);
+
+  const {
+    joinConversation,
+    sendMessage: sendSocket,
+    emitTyping,
+    emitDelivered,
+  } = useMessagingSocket(
     accessToken,
     (message) => {
-      if (message.conversationId === conversationId) {
-        setMessages((prev) =>
-          prev.some((m) => m.id === message.id) ? prev : [...prev, message],
-        );
+      if (message.conversationId !== conversationId) return;
+      setMessages((prev) =>
+        prev.some((m) => m.id === message.id) ? prev : [...prev, message],
+      );
+      if (message.senderId !== user?.id) {
+        emitDeliveredRef.current?.(conversationId, [message.id]);
+      }
+    },
+    (payload) => {
+      if (payload.conversationId !== conversationId) return;
+      const readAt = payload.readAt;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.senderId === user?.id && !m.readAt
+            ? { ...m, readAt, deliveredAt: m.deliveredAt ?? readAt }
+            : m,
+        ),
+      );
+    },
+    (payload) => {
+      if (payload.conversationId !== conversationId) return;
+      const deliveredAt = payload.deliveredAt;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.senderId !== user?.id || m.deliveredAt) return m;
+          if (payload.messageIds?.length && !payload.messageIds.includes(m.id)) {
+            return m;
+          }
+          return { ...m, deliveredAt };
+        }),
+      );
+    },
+    (payload) => {
+      if (
+        payload.conversationId !== conversationId ||
+        payload.userId === user?.id
+      ) {
+        return;
+      }
+      setPeerTyping(payload.typing);
+      if (peerTypingClearRef.current) {
+        window.clearTimeout(peerTypingClearRef.current);
+      }
+      if (payload.typing) {
+        peerTypingClearRef.current = window.setTimeout(() => {
+          setPeerTyping(false);
+        }, 4000);
       }
     },
   );
+
+  useEffect(() => {
+    emitDeliveredRef.current = emitDelivered;
+  }, [emitDelivered]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +148,12 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
           setConversation(conv);
           setMessages(msgs.items);
           await api.markRead(conversationId);
+          const incoming = msgs.items
+            .filter((m) => m.senderId !== user?.id && !m.deliveredAt)
+            .map((m) => m.id);
+          if (incoming.length) {
+            emitDeliveredRef.current?.(conversationId, incoming);
+          }
         }
       } catch {
         if (!cancelled) setError(t('loadFailed'));
@@ -89,7 +165,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [api, conversationId, t]);
+  }, [api, conversationId, t, user?.id]);
 
   useEffect(() => {
     joinConversation(conversationId);
@@ -97,7 +173,27 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, peerTyping]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      if (peerTypingClearRef.current) {
+        window.clearTimeout(peerTypingClearRef.current);
+      }
+    };
+  }, []);
+
+  function handleDraftChange(value: string) {
+    setDraft(value);
+    if (!conversation?.canSend) return;
+
+    emitTyping(conversationId, true);
+    if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = window.setTimeout(() => {
+      emitTyping(conversationId, false);
+    }, 1500);
+  }
 
   async function pushOutgoing(content: string) {
     try {
@@ -125,6 +221,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
 
     setIsSending(true);
     setError(null);
+    emitTyping(conversationId, false);
 
     try {
       await pushOutgoing(draft.trim());
@@ -178,6 +275,11 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
         <h2 className="break-words font-bold text-on-surface [overflow-wrap:anywhere]">
           {conversation?.otherParticipant?.name}
         </h2>
+        <PresenceText
+          presence={presence}
+          typing={peerTyping}
+          className="mt-0.5"
+        />
         <p className="mt-0.5 line-clamp-2 break-words text-sm text-slate-500 [overflow-wrap:anywhere]">
           {conversation?.project?.title}
         </p>
@@ -256,14 +358,22 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
                     </span>
                   )}
                   <p
-                    className={`mt-1 text-[10px] ${
+                    className={`mt-1 flex items-center gap-2 text-[10px] ${
                       isMine ? 'text-slate-300' : 'text-slate-400'
                     }`}
                   >
-                    {new Date(m.createdAt).toLocaleTimeString(timeLocale, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    <span>
+                      {new Date(m.createdAt).toLocaleTimeString(timeLocale, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    {isMine ? (
+                      <span aria-label={receiptLabel(m, t)}>
+                        {m.readAt ? '✓✓' : m.deliveredAt ? '✓✓' : '✓'}{' '}
+                        {receiptLabel(m, t)}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
               </div>
@@ -299,7 +409,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
             </button>
             <input
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => handleDraftChange(e.target.value)}
               placeholder={t('typeMessage')}
               className="min-w-0 flex-1 rounded-full border border-line bg-cream px-4 py-2.5 text-sm outline-none focus:border-ember focus:ring-1 focus:ring-ember"
               maxLength={5000}

@@ -85,4 +85,9 @@ export class EnvironmentVariables {
 
   @IsString()
   EMAIL_VERIFICATION_TOKEN_EXPIRES_IN: string = '24h';
+
+  /** Optional. When set, presence + Socket.IO adapter use Redis (multi-instance). */
+  @IsOptional()
+  @IsString()
+  REDIS_URL?: string;
 }

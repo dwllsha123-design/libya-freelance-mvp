@@ -102,6 +102,7 @@ export interface PublicPortfolioItem {
 }
 
 export interface PublicProfile {
+  userId?: string;
   username: string;
   firstName: string;
   lastName: string;
@@ -112,6 +113,12 @@ export interface PublicProfile {
   workMode: string;
   joinDate: string;
   role: UserRole;
+  presenceVisibility?: 'EVERYONE' | 'CLIENTS_ONLY' | 'NOBODY';
+  presence?: {
+    userId: string;
+    status: 'ONLINE' | 'RECENTLY_ACTIVE' | 'OFFLINE';
+    lastSeenAt: string | null;
+  };
   freelancer?: {
     professionalTitle?: string | null;
     availability: string;

@@ -1,21 +1,33 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Server } from 'socket.io';
 import { userNotificationRoom } from '../notifications/notifications.constants.js';
+import { PresenceService } from '../presence/presence.service.js';
 
 /**
- * Best-effort Socket.IO session control for a single Nest instance.
- * Multi-instance deployments require a shared adapter (e.g. Redis) for global disconnect.
+ * Socket.IO session control. With Redis adapter, disconnects propagate across replicas.
  */
 @Injectable()
 export class RealtimeSessionService {
   private readonly logger = new Logger(RealtimeSessionService.name);
   private server: Server | null = null;
 
+  constructor(private readonly presence: PresenceService) {}
+
   setServer(server: Server) {
     this.server = server;
   }
 
   async disconnectUser(userId: string): Promise<void> {
+    try {
+      await this.presence.forceOffline(userId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to clear presence for ${userId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
     if (!this.server) {
       return;
     }

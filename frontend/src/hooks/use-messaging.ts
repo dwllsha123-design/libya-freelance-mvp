@@ -15,6 +15,7 @@ export interface ConversationSummary {
     estimatedDurationDays?: number;
   } | null;
   otherParticipant: {
+    id?: string;
     name: string;
     username: string;
     profilePhoto?: string | null;
@@ -35,6 +36,7 @@ export interface MessageItem {
   conversationId: string;
   senderId: string;
   content: string;
+  deliveredAt?: string | null;
   readAt: string | null;
   createdAt: string;
 }

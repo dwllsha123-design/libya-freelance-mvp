@@ -31,6 +31,8 @@ import { ReferenceDataModule } from './reference-data/reference-data.module.js';
 import { AgreementsModule } from './agreements/agreements.module.js';
 import { VerificationModule } from './verification/verification.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
+import { RedisModule } from './redis/redis.module.js';
+import { PresenceModule } from './presence/presence.module.js';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
       validate,
     }),
     PrismaModule,
+    RedisModule,
+    PresenceModule,
     ReferenceDataModule,
     StorageModule,
     UsersModule,

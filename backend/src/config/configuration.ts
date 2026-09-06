@@ -78,4 +78,7 @@ export default () => ({
     /** When true, Nuqati point purchases go through the live payment provider. */
     pointsGatewayEnabled: process.env.PAYMENT_POINTS_GATEWAY_ENABLED === 'true',
   },
+  redis: {
+    url: process.env.REDIS_URL ?? '',
+  },
 });

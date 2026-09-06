@@ -434,7 +434,9 @@ Access tokens live in frontend memory only and travel as `Authorization: Bearer`
 - Auth: Bearer token in handshake (`auth.token`)
 - Transports: `websocket` + `polling` fallback
 - CORS: `CORS_ORIGINS` on backend
-- No Redis adapter (single instance). Document horizontal scaling as future work.
+- **Single replica (current Railway default):** in-memory presence is acceptable when `REDIS_URL` is unset.
+- **Multiple replicas:** set `REDIS_URL` (Railway Redis plugin). Presence + Socket.IO Redis adapter then share state. If `REDIS_URL` is set but Redis is down, presence **degrades** (reports offline / empty online lists) — it does **not** fall back to per-instance memory (avoids split-brain). Messaging/auth continue.
+- Optional: `PRESENCE_OFFLINE_GRACE_MS` (default `10000`)
 
 ---
 

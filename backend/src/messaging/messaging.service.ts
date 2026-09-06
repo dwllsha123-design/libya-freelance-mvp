@@ -426,13 +426,24 @@ export class MessagingService {
   async markRead(userId: string, conversationId: string) {
     await this.findMemberConversation(userId, conversationId);
 
+    const now = new Date();
     const result = await this.prisma.message.updateMany({
       where: {
         conversationId,
         senderId: { not: userId },
         readAt: null,
       },
-      data: { readAt: new Date() },
+      data: { readAt: now, deliveredAt: now },
+    });
+
+    // Also backfill delivery for any unread-delivered gap
+    await this.prisma.message.updateMany({
+      where: {
+        conversationId,
+        senderId: { not: userId },
+        deliveredAt: null,
+      },
+      data: { deliveredAt: now },
     });
 
     await this.notifications.markReadByTargetUrl(
@@ -442,9 +453,66 @@ export class MessagingService {
 
     return {
       conversationId,
+      readBy: userId,
       markedCount: result.count,
-      readAt: new Date(),
+      readAt: now,
     };
+  }
+
+  async markDelivered(
+    userId: string,
+    conversationId: string,
+    messageIds?: string[],
+  ) {
+    await this.findMemberConversation(userId, conversationId);
+
+    const now = new Date();
+    const where: Prisma.MessageWhereInput = {
+      conversationId,
+      senderId: { not: userId },
+      deliveredAt: null,
+    };
+    if (messageIds?.length) {
+      where.id = { in: messageIds.slice(0, 100) };
+    }
+
+    const result = await this.prisma.message.updateMany({
+      where,
+      data: { deliveredAt: now },
+    });
+
+    return {
+      conversationId,
+      deliveredBy: userId,
+      markedCount: result.count,
+      deliveredAt: now,
+      messageIds: messageIds?.slice(0, 100),
+    };
+  }
+
+  async getOtherParticipantId(
+    conversationId: string,
+    viewerId: string,
+  ): Promise<string | null> {
+    const other = await this.prisma.conversationMember.findFirst({
+      where: {
+        conversationId,
+        userId: { not: viewerId },
+      },
+      select: { userId: true },
+    });
+    return other?.userId ?? null;
+  }
+
+  async findActiveUsersByIds(userIds: string[]) {
+    return this.prisma.user.findMany({
+      where: { id: { in: userIds }, status: UserStatus.ACTIVE },
+      select: {
+        id: true,
+        role: true,
+        presenceVisibility: true,
+      },
+    });
   }
 
   async getUnreadCount(userId: string) {
@@ -621,6 +689,7 @@ export class MessagingService {
     const profile = user.profile;
 
     return {
+      id: user.id,
       name: profile
         ? `${profile.firstName} ${profile.lastName}`
         : 'مستخدم',
@@ -635,6 +704,7 @@ export class MessagingService {
     conversationId: string;
     senderId: string;
     content: string;
+    deliveredAt?: Date | null;
     readAt: Date | null;
     createdAt: Date;
   }) {
@@ -643,6 +713,7 @@ export class MessagingService {
       conversationId: message.conversationId,
       senderId: message.senderId,
       content: message.content,
+      deliveredAt: message.deliveredAt ?? null,
       readAt: message.readAt,
       createdAt: message.createdAt,
     };

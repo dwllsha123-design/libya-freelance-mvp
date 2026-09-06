@@ -8,6 +8,7 @@ import '../globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
 import { SocketProvider } from '@/contexts/socket-context';
+import { PresenceProvider } from '@/hooks/use-presence';
 import { AppChrome } from '@/components/layout/app-chrome';
 import { WebPushEnabler } from '@/components/notifications/web-push-enabler';
 import { routing, type AppLocale } from '@/i18n/routing';
@@ -102,8 +103,10 @@ export default async function LocaleLayout({
           <ThemeProvider>
             <AuthProvider>
               <SocketProvider>
-                <WebPushEnabler />
-                <AppChrome>{children}</AppChrome>
+                <PresenceProvider>
+                  <WebPushEnabler />
+                  <AppChrome>{children}</AppChrome>
+                </PresenceProvider>
               </SocketProvider>
             </AuthProvider>
           </ThemeProvider>

@@ -5,6 +5,9 @@ import { Link, usePathname } from '@/i18n/navigation';
 import type { ConversationSummary } from '@/hooks/use-messaging';
 import { previewMessageContent } from '@/lib/message-attachment';
 import type { AppLocale } from '@/i18n/routing';
+import { PresenceDot } from '@/components/presence/presence-indicator';
+import { PresenceText } from '@/components/presence/presence-text';
+import { usePresenceSubscription } from '@/hooks/use-presence';
 
 export function ConversationList({
   conversations,
@@ -18,6 +21,11 @@ export function ConversationList({
   const locale = useLocale() as AppLocale;
   const pathname = usePathname();
   const dateLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
+
+  const otherIds = conversations
+    .map((c) => c.otherParticipant?.id)
+    .filter((id): id is string => !!id);
+  const presenceMap = usePresenceSubscription(otherIds);
 
   if (isLoading) {
     return <p className="p-4 text-sm text-slate-500">{tCommon('loadingPage')}</p>;
@@ -34,6 +42,8 @@ export function ConversationList({
       {conversations.map((c) => {
         const href = `/messages/${c.conversationId}`;
         const active = pathname === href;
+        const otherId = c.otherParticipant?.id;
+        const presence = otherId ? presenceMap[otherId] : null;
 
         return (
           <li key={c.conversationId}>
@@ -45,9 +55,17 @@ export function ConversationList({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-on-surface">
-                    {c.otherParticipant?.name ?? t('unknownUser')}
+                  <p className="flex items-center gap-1.5 truncate font-semibold text-on-surface">
+                    <PresenceDot presence={presence} />
+                    <span className="truncate">
+                      {c.otherParticipant?.name ?? t('unknownUser')}
+                    </span>
                   </p>
+                  <PresenceText
+                    presence={presence}
+                    showDot={false}
+                    className="mt-0.5"
+                  />
                   <p className="truncate text-xs text-slate-500">
                     {c.project?.title}
                   </p>

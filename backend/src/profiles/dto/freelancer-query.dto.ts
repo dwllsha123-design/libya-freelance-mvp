@@ -1,6 +1,6 @@
 import { PAGINATION_MAX_LIMIT } from '../../common/constants/pagination.constants.js';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class FreelancerQueryDto {
   @IsOptional()
@@ -27,4 +27,9 @@ export class FreelancerQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  /** Presence filter: all | online | active_today | active_week */
+  @IsOptional()
+  @IsIn(['all', 'online', 'active_today', 'active_week'])
+  activity?: 'all' | 'online' | 'active_today' | 'active_week' = 'all';
 }

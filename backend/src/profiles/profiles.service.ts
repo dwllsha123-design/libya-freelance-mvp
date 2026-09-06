@@ -5,7 +5,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FreelancerSubscriptionStatus, IdentityVerificationStatus, Prisma } from '@prisma/client';
+import {
+  FreelancerSubscriptionStatus,
+  IdentityVerificationStatus,
+  PresenceVisibility,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { FreelancerQueryDto } from './dto/freelancer-query.dto.js';
@@ -19,6 +25,8 @@ import { ReviewsService } from '../reviews/reviews.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { isFreelancerVerified } from './freelancer-verification.util.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
+import { PresenceService } from '../presence/presence.service.js';
+import type { PresenceSnapshot } from '../presence/presence.types.js';
 
 const profileInclude = {
   city: true,
@@ -38,6 +46,8 @@ const profileInclude = {
       status: true,
       emailVerified: true,
       createdAt: true,
+      lastSeenAt: true,
+      presenceVisibility: true,
       identityVerification: {
         select: { status: true, expiresAt: true },
       },
@@ -46,7 +56,7 @@ const profileInclude = {
           status: FreelancerSubscriptionStatus.ACTIVE,
         },
         select: { status: true, expiresAt: true },
-        orderBy: { expiresAt: 'desc' },
+        orderBy: { expiresAt: 'desc' as const },
         take: 3,
       },
     },
@@ -62,6 +72,7 @@ export class ProfilesService {
     private readonly reviews: ReviewsService,
     private readonly nuqatiService: NuqatiService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly presence: PresenceService,
   ) {}
 
   async getMyProfile(userId: string) {
@@ -176,6 +187,13 @@ export class ProfilesService {
         });
       }
 
+      if (dto.presenceVisibility !== undefined) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { presenceVisibility: dto.presenceVisibility },
+        });
+      }
+
       return tx.profile.findUnique({
         where: { userId },
         include: profileInclude,
@@ -250,6 +268,43 @@ export class ProfilesService {
       ];
     }
 
+    const activity = query.activity ?? 'all';
+    if (activity === 'online') {
+      let onlineIds = await this.presence.getOnlineUserIds(Role.FREELANCER);
+      // Public listing (no viewer): only EVERYONE visibility may appear as "online"
+      onlineIds = await this.filterOnlineIdsForPublicVisibility(onlineIds);
+      if (onlineIds.length === 0) {
+        return {
+          data: [],
+          meta: { page, limit, total: 0, totalPages: 0 },
+        };
+      }
+      where.userId = { in: onlineIds };
+    } else if (activity === 'active_today' || activity === 'active_week') {
+      let onlineIds = await this.presence.getOnlineUserIds(Role.FREELANCER);
+      onlineIds = await this.filterOnlineIdsForPublicVisibility(onlineIds);
+      const since = new Date();
+      if (activity === 'active_today') {
+        since.setHours(0, 0, 0, 0);
+      } else {
+        since.setDate(since.getDate() - 7);
+      }
+      where.AND = [
+        {
+          OR: [
+            ...(onlineIds.length ? [{ userId: { in: onlineIds } }] : []),
+            {
+              user: {
+                lastSeenAt: { gte: since },
+                // Public: hide last-seen for private visibility users
+                presenceVisibility: PresenceVisibility.EVERYONE,
+              },
+            },
+          ],
+        },
+      ];
+    }
+
     const [items, total] = await Promise.all([
       this.prisma.profile.findMany({
         where,
@@ -266,8 +321,20 @@ export class ProfilesService {
       this.prisma.profile.count({ where }),
     ]);
 
+    const presenceMap = await this.buildPresenceMap(
+      items.map((p) => p.userId),
+      null,
+    );
+
     return {
-      data: items.map((p) => this.formatProfile(p, false)),
+      data: items.map((p) => ({
+        ...this.formatProfile(p, false),
+        presence: presenceMap.get(p.userId) ?? {
+          userId: p.userId,
+          status: 'OFFLINE' as const,
+          lastSeenAt: null,
+        },
+      })),
       meta: {
         page,
         limit,
@@ -296,8 +363,15 @@ export class ProfilesService {
 
     void this.subscriptions.recordProfileView(profile.userId).catch(() => undefined);
 
+    const presenceMap = await this.buildPresenceMap([profile.userId], null);
+
     return {
       ...this.formatProfile(profile, false),
+      presence: presenceMap.get(profile.userId) ?? {
+        userId: profile.userId,
+        status: 'OFFLINE' as const,
+        lastSeenAt: null,
+      },
       portfolio,
       reviews,
     };
@@ -330,6 +404,7 @@ export class ProfilesService {
     includePrivate: boolean,
   ) {
     const base = {
+      userId: profile.userId,
       username: profile.username,
       firstName: profile.firstName,
       lastName: profile.lastName,
@@ -358,6 +433,8 @@ export class ProfilesService {
         phone: profile.phone,
         status: profile.user.status,
         emailVerified: profile.user.emailVerified,
+        presenceVisibility: profile.user.presenceVisibility,
+        lastSeenAt: profile.user.lastSeenAt,
         freelancer: profile.freelancerProfile
           ? {
               professionalTitle: profile.freelancerProfile.professionalTitle,
@@ -402,6 +479,30 @@ export class ProfilesService {
           }
         : null,
     };
+  }
+
+  private async buildPresenceMap(
+    userIds: string[],
+    viewer: { id: string; role: Role } | null,
+  ): Promise<Map<string, PresenceSnapshot>> {
+    const items = await this.presence.getPresenceBatch(userIds, viewer);
+    return new Map(items.map((item) => [item.userId, item]));
+  }
+
+  /** Public online filter must not surface users who hide presence. */
+  private async filterOnlineIdsForPublicVisibility(
+    onlineIds: string[],
+  ): Promise<string[]> {
+    if (onlineIds.length === 0) return [];
+    const rows = await this.prisma.user.findMany({
+      where: {
+        id: { in: onlineIds },
+        status: 'ACTIVE',
+        presenceVisibility: PresenceVisibility.EVERYONE,
+      },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
   }
 
   private formatPublicFreelancer(
