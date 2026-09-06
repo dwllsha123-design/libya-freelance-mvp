@@ -9,7 +9,6 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NuqatiBadge } from '@/components/nuqati/points-badge';
 import { useUnreadMessageCount } from '@/hooks/use-unread-messages';
 import { Logo } from '@/components/brand/logo';
-import { NavSearch } from '@/components/layout/nav-search';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { DemoVideoModal } from '@/components/layout/demo-video-modal';
@@ -30,7 +29,7 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
         active
           ? 'bg-ink text-cream'
           : 'text-ink-soft hover:bg-cream-deep hover:text-ink'
@@ -60,11 +59,11 @@ function NavDropdown({
   }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
+        className={`flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors xl:px-4 ${
           open ? 'bg-cream-deep text-ink' : 'text-ink-soft hover:bg-cream-deep hover:text-ink'
         }`}
       >
@@ -269,18 +268,13 @@ export function Navbar() {
           <NavDropdown label={t('findWork')} items={browseMenu} />
           <NavDropdown label={t('myActivity')} items={activityMenu} />
           {user ? (
-            <>
-              <NavLink href="/dashboard" active={pathname === '/dashboard'}>
-                {t('dashboard')}
-              </NavLink>
-              <Link
-                href="/messages"
-                className="relative inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink xl:px-4"
-              >
-                {t('messages')}
-                {messageBadge}
-              </Link>
-            </>
+            <Link
+              href="/messages"
+              className="relative inline-flex items-center whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink xl:px-4"
+            >
+              {t('messages')}
+              {messageBadge}
+            </Link>
           ) : (
             <NavLink href="/how-it-works" active={pathname.startsWith('/how-it-works')}>
               {t('howItWorks')}
@@ -291,7 +285,6 @@ export function Navbar() {
         {/* Actions — bell stays in the bar on all sizes; lang/theme live in the drawer on mobile */}
         <div className="ms-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <div className="hidden items-center gap-1.5 lg:flex">
-            <NavSearch compact />
             <button
               type="button"
               onClick={() => setDemoOpen(true)}
