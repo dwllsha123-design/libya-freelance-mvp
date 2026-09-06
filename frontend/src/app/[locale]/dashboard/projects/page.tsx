@@ -114,7 +114,7 @@ export default function ClientProjectsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="page-gutter page-shell page-shell--app page-shell--padded">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-on-surface">{tDashboard('myProjects')}</h1>
         <Link

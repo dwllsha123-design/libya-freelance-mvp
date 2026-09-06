@@ -289,7 +289,7 @@ export function AdminShell({
 
   return (
     <div className="min-h-screen bg-[#f3f4f5]" dir="rtl">
-      <aside className="fixed inset-y-0 right-0 z-30 hidden w-[280px] border-l border-slate-200 bg-white lg:block">
+      <aside className="fixed inset-y-0 end-0 z-30 hidden w-[min(100%,280px)] border-s border-slate-200 bg-white lg:block">
         {sidebar}
       </aside>
 
@@ -301,13 +301,13 @@ export function AdminShell({
             aria-label="close"
             onClick={() => setDrawerOpen(false)}
           />
-          <aside className="absolute inset-y-0 right-0 w-[min(100%,290px)] bg-white shadow-xl">
+          <aside className="absolute inset-y-0 end-0 w-[min(100%,290px)] bg-white shadow-xl">
             {sidebar}
           </aside>
         </div>
       ) : null}
 
-      <div className="lg:mr-[280px]">
+      <div className="min-w-0 lg:me-[280px]">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="flex items-center gap-3 px-4 py-3 md:px-6">
             <button
@@ -447,7 +447,9 @@ export function AdminShell({
           </div>
         </header>
 
-        <main className="mx-auto min-w-0 max-w-[1600px] px-4 py-6 md:px-6">{children}</main>
+        <main className="page-gutter page-shell page-shell--full mx-auto min-w-0 py-6">
+          {children}
+        </main>
       </div>
     </div>
   );

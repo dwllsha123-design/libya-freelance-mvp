@@ -255,9 +255,9 @@ export function FreelancerDashboard() {
 
   return (
     <div className="bg-transparent">
-      <div className="page-gutter mx-auto max-w-3xl py-8 sm:py-10">
+      <div className="page-gutter page-shell page-shell--app page-shell--padded">
         <header className="animate-fade-up">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+          <h1 className="fluid-h1 font-display font-bold tracking-tight text-ink">
             {t('title')}
           </h1>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -292,7 +292,7 @@ export function FreelancerDashboard() {
           <p className="mt-2 text-sm text-error">{switchError}</p>
         ) : null}
 
-        <div className="mt-6 grid animate-fade-up grid-cols-2 gap-3" style={{ animationDelay: '80ms' }}>
+        <div className="stats-grid mt-6 animate-fade-up" style={{ animationDelay: '80ms' }}>
           <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
               <ClockIcon />

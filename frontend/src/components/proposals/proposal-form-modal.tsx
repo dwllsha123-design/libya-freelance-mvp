@@ -462,7 +462,8 @@ function ProposalFormModalBody({
                     {t('boostBoardEmpty')}
                   </p>
                 ) : (
-                  <table className="w-full text-sm">
+                  <div className="responsive-table">
+                  <table className="w-full min-w-[20rem] text-sm">
                     <thead>
                       <tr className="border-b border-line/60 text-start text-xs text-ink-soft">
                         <th className="px-3 py-2 font-medium">{t('boostRank')}</th>
@@ -497,6 +498,7 @@ function ProposalFormModalBody({
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
 

@@ -81,7 +81,7 @@ function CompleteProfileFields({
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-6xl flex-col px-4 py-8 lg:flex-row lg:items-stretch lg:gap-12 lg:py-12">
+    <div className="page-gutter page-shell page-shell--app flex min-h-0 flex-col py-8 lg:flex-row lg:items-stretch lg:gap-8 lg:py-12 xl:gap-12">
       <section className="flex flex-col justify-center lg:w-2/5 lg:py-8">
         <div className="mb-6 lg:hidden">
           <Logo href="/" />

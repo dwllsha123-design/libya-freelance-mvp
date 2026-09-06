@@ -158,7 +158,7 @@ export function ClientDashboard() {
 
   return (
     <div className="bg-transparent">
-      <div className="page-gutter mx-auto max-w-3xl py-8 sm:py-10">
+      <div className="page-gutter page-shell page-shell--app page-shell--padded">
         {!promoDismissed ? (
           <div className="relative mb-6 animate-fade-up overflow-hidden rounded-2xl border border-line bg-cream-deep/80 p-4 sm:p-5">
             <button
@@ -233,7 +233,7 @@ export function ClientDashboard() {
         {switchError ? <p className="mt-2 text-sm text-error">{switchError}</p> : null}
 
         <div
-          className="mt-6 grid animate-fade-up grid-cols-2 gap-3"
+          className="stats-grid mt-6 animate-fade-up"
           style={{ animationDelay: '100ms' }}
         >
           <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">

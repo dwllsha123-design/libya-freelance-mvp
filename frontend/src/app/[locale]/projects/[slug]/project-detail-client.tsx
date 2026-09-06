@@ -199,7 +199,7 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
           ))}
         </div>
 
-        <div className="mt-8 grid min-w-0 gap-8 md:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)]">
           <div className="min-w-0">
             <h2 className="font-display text-xl font-semibold text-ink">
               {t('offerDetailsCard')}
@@ -328,13 +328,13 @@ export default function ProjectDetailClient({ slug }: { slug: string }) {
       {showStickyApply ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-cream/95 backdrop-blur md:hidden">
           <div className="page-gutter flex items-center justify-between gap-3 py-3">
-            <div className="text-sm text-ink-soft">
+            <div className="min-w-0 flex-1 truncate text-sm text-ink-soft">
               {t('applyNowWithCost', { cost: submitCost })}
             </div>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="rounded-full bg-ember px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-ember-deep"
+              className="shrink-0 rounded-full bg-ember px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-ember-deep sm:px-6"
             >
               {t('applyNow')}
             </button>

@@ -38,24 +38,30 @@ export default function MessagesLayoutClient({
   }, [user, api]);
 
   if (authLoading) {
-    return <div className="p-8 text-center">{tCommon('loadingPage')}</div>;
+    return <div className="page-gutter py-8 text-center">{tCommon('loadingPage')}</div>;
   }
 
   if (!user) {
-    return <div className="p-8 text-center">{t('loginRequired')}</div>;
+    return <div className="page-gutter py-8 text-center">{t('loginRequired')}</div>;
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-0 w-full max-w-6xl flex-1 overflow-hidden bg-cream sm:h-[calc(100dvh-4rem)] lg:rounded-xl lg:border lg:border-line lg:bg-white lg:shadow-sm">
-      <aside className="hidden w-full max-w-sm shrink-0 border-s border-line lg:block lg:w-80">
-        <div className="border-b border-line p-4">
-          <h1 className="text-xl font-bold text-on-surface">{t('title')}</h1>
+    <div className="page-gutter flex w-full min-w-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)] lg:py-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 overflow-hidden bg-cream lg:rounded-xl lg:border lg:border-line lg:bg-white lg:shadow-sm">
+        <div className="flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom,0px))] min-h-0 w-full sm:h-[calc(100dvh-4rem-env(safe-area-inset-bottom,0px))] lg:h-[min(720px,calc(100dvh-6rem))]">
+          <aside className="hidden min-h-0 w-full max-w-sm shrink-0 border-s border-line lg:flex lg:w-72 lg:max-w-none lg:flex-col xl:w-80">
+            <div className="shrink-0 border-b border-line p-4">
+              <h1 className="text-xl font-bold text-on-surface">{t('title')}</h1>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ConversationList conversations={conversations} isLoading={isLoading} />
+            </div>
+          </aside>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
+            {children}
+          </main>
         </div>
-        <ConversationList conversations={conversations} isLoading={isLoading} />
-      </aside>
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        {children}
-      </main>
+      </div>
     </div>
   );
 }

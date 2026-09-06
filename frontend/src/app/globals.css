@@ -92,6 +92,8 @@
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   background:
     radial-gradient(90% 60% at 100% 0%, rgba(234, 88, 12, 0.08) 0%, transparent 55%),
     radial-gradient(80% 60% at 0% 5%, rgba(5, 150, 105, 0.06) 0%, transparent 50%),
@@ -102,6 +104,11 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
 }
 
 .dark body {
@@ -278,7 +285,7 @@ textarea {
   font: inherit;
 }
 
-/* Shared horizontal padding: phone → tablet → desktop */
+/* Shared horizontal padding: phone → tablet → laptop → desktop → large */
 .page-gutter {
   padding-inline: max(1rem, env(safe-area-inset-left))
     max(1rem, env(safe-area-inset-right));
@@ -289,10 +296,135 @@ textarea {
       max(1.25rem, env(safe-area-inset-right));
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .page-gutter {
     padding-inline: max(1.5rem, env(safe-area-inset-left))
       max(1.5rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1024px) {
+  .page-gutter {
+    padding-inline: max(1.75rem, env(safe-area-inset-left))
+      max(1.75rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1280px) {
+  .page-gutter {
+    padding-inline: max(2rem, env(safe-area-inset-left))
+      max(2rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1536px) {
+  .page-gutter {
+    padding-inline: max(2.5rem, env(safe-area-inset-left))
+      max(2.5rem, env(safe-area-inset-right));
+  }
+}
+
+/* Page shell variants — different max widths by use-case */
+.page-shell {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.page-shell--content {
+  max-width: 56rem; /* ~896px — reading / profile detail */
+}
+.page-shell--app {
+  max-width: 80rem; /* ~1280px — marketplace */
+}
+@media (min-width: 1536px) {
+  .page-shell--app {
+    max-width: 90rem; /* ~1440px */
+  }
+}
+.page-shell--full {
+  max-width: 112rem; /* ~1792px — dashboards / tables */
+}
+
+.page-shell--padded {
+  padding-block: 1.5rem;
+}
+@media (min-width: 640px) {
+  .page-shell--padded {
+    padding-block: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .page-shell--padded {
+    padding-block: 2.5rem;
+  }
+}
+
+/* Adaptive auto-fit card grid */
+.responsive-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--rg-min, 280px)), 1fr)
+  );
+}
+
+.responsive-grid > * {
+  min-width: 0;
+  width: 100%;
+}
+
+/* KPI / stats redistribution */
+.stats-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+@media (min-width: 640px) {
+  .stats-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  }
+}
+@media (min-width: 1280px) {
+  .stats-grid {
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.75rem), 1fr));
+  }
+}
+
+.responsive-table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.responsive-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Fluid section titles */
+.fluid-h1 {
+  font-size: clamp(1.5rem, 1.15rem + 1.5vw, 2.25rem);
+  line-height: 1.2;
+}
+.fluid-h2 {
+  font-size: clamp(1.25rem, 1.05rem + 1vw, 1.75rem);
+  line-height: 1.25;
+}
+
+/* Container query host for reusable cards */
+.cq-host {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+}
+
+@container (max-width: 360px) {
+  .cq-card-stack {
+    flex-direction: column;
   }
 }
 

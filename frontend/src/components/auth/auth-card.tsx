@@ -14,7 +14,7 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
   const t = useTranslations('brand');
 
   return (
-    <div className="mx-auto w-full max-w-md rounded-3xl border border-line bg-surface p-8 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)]">
+    <div className="mx-auto w-full max-w-md rounded-3xl border border-line bg-surface p-5 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] sm:p-8">
       <div className="mb-8 text-center">
         <div className="flex justify-center">
           <Logo href="/" />

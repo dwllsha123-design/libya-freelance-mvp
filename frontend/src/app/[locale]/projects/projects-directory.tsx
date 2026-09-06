@@ -117,11 +117,11 @@ export default function ProjectsDirectoryPage() {
   }
 
   return (
-    <div className="page-gutter mx-auto max-w-6xl py-8 md:py-10">
-      <h1 className="font-display text-3xl font-bold text-ink">{t('browseTitle')}</h1>
+    <div className="page-gutter page-shell page-shell--app page-shell--padded">
+      <h1 className="fluid-h1 font-display font-bold text-ink">{t('browseTitle')}</h1>
 
-      <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start">
-        <aside className="hidden lg:block lg:w-72 lg:shrink-0">
+      <div className="sidebar-layout mt-6 grid min-w-0 gap-4 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] lg:gap-6">
+        <aside className="hidden min-w-0 lg:block">
           <div className="sticky top-24 rounded-2xl border border-line bg-cream p-4 shadow-[0_8px_24px_-16px_rgba(21,32,60,0.25)]">
             <ProjectFiltersSidebar
               filters={filters}
@@ -142,7 +142,7 @@ export default function ProjectsDirectoryPage() {
               aria-label={t('closeFilters')}
               onClick={() => setMobileFiltersOpen(false)}
             />
-            <div className="absolute inset-y-0 end-0 w-full max-w-sm overflow-y-auto border-s border-line bg-cream p-4 shadow-xl">
+            <div className="absolute inset-y-0 end-0 flex w-full max-w-sm flex-col overflow-y-auto border-s border-line bg-cream p-4 shadow-xl pb-[env(safe-area-inset-bottom)]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-display font-bold text-ink">{t('filterProjects')}</h2>
                 <button
@@ -165,58 +165,62 @@ export default function ProjectsDirectoryPage() {
           </div>
         ) : null}
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex overflow-hidden rounded-xl border border-line">
-              {(['list', 'grid'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setView(v)}
-                  className={`px-3 py-2 text-sm font-medium transition-colors ${
-                    view === v ? 'bg-ink text-cream' : 'bg-cream text-ink-soft hover:bg-cream-deep'
-                  }`}
-                  aria-pressed={view === v}
-                >
-                  {v === 'list' ? '☰' : '▦'}
-                </button>
-              ))}
-            </div>
-            <div className="relative min-w-0 flex-1">
-              <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-ink-soft">
-                ⌕
-              </span>
-              <input
-                key={filters.q}
-                data-project-search
-                defaultValue={filters.q}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') submitSearch();
-                }}
-                placeholder={t('searchJobsPlaceholder')}
-                className="w-full rounded-xl border border-line bg-cream py-2.5 pe-4 ps-9 text-sm shadow-sm outline-none ring-ember/30 focus:ring-2"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={submitSearch}
-              className="rounded-xl bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-ember-deep"
-            >
-              {tCommon('search')}
-            </button>
-            <button
-              type="button"
-              className="relative rounded-xl border border-line bg-cream px-4 py-2 text-sm text-ink lg:hidden"
-              onClick={() => setMobileFiltersOpen(true)}
-            >
-              {t('filter')}
-              {activeFilterCount > 0 ? (
-                <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ember text-xs text-white">
-                  {activeFilterCount}
+        <div className="min-w-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="order-2 flex min-w-0 flex-1 gap-2 sm:order-1">
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-ink-soft">
+                  ⌕
                 </span>
-              ) : null}
-            </button>
+                <input
+                  key={filters.q}
+                  data-project-search
+                  defaultValue={filters.q}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitSearch();
+                  }}
+                  placeholder={t('searchJobsPlaceholder')}
+                  className="w-full rounded-xl border border-line bg-cream py-2.5 pe-4 ps-9 text-sm shadow-sm outline-none ring-ember/30 focus:ring-2"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={submitSearch}
+                className="shrink-0 rounded-xl bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-ember-deep"
+              >
+                {tCommon('search')}
+              </button>
+            </div>
+            <div className="order-1 flex items-center gap-2 sm:order-2">
+              <div className="flex overflow-hidden rounded-xl border border-line">
+                {(['list', 'grid'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setView(v)}
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${
+                      view === v ? 'bg-ink text-cream' : 'bg-cream text-ink-soft hover:bg-cream-deep'
+                    }`}
+                    aria-pressed={view === v}
+                  >
+                    {v === 'list' ? '☰' : '▦'}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="relative rounded-xl border border-line bg-cream px-4 py-2 text-sm text-ink lg:hidden"
+                onClick={() => setMobileFiltersOpen(true)}
+              >
+                {t('filter')}
+                {activeFilterCount > 0 ? (
+                  <span className="absolute -start-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ember text-xs text-white">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -244,8 +248,13 @@ export default function ProjectsDirectoryPage() {
 
           <div
             className={`mt-6 ${
-              view === 'grid' ? 'grid gap-4 sm:grid-cols-2' : 'space-y-4'
+              view === 'grid'
+                ? 'responsive-grid gap-4'
+                : 'space-y-4'
             }`}
+            style={
+              view === 'grid' ? { ['--rg-min' as string]: '300px' } : undefined
+            }
           >
             {data?.items.map((project) => (
               <Link

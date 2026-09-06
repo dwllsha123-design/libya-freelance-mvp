@@ -67,7 +67,7 @@ export default function FreelancerProfilePage() {
   const hourlyRate = profile.freelancer?.hourlyRate;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="page-gutter page-shell page-shell--content page-shell--padded">
       <BackLink href="/freelancers">{t('backToFreelancers')}</BackLink>
 
       <div className="mt-6 rounded-2xl border border-outline-variant/40 bg-surface p-8 shadow-sm">

@@ -119,7 +119,7 @@ export default function PortfolioDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="page-gutter page-shell page-shell--app page-shell--padded">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>

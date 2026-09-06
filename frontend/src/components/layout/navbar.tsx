@@ -237,7 +237,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur-md supports-[backdrop-filter]:bg-cream/90">
-      <div className="page-gutter mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-16 sm:gap-3">
+      <div className="page-gutter mx-auto flex h-14 w-full max-w-[90rem] items-center gap-2 sm:h-16 sm:gap-3">
         {/* Brand — tools (lang/theme) move to drawer on small screens to free the bar */}
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 lg:flex-none lg:shrink-0">
           <button

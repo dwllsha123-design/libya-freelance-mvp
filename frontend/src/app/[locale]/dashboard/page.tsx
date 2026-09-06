@@ -44,7 +44,7 @@ export default function DashboardPage() {
 
   if (user.role === 'ADMIN') {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="page-gutter page-shell page-shell--app page-shell--padded">
         <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
         <p className="mt-4 text-slate-600">
           <Link href="/admin" className="font-semibold text-primary">
