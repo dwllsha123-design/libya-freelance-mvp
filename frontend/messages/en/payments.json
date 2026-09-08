@@ -20,7 +20,7 @@
   "statusFailed": "Failed",
   "statusCancelled": "Cancelled",
   "statusRefunded": "Refunded",
-  "modeSimulated": "Current funding is simulated until a Libyan payment gateway is connected.",
-  "modeRedirect": "You will be redirected to the payment gateway to complete the transaction securely.",
-  "modeDefault": "The amount will be charged via the active payment gateway."
+  "modeSimulated": "Payment protection coming soon. Current funding is simulated only and does not mean an electronic payment gateway is live.",
+  "modeRedirect": "The electronic payment gateway is being prepared and will be available soon.",
+  "modeDefault": "Payment protection and electronic payments are not enabled yet — coming soon."
 }

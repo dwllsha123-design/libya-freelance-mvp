@@ -54,8 +54,30 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'brand' });
 
   return {
-    title: `${t('name')} | Libyi Freelance`,
+    title: t('name'),
     description: t('tagline'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://libyanfreelance.ly'),
+    alternates: {
+      canonical: locale === 'en' ? '/en' : '/',
+      languages: {
+        'ar-LY': '/',
+        en: '/en',
+        'x-default': '/',
+      },
+    },
+    openGraph: {
+      title: t('name'),
+      description: t('tagline'),
+      locale: locale === 'en' ? 'en' : 'ar_LY',
+      alternateLocale: locale === 'en' ? ['ar_LY'] : ['en'],
+      type: 'website',
+      siteName: 'Libyan Freelance',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('name'),
+      description: t('tagline'),
+    },
     icons: {
       icon: [
         { url: '/favicon.ico', sizes: 'any' },

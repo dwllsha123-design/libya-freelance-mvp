@@ -4,7 +4,7 @@
   "contactTitle": "Contact",
   "helpTitle": "Help center",
   "howItWorksTitle": "How it works",
-  "escrowTitle": "Escrow",
+  "escrowTitle": "Payment protection — coming soon",
   "privacyTitle": "Privacy policy",
   "termsTitle": "Terms of service",
   "sitemapTitle": "Sitemap",
@@ -12,7 +12,7 @@
   "joinFreelancerCta": "Join as a Libyan freelancer",
   "escrowLedgerCta": "Escrow ledger",
   "paymentInquiryCta": "Payment inquiry",
-  "escrowPageLink": "escrow page",
+  "escrowPageLink": "payment protection page",
   "contactPageLink": "contact page",
   "privacyPageLink": "privacy policy"
 }

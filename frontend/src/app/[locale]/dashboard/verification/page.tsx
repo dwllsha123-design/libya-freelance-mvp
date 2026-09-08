@@ -184,7 +184,7 @@ export default function VerificationDashboardPage() {
       <p className="text-sm">
         للاشتراك في Pro بعد التوثيق:{' '}
         <Link href="/dashboard/pro" className="text-primary underline">
-          Libya Freelance Pro
+          ليبي فريلانس برو
         </Link>
       </p>
     </div>

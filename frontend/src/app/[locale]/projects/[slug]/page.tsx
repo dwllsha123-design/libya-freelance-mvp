@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { API_BASE_URL } from '@/lib/api';
+import { localizedPath } from '@/lib/seo';
 import ProjectDetailClient from './project-detail-client';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -9,7 +10,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params;
   const t = await getTranslations({ locale, namespace: 'projects' });
   const tBrand = await getTranslations({ locale, namespace: 'brand' });
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://libyanfreelance.ly';
+  const arPath = localizedPath('ar', `/projects/${slug}`);
+  const enPath = localizedPath('en', `/projects/${slug}`);
+  const canonicalPath = localizedPath(locale, `/projects/${slug}`);
 
   try {
     const res = await fetch(
@@ -29,12 +33,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: `${project.title} | ${tBrand('name')}`,
       description: project.description?.slice(0, 160),
-      alternates: { canonical: `${baseUrl}/projects/${slug}` },
+      alternates: {
+        canonical: `${baseUrl}${canonicalPath}`,
+        languages: {
+          'ar-LY': `${baseUrl}${arPath}`,
+          en: `${baseUrl}${enPath}`,
+          'x-default': `${baseUrl}${arPath}`,
+        },
+      },
       openGraph: {
         title: project.title,
         description: project.description?.slice(0, 160),
-        url: `${baseUrl}/projects/${slug}`,
+        url: `${baseUrl}${canonicalPath}`,
         type: 'article',
+        locale: locale === 'en' ? 'en' : 'ar_LY',
+        siteName: 'Libyan Freelance',
       },
     };
   } catch {

@@ -36,5 +36,6 @@ export interface SafeUser {
     firstName: string;
     lastName: string;
     username: string;
+    profilePhoto: string | null;
   } | null;
 }

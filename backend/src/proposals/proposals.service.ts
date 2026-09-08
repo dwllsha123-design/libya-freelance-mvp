@@ -47,6 +47,8 @@ const freelancerPublicSelect = {
           professionalTitle: true,
           completedProjects: true,
           averageRating: true,
+          performanceLevel: true,
+          isVerifiedTalent: true,
           skills: {
             include: { skill: { select: { name: true, slug: true } } },
           },
@@ -587,6 +589,8 @@ export class ProposalsService {
             professionalTitle: fp?.professionalTitle ?? null,
             rating: fp?.averageRating ?? null,
             completedProjects: fp?.completedProjects ?? 0,
+            performanceLevel: fp?.performanceLevel ?? 'NONE',
+            isVerifiedTalent: fp?.isVerifiedTalent ?? false,
             skills: fp?.skills.map((s) => ({
               name: s.skill.name,
               slug: s.skill.slug,

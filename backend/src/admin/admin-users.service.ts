@@ -222,6 +222,9 @@ export class AdminUsersService {
               averageRating: freelancer.averageRating,
               portfolioCount: freelancer._count.portfolio,
               skillsCount: freelancer._count.skills,
+              performanceLevel: freelancer.performanceLevel,
+              isVerifiedTalent: freelancer.isVerifiedTalent,
+              verifiedTalentAt: freelancer.verifiedTalentAt,
             }
           : null,
       client:
@@ -255,6 +258,9 @@ export class AdminUsersService {
               averageRating: freelancer.averageRating,
               portfolioCount: freelancer._count.portfolio,
               skillsCount: freelancer._count.skills,
+              performanceLevel: freelancer.performanceLevel,
+              isVerifiedTalent: freelancer.isVerifiedTalent,
+              verifiedTalentAt: freelancer.verifiedTalentAt,
             }
           : null,
       client:

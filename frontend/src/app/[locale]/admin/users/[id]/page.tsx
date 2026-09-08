@@ -18,7 +18,13 @@ export default function AdminUserDetailPage() {
   const api = useAdminApi();
   const [user, setUser] = useState<Record<string, unknown> | null>(null);
   const [pending, setPending] = useState<
-    'suspend' | 'ban' | 'reactivate' | 'revokeSessions' | null
+    | 'suspend'
+    | 'ban'
+    | 'reactivate'
+    | 'revokeSessions'
+    | 'grantVerifiedTalent'
+    | 'revokeVerifiedTalent'
+    | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
   const dateLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
@@ -41,6 +47,8 @@ export default function AdminUserDetailPage() {
       if (pending === 'ban') await api.banUser(params.id);
       if (pending === 'reactivate') await api.reactivateUser(params.id);
       if (pending === 'revokeSessions') await api.revokeUserSessions(params.id);
+      if (pending === 'grantVerifiedTalent') await api.grantVerifiedTalent(params.id);
+      if (pending === 'revokeVerifiedTalent') await api.revokeVerifiedTalent(params.id);
       const updated = await api.user(params.id);
       setUser(updated);
       setPending(null);
@@ -61,7 +69,11 @@ export default function AdminUserDetailPage() {
         ? t('suspendTitle')
         : pending === 'revokeSessions'
           ? t('revokeSessionsTitle')
-          : t('reactivateTitle');
+          : pending === 'grantVerifiedTalent'
+            ? t('grantVerifiedTalent')
+            : pending === 'revokeVerifiedTalent'
+              ? t('revokeVerifiedTalent')
+              : t('reactivateTitle');
 
   return (
     <div className="space-y-6">
@@ -111,6 +123,15 @@ export default function AdminUserDetailPage() {
                 </p>
                 <p>
                   {t('portfolioCount')}: {String(freelancer.portfolioCount)}
+                </p>
+                <p>
+                  {t('performanceLevel')}: {String(freelancer.performanceLevel ?? 'NONE')}
+                </p>
+                <p>
+                  {t('verifiedTalent')}:{' '}
+                  {freelancer.isVerifiedTalent
+                    ? t('verifiedTalentYes')
+                    : t('verifiedTalentNo')}
                 </p>
               </>
             ) : null}
@@ -164,6 +185,25 @@ export default function AdminUserDetailPage() {
           >
             {t('revokeSessions')}
           </button>
+          {user.role === 'FREELANCER' ? (
+            freelancer?.isVerifiedTalent ? (
+              <button
+                type="button"
+                onClick={() => setPending('revokeVerifiedTalent')}
+                className="rounded-xl border border-amber-200 px-4 py-2 text-sm text-amber-800"
+              >
+                {t('revokeVerifiedTalent')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPending('grantVerifiedTalent')}
+                className="rounded-xl border border-emerald-200 px-4 py-2 text-sm text-emerald-800"
+              >
+                {t('grantVerifiedTalent')}
+              </button>
+            )
+          ) : null}
         </div>
       </AdminPanel>
 

@@ -205,8 +205,8 @@ describe('SubscriptionsService activation rules', () => {
   const plan = {
     id: 'plan-1',
     code: PRO_PLAN_CODE,
-    nameAr: 'Libya Freelance Pro',
-    nameEn: 'Libya Freelance Pro',
+    nameAr: 'ليبي فريلانس برو',
+    nameEn: 'Libyan Freelance Pro',
     price: 49 as never,
     currency: 'LYD',
     durationDays: 30,

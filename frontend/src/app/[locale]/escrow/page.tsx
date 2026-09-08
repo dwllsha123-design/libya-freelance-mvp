@@ -1,10 +1,23 @@
+import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import type { AppLocale } from '@/i18n/routing';
 import { MarketingPage } from '@/components/marketing/marketing-page';
 import { getMarketingPageContent } from '@/lib/marketing-pages-i18n';
+import { buildPageMetadata } from '@/lib/seo';
 
 type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const content = getMarketingPageContent(locale as AppLocale).escrow;
+  return buildPageMetadata({
+    title: content.title,
+    description: content.subtitle,
+    path: '/escrow',
+    locale,
+  });
+}
 
 export default async function EscrowPage({ params }: Props) {
   const { locale } = await params;

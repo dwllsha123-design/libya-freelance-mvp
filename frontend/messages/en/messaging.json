@@ -26,8 +26,8 @@
   "proposalLabel": "Proposal: {price} · {status}",
   "agreementTitle": "Work agreement & escrow",
   "agreementDays": "{count} work days",
-  "agreementEscrowHint": "Payment is held in escrow when the client funds it. Without a local payment gateway, funding stays simulated until a provider is connected.",
-  "agreementEscrowCta": "Escrow ledger",
-  "agreementHowCta": "How escrow works",
+  "agreementEscrowHint": "Payment protection coming soon. We are preparing an integrated payment and transaction-protection system. Any current funding is simulated only.",
+  "agreementEscrowCta": "Escrow ledger (simulated)",
+  "agreementHowCta": "Payment protection — coming soon",
   "unknownUser": "User"
 }

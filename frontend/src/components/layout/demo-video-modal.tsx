@@ -22,17 +22,17 @@ const copy: Record<
   ar: {
     tag: 'عرض توضيحي للمنصة',
     title: 'شاهد جولة قصيرة',
-    sub: 'تعرّف على كيفية نشر مشروعك، استقبال العروض، والدفع الآمن خلال دقيقتين.',
+    sub: 'تعرّف على كيفية نشر مشروعك واستقبال العروض خلال دقيقتين. حماية المدفوعات قريبًا.',
     play: 'تشغيل الجولة',
-    steps: ['أنشئ حسابك مجانًا', 'انشر أو تصفّح العروض', 'سلّم وادفع عبر الضمان'],
+    steps: ['أنشئ حسابك مجانًا', 'انشر أو تصفّح العروض', 'سلّم العمل وابنِ سمعتك'],
     close: 'إغلاق',
   },
   en: {
     tag: 'Platform demo',
     title: 'Watch a quick tour',
-    sub: 'See how to post a project, receive proposals, and pay safely in under two minutes.',
+    sub: 'See how to post a project and receive proposals in under two minutes. Payment protection coming soon.',
     play: 'Play the tour',
-    steps: ['Create your free account', 'Post or browse gigs', 'Deliver & pay via escrow'],
+    steps: ['Create your free account', 'Post or browse gigs', 'Deliver work and build reputation'],
     close: 'Close',
   },
 };

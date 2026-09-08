@@ -33,8 +33,8 @@ export default async function ContactPage({ params }: Props) {
             rel="noopener noreferrer"
             aria-label={
               isAr
-                ? 'صفحة Libya Freelance على فيسبوك'
-                : 'Libya Freelance on Facebook'
+                ? 'صفحة ليبي فريلانس على فيسبوك'
+                : 'Libyan Freelance on Facebook'
             }
             className="inline-flex items-center gap-2 rounded-full border border-outline-variant/50 bg-[#1877F2] px-3 py-1.5 text-sm font-medium text-white transition hover:opacity-90"
           >

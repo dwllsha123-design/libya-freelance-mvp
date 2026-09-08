@@ -66,8 +66,8 @@ function StoreBadge({
     (status === 'AVAILABLE' || status === 'BETA') && Boolean(href);
   const aria =
     locale === 'ar'
-      ? `تطبيق Libya Freelance على ${title} — ${badge}`
-      : `Libya Freelance on ${title} — ${badge}`;
+      ? `تطبيق ليبي فريلانس على ${title} — ${badge}`
+      : `Libyan Freelance on ${title} — ${badge}`;
 
   const Icon = kind === 'ios' ? AppleIcon : PlayIcon;
   const className = compact
@@ -135,7 +135,7 @@ export function StoreBadgePair({
       className={`flex flex-wrap items-center gap-3 ${className}`}
       role="group"
       aria-label={
-        locale === 'ar' ? 'تطبيقات Libya Freelance' : 'Libya Freelance apps'
+        locale === 'ar' ? 'تطبيقات ليبي فريلانس' : 'Libyan Freelance apps'
       }
     >
       <StoreBadge

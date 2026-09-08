@@ -97,6 +97,7 @@ export class AuthService {
               firstName: true,
               lastName: true,
               username: true,
+              profilePhoto: true,
             },
           },
         },
@@ -181,6 +182,7 @@ export class AuthService {
                 firstName: true,
                 lastName: true,
                 username: true,
+                profilePhoto: true,
               },
             },
           },
@@ -350,6 +352,7 @@ export class AuthService {
             firstName: true,
             lastName: true,
             username: true,
+            profilePhoto: true,
             freelancerProfile: { select: { id: true } },
             clientProfile: { select: { id: true, displayName: true } },
           },
@@ -494,6 +497,7 @@ export class AuthService {
       firstName: string;
       lastName: string;
       username: string;
+      profilePhoto?: string | null;
       freelancerProfile?: { id: string } | null;
       clientProfile?: { id: string; displayName?: string | null } | null;
     } | null;
@@ -524,6 +528,7 @@ export class AuthService {
             firstName: user.profile.firstName,
             lastName: user.profile.lastName,
             username: user.profile.username,
+            profilePhoto: user.profile.profilePhoto ?? null,
           }
         : null,
     };

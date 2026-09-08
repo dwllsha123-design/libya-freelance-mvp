@@ -26,8 +26,8 @@
   "proposalLabel": "العرض: {price} · {status}",
   "agreementTitle": "اتفاق العمل والضمان",
   "agreementDays": "{count} يوم عمل",
-  "agreementEscrowHint": "ضمان الدفع عبر حساب الضمان عند تمويل العميل. بدون بوابة دفع محلية يبقى التمويل محاكى حتى ربط مزوّد الدفع.",
-  "agreementEscrowCta": "سجل الضمان",
-  "agreementHowCta": "كيف يعمل الضمان",
+  "agreementEscrowHint": "حماية المدفوعات قريبًا. نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة. أي تمويل حالي تجريبي فقط.",
+  "agreementEscrowCta": "سجل الضمان (تجريبي)",
+  "agreementHowCta": "حماية المدفوعات — قريبًا",
   "unknownUser": "مستخدم"
 }

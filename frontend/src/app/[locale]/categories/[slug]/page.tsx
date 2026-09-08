@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: getCategorySeoTitle(name, appLocale),
     description: getLocalizedDescription(category, appLocale),
     path: `/categories/${category.slug}`,
+    locale: appLocale,
   });
 }
 

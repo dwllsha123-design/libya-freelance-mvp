@@ -32,6 +32,7 @@ import {
 import { EscrowService } from '../escrow/escrow.service.js';
 import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
+import { BadgeService } from '../badges/badge.service.js';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
@@ -46,6 +47,7 @@ export class AdminController {
     private readonly skills: AdminSkillsService,
     private readonly escrow: EscrowService,
     private readonly agreements: AgreementsService,
+    private readonly badges: BadgeService,
   ) {}
 
   @Get('dashboard')
@@ -81,6 +83,16 @@ export class AdminController {
   @Post('users/:id/revoke-sessions')
   revokeUserSessions(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.revokeSessions(admin.id, id);
+  }
+
+  @Post('users/:id/verified-talent/grant')
+  grantVerifiedTalent(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
+    return this.badges.grantVerifiedTalent(admin.id, id);
+  }
+
+  @Post('users/:id/verified-talent/revoke')
+  revokeVerifiedTalent(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
+    return this.badges.revokeVerifiedTalent(admin.id, id);
   }
 
   @Get('projects')

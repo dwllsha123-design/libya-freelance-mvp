@@ -3,11 +3,18 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { EscrowModule } from '../escrow/escrow.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
+import { BadgesModule } from '../badges/badges.module.js';
 import { ProjectsController } from './projects.controller.js';
 import { ProjectsService } from './projects.service.js';
 
 @Module({
-  imports: [NotificationsModule, EscrowModule, NuqatiModule, PlatformModule],
+  imports: [
+    NotificationsModule,
+    EscrowModule,
+    NuqatiModule,
+    PlatformModule,
+    BadgesModule,
+  ],
   controllers: [ProjectsController],
   providers: [ProjectsService],
   exports: [ProjectsService],

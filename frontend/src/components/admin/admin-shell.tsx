@@ -225,7 +225,7 @@ export function AdminShell({
         <div className="flex items-center gap-3">
           <Logo href={siteUrl} showName={false} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-on-surface">Libya Freelance</p>
+            <p className="truncate text-sm font-bold text-on-surface">Libyan Freelance</p>
             <p className="text-xs text-slate-500">{t('platformAdminLabel')}</p>
           </div>
         </div>

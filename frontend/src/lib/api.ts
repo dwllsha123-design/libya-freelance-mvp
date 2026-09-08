@@ -61,6 +61,7 @@ export interface AuthUser {
     firstName: string;
     lastName: string;
     username: string;
+    profilePhoto?: string | null;
   } | null;
 }
 
@@ -128,6 +129,8 @@ export interface PublicProfile {
     isVerified?: boolean;
     identityVerified?: boolean;
     isPro?: boolean;
+    performanceLevel?: 'NONE' | 'RISING' | 'PROVEN' | 'TOP_PERFORMER' | 'ELITE';
+    isVerifiedTalent?: boolean;
     skills: Skill[];
     portfolio?: {
       count: number;

@@ -1,4 +1,4 @@
-/* Libya Freelance — Web Push service worker (served at /sw.js) */
+/* Libyan Freelance — Web Push service worker (served at /sw.js) */
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });

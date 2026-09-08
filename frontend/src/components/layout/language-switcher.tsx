@@ -64,7 +64,10 @@ export function LanguageSwitcher() {
 
   function switchLocale(next: AppLocale) {
     if (next === locale) return;
-    router.replace(pathname, { locale: next });
+    const query =
+      typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '';
+    const href = query ? `${pathname}?${query}` : pathname;
+    router.replace(href, { locale: next });
   }
 
   return (

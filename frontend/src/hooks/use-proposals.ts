@@ -43,6 +43,8 @@ export interface ClientProposal {
     professionalTitle?: string | null;
     rating?: number | null;
     completedProjects: number;
+    performanceLevel?: 'NONE' | 'RISING' | 'PROVEN' | 'TOP_PERFORMER' | 'ELITE';
+    isVerifiedTalent?: boolean;
     skills: { name: string; slug: string }[];
     portfolio?: {
       count: number;

@@ -14,6 +14,7 @@ import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats'
 import { PresenceDot } from '@/components/presence/presence-indicator';
 import { PresenceText } from '@/components/presence/presence-text';
 import { usePresenceStore } from '@/hooks/use-presence';
+import { FreelancerBadgeChip } from '@/components/badges/freelancer-badge-chip';
 
 function initials(first: string, last: string) {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
@@ -74,6 +75,11 @@ export function FreelancerCard({
             {verified ? <VerifiedBadge /> : null}
             {freelancer.freelancer?.identityVerified ? <IdentityVerifiedBadge /> : null}
             {freelancer.freelancer?.isPro ? <ProBadge /> : null}
+            <FreelancerBadgeChip
+              level={freelancer.freelancer?.performanceLevel}
+              verifiedTalent={Boolean(freelancer.freelancer?.isVerifiedTalent)}
+              compact
+            />
           </div>
           <p className="truncate text-sm text-on-surface-variant">
             {freelancer.freelancer?.professionalTitle ?? t('defaultTitle')}

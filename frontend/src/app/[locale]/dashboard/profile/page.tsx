@@ -17,7 +17,7 @@ export default function ProfileEditPage() {
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
-  const { user, accessToken, isLoading: authLoading } = useAuth();
+  const { user, accessToken, isLoading: authLoading, updateProfilePhoto } = useAuth();
   const {
     profile,
     skills,
@@ -116,7 +116,10 @@ export default function ProfileEditPage() {
         <ProfilePhotoUpload
           currentPhoto={profile.profilePhoto}
           accessToken={accessToken}
-          onUploaded={setProfilePhoto}
+          onUploaded={(photoUrl) => {
+            setProfilePhoto(photoUrl);
+            updateProfilePhoto(photoUrl);
+          }}
         />
       ) : null}
 

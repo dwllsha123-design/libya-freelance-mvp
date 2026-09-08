@@ -21,6 +21,7 @@ import {
   validateReviewComment,
 } from './review-validation.util.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { BadgeService } from '../badges/badge.service.js';
 
 const reviewInclude = {
   reviewer: {
@@ -47,6 +48,7 @@ export class ReviewsService {
     private readonly notifications: NotificationsService,
     private readonly ratingService: ReviewRatingService,
     private readonly platformPolicy: PlatformPolicyService,
+    private readonly badges: BadgeService,
   ) {}
 
   async submitReview(userId: string, role: Role, projectId: string, dto: CreateReviewDto) {
@@ -101,6 +103,8 @@ export class ReviewsService {
         `تم تقييمك في مشروع "${review.project.title}"`,
         targetUrl,
       );
+
+      void this.badges.recalculateForUser(reviewedUserId).catch(() => undefined);
 
       return this.formatReview(review);
     } catch (error) {

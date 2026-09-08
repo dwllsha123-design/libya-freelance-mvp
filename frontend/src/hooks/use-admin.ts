@@ -265,6 +265,16 @@ export function useAdminApi() {
           method: 'POST',
         }),
 
+      grantVerifiedTalent: (id: string) =>
+        authenticatedRequest(`/admin/users/${id}/verified-talent/grant`, requireToken(), {
+          method: 'POST',
+        }),
+
+      revokeVerifiedTalent: (id: string) =>
+        authenticatedRequest(`/admin/users/${id}/verified-talent/revoke`, requireToken(), {
+          method: 'POST',
+        }),
+
       projects: (params: Record<string, string | undefined> = {}) =>
         authenticatedRequest<Paginated<Record<string, unknown>>>(
           `/admin/projects${qs(params)}`,

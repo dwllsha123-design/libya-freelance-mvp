@@ -297,8 +297,8 @@ const AR_CONTENT: MarketingPagesContent = {
         title: 'الأمان والمدفوعات',
         items: [
           {
-            q: 'هل يوجد نظام ضمان؟',
-            a: 'نعم. عند قبول عرض، يُموَّل الضمان بمبلغ العرض بالدينار الليبي. يُحرَّر المبلغ للمستقل عند تأكيد إتمام المشروع.',
+            q: 'هل يوجد نظام ضمان أو حماية للمدفوعات؟',
+            a: 'نظام حماية المدفوعات — قريبًا. نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل. الميزة غير مفعّلة حاليًا.',
           },
           {
             q: 'كيف أبلّغ عن مشكلة؟',
@@ -310,7 +310,7 @@ const AR_CONTENT: MarketingPagesContent = {
     quickLinksHeading: 'روابط سريعة',
     quickLinks: [
       { href: '/how-it-works', label: 'كيف تعمل المنصة — دليل مفصّل' },
-      { href: '/escrow', label: 'نظام الضمان' },
+      { href: '/escrow', label: 'حماية المدفوعات قريبًا' },
       { href: '/privacy', label: 'سياسة الخصوصية' },
       { href: '/terms', label: 'شروط الخدمة' },
       { href: '/contact', label: 'اتصل بنا' },
@@ -372,32 +372,32 @@ const AR_CONTENT: MarketingPagesContent = {
     verifiedIntro: 'تُمنح تلقائياً للمستقلين الليبيين الذين يستوفون المعايير التالية:',
     verificationCriteria: [...VERIFICATION_CRITERIA_AR],
     currencyHeading: 'العملة والمدفوعات',
-    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). عند قبول عرض، يُموَّل الضمان تلقائياً ويُحرَّر للمستقل بعد الإتمام — راجع `,
-    currencyLinkLabel: 'صفحة نظام الضمان',
+    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). نظام حماية المدفوعات الإلكتروني قيد التجهيز وسيكون متاحًا قريبًا — راجع `,
+    currencyLinkLabel: 'صفحة حماية المدفوعات',
     currencyAfterLink: '.',
   },
   escrow: {
-    title: 'نظام الضمان',
-    subtitle: 'حماية المدفوعات للعميل والمستقل — بالدينار الليبي',
-    intro: `نظام الضمان في ${PLATFORM_NAME_AR} يحمي أموال المشروع حتى يوافق العميل على التسليم — بثقة للعميل وضمان للمستقل في السوق الليبي.`,
-    howHeading: 'كيف يعمل؟',
+    title: 'نظام حماية المدفوعات — قريبًا',
+    subtitle: 'نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة',
+    intro: `نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل على ${PLATFORM_NAME_AR}. هذه الميزة غير مفعّلة بعد.`,
+    howHeading: 'ما الذي نجهّزه؟',
     howSteps: [
-      `يختار العميل عرضاً ويُموّل الضمان بمبلغ العرض (${PLATFORM_CURRENCY_CODE})`,
-      'تبقى الأموال محجوزة أثناء تنفيذ المشروع',
-      `عند تأكيد الإتمام، يُحرَّر المبلغ للمستقل (بعد عمولة المنصة ${ESCROW_PLATFORM_FEE_PERCENT}%)`,
-      'في حال النزاع، يتدخل فريق الإدارة لحل الاختلاف',
+      `عند الإطلاق: تمويل آمن لمبلغ العرض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}) عبر مزوّدي دفع محليين`,
+      'حجز الأموال داخل المنصة أثناء تنفيذ المشروع حتى موافقة العميل',
+      `تحرير المستحقات للمستقل بعد التأكيد (مع عمولة المنصة ${ESCROW_PLATFORM_FEE_PERCENT}%)`,
+      'آلية نزاع عادلة عند الاختلاف — بمراجعة فريق الإدارة',
     ],
     forClientsHeading: 'للعملاء',
     forClientsItems: [
-      'لا تدفع للمستقل مباشرة — المبلغ محمي حتى رضاك عن العمل',
-      'يمكنك فتح نزاع إذا لم يُنفَّذ العمل كما اتُفق',
+      'حماية المدفوعات قريبًا — لن تحتاج للدفع المباشر دون حماية داخل المنصة',
+      'عند الإطلاق ستتمكن من فتح نزاع إذا لم يُنفَّذ العمل كما اتُفق',
     ],
     forFreelancersHeading: 'للمستقلين',
     forFreelancersItems: [
-      'اطمئن أن المبلغ مموّل قبل بدء العمل الجاد',
-      'يُحرَّر مستحقك تلقائياً عند تأكيد العميل للإتمام',
+      'عند الإطلاق: اطمئن أن المبلغ محمي قبل بدء العمل الجاد',
+      'تحرير المستحقات بعد تأكيد العميل — ضمن نظام الحماية القادم',
     ],
-    mvpNote: `التمويل الحالي محاكى للتجربة (MVP) — سيتم ربط بوابة دفع ليبية قريباً. جميع المبالغ بالدينار الليبي (${PLATFORM_CURRENCY_CODE}).`,
+    mvpNote: `حماية المدفوعات قريبًا. نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة. جميع الميزانيات المعروضة حاليًا بالدينار الليبي (${PLATFORM_CURRENCY_CODE}).`,
   },
   privacy: {
     metaTitle: 'سياسة الخصوصية',
@@ -520,10 +520,10 @@ const AR_CONTENT: MarketingPagesContent = {
       {
         heading: '5. المدفوعات والضمان',
         beforeEscrowLink:
-          'الميزانيات تُعرض بالدينار الليبي (د.ل). عند قبول عرض، يُموَّل حساب ضمان بالمبلغ المتفق عليه قبل بدء العمل. يُحرَّر المبلغ للمستقل عند تأكيد إتمام المشروع، مع خصم عمولة المنصة (10%). في حال النزاع، يُجمَّد المبلغ حتى قرار الإدارة. راجع ',
-        escrowLinkLabel: 'صفحة نظام الضمان',
+          'الميزانيات تُعرض بالدينار الليبي (د.ل). نظام حماية المدفوعات الإلكتروني غير مفعّل حاليًا ونعمل على إطلاقه قريبًا بالتعاون مع مزودي الدفع في ليبيا. عند التفعيل، ستُحمى أموال المشروع داخل المنصة حتى تأكيد الإتمام، مع خصم عمولة المنصة (10%)، وآلية نزاع عند الحاجة. راجع ',
+        escrowLinkLabel: 'صفحة حماية المدفوعات',
         afterEscrowLink:
-          ' للتفاصيل. التمويل الحالي تجريبي (محاكاة) إلى حين ربط بوابة دفع ليبية.',
+          ' للتفاصيل والتحديثات. حتى إطلاق البوابة، لا تُحجز أموال حقيقية داخل المنصة.',
       },
       {
         heading: '6. التقييمات والمحتوى',
@@ -575,7 +575,7 @@ const AR_CONTENT: MarketingPagesContent = {
         links: [
           { href: '/how-it-works', label: 'كيف تعمل' },
           { href: '/help', label: 'مركز المساعدة' },
-          { href: '/escrow', label: 'نظام الضمان' },
+          { href: '/escrow', label: 'حماية المدفوعات قريبًا' },
           { href: '/about', label: 'من نحن' },
           { href: '/contact', label: 'اتصل بنا' },
           { href: '/privacy', label: 'الخصوصية' },
@@ -704,8 +704,8 @@ const EN_CONTENT: MarketingPagesContent = {
         title: 'Safety and payments',
         items: [
           {
-            q: 'Is there an escrow system?',
-            a: 'Yes. When you accept a proposal, escrow is funded with the proposal amount in Libyan Dinar. Funds are released to the freelancer when the project is marked complete.',
+            q: 'Is there an escrow or payment protection system?',
+            a: 'Payment Protection — Coming Soon. We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers. This feature is not live yet.',
           },
           {
             q: 'How do I report a problem?',
@@ -717,7 +717,7 @@ const EN_CONTENT: MarketingPagesContent = {
     quickLinksHeading: 'Quick links',
     quickLinks: [
       { href: '/how-it-works', label: 'How it works — detailed guide' },
-      { href: '/escrow', label: 'Escrow' },
+      { href: '/escrow', label: 'Payment protection — coming soon' },
       { href: '/privacy', label: 'Privacy policy' },
       { href: '/terms', label: 'Terms of service' },
       { href: '/contact', label: 'Contact us' },
@@ -780,32 +780,33 @@ const EN_CONTENT: MarketingPagesContent = {
     verificationCriteria: [...VERIFICATION_CRITERIA_EN],
     currencyHeading: 'Currency and payments',
     currencyBeforeLink:
-      'All budgets and proposals are in Libyan Dinar (LYD). When you accept a proposal, escrow is funded automatically and released to the freelancer after completion — see the ',
-    currencyLinkLabel: 'escrow page',
+      'All budgets and proposals are in Libyan Dinar (LYD). Electronic payment protection is being prepared and will be available soon — see the ',
+    currencyLinkLabel: 'payment protection page',
     currencyAfterLink: '.',
   },
   escrow: {
-    title: 'Escrow',
-    subtitle: 'Payment protection for clients and freelancers — in Libyan Dinar',
-    intro: `${PLATFORM_NAME_EN} escrow protects project funds until the client approves delivery — confidence for clients and assurance for freelancers in the Libyan market.`,
-    howHeading: 'How does it work?',
+    title: 'Payment Protection — Coming Soon',
+    subtitle: 'We are preparing an integrated payment and transaction-protection system inside the platform',
+    intro: `We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers on ${PLATFORM_NAME_EN}. This feature is not enabled yet.`,
+    howHeading: 'What we are building',
     howSteps: [
-      `The client selects a proposal and funds escrow with the proposal amount (LYD)`,
-      'Funds remain held while the project is in progress',
-      `On completion confirmation, funds are released to the freelancer (after a ${ESCROW_PLATFORM_FEE_PERCENT}% platform fee)`,
-      'In case of dispute, the admin team steps in to resolve the issue',
+      'At launch: secure funding of the proposal amount (LYD) via local payment providers',
+      'Holding project funds on the platform while work is in progress until client approval',
+      `Releasing payment to the freelancer after confirmation (after a ${ESCROW_PLATFORM_FEE_PERCENT}% platform fee)`,
+      'A fair dispute process when parties disagree — reviewed by the admin team',
     ],
     forClientsHeading: 'For clients',
     forClientsItems: [
-      "You don't pay the freelancer directly — funds are protected until you're satisfied",
-      'You can open a dispute if work is not delivered as agreed',
+      'Payment protection coming soon — you will not need to pay unprotected outside the platform',
+      'Once live, you will be able to open a dispute if work is not delivered as agreed',
     ],
     forFreelancersHeading: 'For freelancers',
     forFreelancersItems: [
-      'Be confident funds are secured before serious work begins',
-      'Your payment is released automatically when the client confirms completion',
+      'At launch: confidence that funds are protected before serious work begins',
+      'Payment released after client confirmation — within the upcoming protection system',
     ],
-    mvpNote: `Current funding is simulated for the MVP — a Libyan payment gateway will be connected soon. All amounts are in Libyan Dinar (LYD).`,
+    mvpNote:
+      'Payment protection coming soon. We are preparing an integrated payment and transaction-protection system inside the platform. All budgets shown today are in Libyan Dinar (LYD).',
   },
   privacy: {
     metaTitle: 'Privacy policy',
@@ -929,10 +930,10 @@ const EN_CONTENT: MarketingPagesContent = {
       {
         heading: '5. Payments and escrow',
         beforeEscrowLink:
-          'Budgets are shown in Libyan Dinar (LYD). When a proposal is accepted, escrow is funded with the agreed amount before work begins. Funds are released to the freelancer on project completion, minus a 10% platform fee. In disputes, funds are held until an admin decision. See the ',
-        escrowLinkLabel: 'escrow page',
+          'Budgets are shown in Libyan Dinar (LYD). Electronic payment protection is not live yet — we are preparing a launch with payment providers in Libya. Once enabled, project funds will be protected on the platform until completion confirmation, minus a 10% platform fee, with a dispute process when needed. See the ',
+        escrowLinkLabel: 'payment protection page',
         afterEscrowLink:
-          ' for details. Current funding is simulated until a Libyan payment gateway is connected.',
+          ' for details and updates. Until the gateway launches, no real funds are held on the platform.',
       },
       {
         heading: '6. Reviews and content',
@@ -984,7 +985,7 @@ const EN_CONTENT: MarketingPagesContent = {
         links: [
           { href: '/how-it-works', label: 'How it works' },
           { href: '/help', label: 'Help center' },
-          { href: '/escrow', label: 'Escrow' },
+          { href: '/escrow', label: 'Payment protection — coming soon' },
           { href: '/about', label: 'About' },
           { href: '/contact', label: 'Contact' },
           { href: '/privacy', label: 'Privacy' },

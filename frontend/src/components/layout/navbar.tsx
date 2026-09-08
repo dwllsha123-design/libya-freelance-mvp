@@ -12,6 +12,8 @@ import { Logo } from '@/components/brand/logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { DemoVideoModal } from '@/components/layout/demo-video-modal';
+import { UserAccountMenu } from '@/components/account/user-account-menu';
+import { UserAvatarSkeleton } from '@/components/account/user-avatar';
 import { useIsClient } from '@/hooks/use-is-client';
 
 function NavLink({
@@ -96,7 +98,6 @@ function NavDropdown({
 
 export function Navbar() {
   const t = useTranslations('nav');
-  const tCommon = useTranslations('common');
   const pathname = usePathname();
   const { user, logout, isLoading, switchRole } = useAuth();
   const unreadMessages = useUnreadMessageCount();
@@ -299,7 +300,7 @@ export function Navbar() {
             </button>
           </div>
           {isLoading ? (
-            <span className="text-sm text-ink-soft">{tCommon('loading')}</span>
+            <UserAvatarSkeleton />
           ) : user ? (
             <>
               {user.role === 'FREELANCER' ? (
@@ -315,13 +316,7 @@ export function Navbar() {
                 <span className="sm:hidden">{t('dashboardShort')}</span>
                 <span className="hidden sm:inline">{t('dashboard')}</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => logout()}
-                className="hidden rounded-full px-3 py-2 text-sm text-ink-soft transition hover:bg-cream-deep hover:text-ink xl:inline"
-              >
-                {t('logout')}
-              </button>
+              <UserAccountMenu />
             </>
           ) : (
             <>

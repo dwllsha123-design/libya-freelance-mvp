@@ -14,6 +14,7 @@ import { useAgreementsApi } from '@/hooks/use-agreements';
 import { ApiError } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
+import { FreelancerBadgeChip } from '@/components/badges/freelancer-badge-chip';
 
 export default function ProjectProposalsPage() {
   const t = useTranslations('projects');
@@ -167,6 +168,13 @@ export default function ProjectProposalsPage() {
                 <p className="break-words text-sm text-slate-500 [overflow-wrap:anywhere]">
                   {proposal.freelancer?.professionalTitle ?? tFreelancers('defaultTitle')}
                 </p>
+                <div className="mt-1">
+                  <FreelancerBadgeChip
+                    level={proposal.freelancer?.performanceLevel}
+                    verifiedTalent={Boolean(proposal.freelancer?.isVerifiedTalent)}
+                    compact
+                  />
+                </div>
                 {proposal.freelancer?.rating ? (
                   <p className="text-xs text-amber-600">
                     ★ {proposal.freelancer.rating.toFixed(1)}

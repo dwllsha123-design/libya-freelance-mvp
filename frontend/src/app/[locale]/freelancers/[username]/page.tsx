@@ -17,6 +17,7 @@ import { isFreelancerVerified, getVerificationCriteria } from '@/lib/freelancer-
 import { formatCurrency } from '@/lib/currency';
 import { getLocalizedCityName } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
+import { FreelancerBadgeChip } from '@/components/badges/freelancer-badge-chip';
 
 function isSafeUrl(url: string) {
   return url.startsWith('http://') || url.startsWith('https://');
@@ -107,6 +108,10 @@ export default function FreelancerProfilePage() {
                 <IdentityVerifiedBadge className="!text-xs" />
               ) : null}
               {profile.freelancer?.isPro ? <ProBadge className="!text-xs" /> : null}
+              <FreelancerBadgeChip
+                level={profile.freelancer?.performanceLevel}
+                verifiedTalent={Boolean(profile.freelancer?.isVerifiedTalent)}
+              />
             </div>
             <PresenceText presence={presence} className="mt-1 text-sm" />
             <p className="mt-2 text-lg text-on-surface-variant">

@@ -16,7 +16,7 @@ export function ProBadge({ className = '' }: { className?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-0.5 rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-900 dark:text-amber-200 ${className}`}
-      title="Libya Freelance Pro"
+      title="Libyan Freelance Pro"
     >
       PRO
     </span>

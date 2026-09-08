@@ -526,6 +526,8 @@ export class ProfilesService {
       isVerified: badges.isVerified,
       identityVerified: badges.identityVerified,
       isPro: badges.isPro,
+      performanceLevel: badges.performanceLevel,
+      isVerifiedTalent: badges.isVerifiedTalent,
     };
   }
 
@@ -558,6 +560,8 @@ export class ProfilesService {
       }),
       identityVerified,
       isPro,
+      performanceLevel: fp.performanceLevel ?? 'NONE',
+      isVerifiedTalent: fp.isVerifiedTalent ?? false,
     };
   }
 }

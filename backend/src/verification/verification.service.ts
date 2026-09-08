@@ -302,7 +302,7 @@ export class VerificationService {
       item.userId,
       NotificationType.VERIFICATION_APPROVED,
       'تم توثيق هويتك',
-      'أصبحت هويتك موثقة على ليبيا فريلانس.',
+      'أصبحت هويتك موثقة على ليبي فريلانس.',
       `/dashboard/verification`,
     );
 

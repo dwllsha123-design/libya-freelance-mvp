@@ -12,7 +12,7 @@ const HOME_CONTENT = {
         items: [
           'إضاعة ساعات في فرز عروض غير مؤهلة على كل مشروع',
           'التعامل مع مستقلين لا يفهمون السوق والسياق الليبي',
-          'لا حماية للدفع عندما تسوء الأمور',
+          'لا نظام حماية مدفوعات جاهز بعد عندما تسوء الأمور',
           'صعوبة التحقق من مستوى المهارة قبل الالتزام',
         ],
       },
@@ -27,7 +27,7 @@ const HOME_CONTENT = {
       },
     },
     features: [
-      { title: 'دفع مضمون بالضمان', body: 'يُحجز مبلغ المشروع بالدينار الليبي حتى تُوافق على التسليم — أمان للطرفين.', icon: '🛡️' },
+      { title: 'نظام حماية المدفوعات — قريبًا', body: 'نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل.', icon: '🛡️' },
       { title: 'نظام تقييم أعمى', body: 'يُقيّم الطرفان قبل نشر التقييم — لتقليل التحيّز وبناء ثقة حقيقية.', icon: '⭐' },
       { title: 'مراسلة فورية', body: 'تواصل، شارك الملفات، وتابع المحادثات داخل المنصة دون فقدان السياق.', icon: '⚡' },
       { title: 'عروض مخصّصة بجودة', body: 'ملفات مكتملة وعروض واضحة بالدينار — أقل ضجيجاً وإشارة أوضح للعملاء الجادّين.', icon: '📋' },
@@ -40,7 +40,7 @@ const HOME_CONTENT = {
       items: [
         { step: '01', title: 'أنشئ حسابك', body: 'سجّل في دقائق واضبط ملفك كعميل أو مستقل. بدون رسوم للبدء.', badge: 'جاهز للتوظيف أو العمل' },
         { step: '02', title: 'اعثر على تطابقاتك', body: 'انشر مشروعاً أو قدّم عرضاً. ميزانيات واضحة بالدينار الليبي تجذب الجادّين.', badge: 'أقل ضجيجاً، إشارة أوضح' },
-        { step: '03', title: 'سلّم، استلم أجرك، تطوّر', body: 'العمل مضمون بالضمان. السمعة تُبنى مع كل مهمة مكتملة في ليبيا.', badge: 'ثقة تتراكم' },
+        { step: '03', title: 'سلّم، استلم أجرك، تطوّر', body: 'أنجز العمل وابنِ سمعتك. حماية المدفوعات قريبًا لرفع الثقة بين الطرفين في ليبيا.', badge: 'ثقة تتراكم' },
       ],
     },
     audience: {
@@ -50,7 +50,7 @@ const HOME_CONTENT = {
           'الوصول إلى مجموعة من المستقلين الليبيين الموثقين',
           'تصفّح الملفات والتقييمات قبل الالتزام',
           'انشر مشروعك مجاناً بالدينار الليبي',
-          'ادفع عبر الضمان عند الموافقة على العمل',
+          'حماية المدفوعات قريبًا داخل المنصة',
           'تقييمات أعمى لبناء ثقة حقيقية',
           'دعم مخصص عند النزاعات',
         ],
@@ -60,7 +60,7 @@ const HOME_CONTENT = {
         items: [
           'اعثر على مشاريع من شركات ليبية موثقة كل يوم',
           'عملاء جادّون — قدّم عروضاً مخصصة بالدينار',
-          'استلم مدفوعات مضمونة بالضمان على كل مشروع',
+          'نظام حماية المدفوعات قيد التجهيز — قريبًا',
           'ابنِ ملفاً وسمعة يهمان فعلاً في السوق المحلي',
           'مراسلة فورية حتى لا تفقد محادثة مهمة',
           'زِد فرصك بإكمال ملفك ومعرض أعمالك',
@@ -68,7 +68,7 @@ const HOME_CONTENT = {
       },
     },
     trustBadges: [
-      'مدفوعات مضمونة بالضمان',
+      'حماية المدفوعات قريبًا',
       'نظام تقييم أعمى',
       'ملفات مستقلين موثقة',
       'آمن وخاص',
@@ -77,12 +77,12 @@ const HOME_CONTENT = {
     ],
     faq: [
       { q: 'كيف يعمل نظام نقاطي؟', a: 'نقاطي مخصصة للمستقلين: تكسبها بالنشاط وتُستخدم لتقديم العروض (10 نقاط لكل عرض). راجع صفحة نقاطي من لوحة التحكم.' },
-      { q: 'هل الانضمام مجاني؟', a: 'نعم. التسجيل والتصفح مجانيان. تدفع فقط عند قبول عرض والتمويل عبر نظام الضمان بالدينار الليبي.' },
-      { q: 'كيف يعمل نظام الضمان؟', a: 'عند قبول عرض، يُحجز مبلغ المشروع (د.ل) في الضمان. يُحرَّر للمستقل عند تأكيد إتمام العمل، أو يُعاد للعميل عند الاسترداد حسب سياسة المنصة.' },
-      { q: 'هل المدفوعات آمنة؟', a: 'نعم. الضمان يحمي الطرفين: العميل لا يدفع مباشرة دون حماية، والمستقل يضمن وجود المبلغ قبل البدء.' },
+      { q: 'هل الانضمام مجاني؟', a: 'نعم. التسجيل والتصفح مجانيان. الميزانيات والعروض بالدينار الليبي. نظام حماية المدفوعات الإلكتروني قريبًا.' },
+      { q: 'هل يوجد نظام حماية للمدفوعات؟', a: 'نظام حماية المدفوعات — قريبًا. نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل.' },
+      { q: 'هل المدفوعات الإلكترونية مفعّلة الآن؟', a: 'ليس بعد. بوابة الدفع الإلكتروني وحماية المعاملات داخل المنصة قيد التجهيز وستكون متاحة قريبًا.' },
       { q: 'هل يمكنني العمل كعميل ومستقل؟', a: 'نعم. حساب واحد للدورين. بدّل بين وضع العميل والمستقل من لوحة التحكم في أي وقت.' },
       { q: 'كيف تبقى التقييمات صادقة؟', a: 'نستخدم تقييماً أعمى: لا يُنشر تقييم أحد الطرفين حتى يقيّم الطرف الآخر — لتقليل الانتقام أو المجاملة.' },
-      { q: 'ماذا يحدث في حال نزاع؟', a: 'يمكن فتح نزاع على الضمان. يراجع فريق الإدارة الأدلة ويتخذ قراراً عادلاً بين استرداد العميل أو تحرير المبلغ للمستقل.' },
+      { q: 'ماذا يحدث في حال نزاع؟', a: 'يمكنك التواصل مع فريق الدعم عبر صفحة اتصل بنا. بعد إطلاق نظام حماية المدفوعات، ستتوفر آليات نزاع مدمجة داخل المنصة.' },
     ],
     freelancersSection: {
       subtitle: 'ملفات موثقة، تقييمات حقيقية، جاهزون للتوظيف في ليبيا',
@@ -101,7 +101,7 @@ const HOME_CONTENT = {
       title: 'كيف يعمل {brand}؟',
       subtitle: 'ثلاث خطوات بسيطة — من التصفح في ليبيا إلى إنجاز المشروع بالدينار الليبي',
       detailedGuide: 'دليل مفصّل',
-      escrow: 'نظام الضمان',
+      escrow: 'حماية المدفوعات قريبًا',
       about: 'من نحن',
     },
     faqSection: {
@@ -114,11 +114,11 @@ const HOME_CONTENT = {
     },
     resources: {
       title: 'موارد لتوظيف المستقلين الليبيين',
-      subtitle: 'أدلة وأسئلة شائعة وشرح الضمان بلغة واضحة.',
+      subtitle: 'أدلة وأسئلة شائعة وتحديثات حول حماية المدفوعات القادمة.',
       links: [
         { label: 'الأدلة', href: '/how-it-works' },
         { label: 'الأسئلة الشائعة', href: '/help' },
-        { label: 'حماية الضمان', href: '/escrow' },
+        { label: 'حماية المدفوعات قريبًا', href: '/escrow' },
       ],
     },
   },
@@ -132,7 +132,7 @@ const HOME_CONTENT = {
         items: [
           'Wasting hours sorting unqualified proposals on every project',
           "Dealing with freelancers who don't understand the Libyan market and context",
-          'No payment protection when things go wrong',
+          'No live payment protection yet when things go wrong',
           'Hard to verify skill level before committing',
         ],
       },
@@ -147,7 +147,7 @@ const HOME_CONTENT = {
       },
     },
     features: [
-      { title: 'Escrow-protected payments', body: 'Project funds in Libyan Dinar are held until you approve delivery — safety for both sides.', icon: '🛡️' },
+      { title: 'Payment Protection — Coming Soon', body: 'We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers.', icon: '🛡️' },
       { title: 'Blind review system', body: 'Both parties review before ratings go live — reducing bias and building real trust.', icon: '⭐' },
       { title: 'Instant messaging', body: 'Communicate, share files, and keep conversations in-platform without losing context.', icon: '⚡' },
       { title: 'Quality custom proposals', body: 'Complete profiles and clear LYD proposals — less noise, stronger signal for serious clients.', icon: '📋' },
@@ -160,7 +160,7 @@ const HOME_CONTENT = {
       items: [
         { step: '01', title: 'Create your account', body: 'Sign up in minutes and set up your client or freelancer profile. Free to start.', badge: 'Ready to hire or work' },
         { step: '02', title: 'Find your matches', body: 'Post a project or submit a proposal. Clear LYD budgets attract serious people.', badge: 'Less noise, clearer signal' },
-        { step: '03', title: 'Deliver, get paid, grow', body: 'Work is escrow-protected. Reputation builds with every completed job in Libya.', badge: 'Trust compounds' },
+        { step: '03', title: 'Deliver, get paid, grow', body: 'Complete the work and build your reputation. Payment protection is coming soon to raise trust for both sides in Libya.', badge: 'Trust compounds' },
       ],
     },
     audience: {
@@ -170,7 +170,7 @@ const HOME_CONTENT = {
           'Access a pool of verified Libyan freelancers',
           'Browse profiles and reviews before committing',
           'Post your project free in Libyan Dinar',
-          'Pay through escrow when you approve the work',
+          'Payment protection coming soon inside the platform',
           'Blind reviews for genuine trust',
           'Dedicated support for disputes',
         ],
@@ -180,7 +180,7 @@ const HOME_CONTENT = {
         items: [
           'Find projects from verified Libyan companies every day',
           'Serious clients — submit tailored LYD proposals',
-          'Get escrow-guaranteed payments on every project',
+          'Payment protection system in progress — coming soon',
           'Build a profile and reputation that matter locally',
           'Instant messaging so you never lose an important conversation',
           'Boost your chances by completing your profile and portfolio',
@@ -188,7 +188,7 @@ const HOME_CONTENT = {
       },
     },
     trustBadges: [
-      'Escrow-guaranteed payments',
+      'Payment protection coming soon',
       'Blind review system',
       'Verified freelancer profiles',
       'Secure and private',
@@ -197,12 +197,12 @@ const HOME_CONTENT = {
     ],
     faq: [
       { q: 'How does Nuqati work?', a: 'Nuqati is for freelancers: earn points through activity and use them to submit proposals (10 points per proposal). See your Nuqati page in the dashboard.' },
-      { q: 'Is joining free?', a: 'Yes. Registration and browsing are free. You only pay when you accept a proposal and fund escrow in Libyan Dinar.' },
-      { q: 'How does escrow work?', a: 'When you accept a proposal, the project amount (LYD) is held in escrow. It is released to the freelancer when work is confirmed, or refunded to the client per platform policy.' },
-      { q: 'Are payments secure?', a: "Yes. Escrow protects both sides: clients don't pay unprotected, and freelancers know funds exist before starting." },
+      { q: 'Is joining free?', a: 'Yes. Registration and browsing are free. Budgets and proposals are in Libyan Dinar. Electronic payment protection is coming soon.' },
+      { q: 'Is there payment protection?', a: 'Payment Protection — Coming Soon. We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers.' },
+      { q: 'Are electronic payments live now?', a: 'Not yet. The payment gateway and in-platform transaction protection are being prepared and will be available soon.' },
       { q: 'Can I work as both client and freelancer?', a: 'Yes. One account for both roles. Switch between client and freelancer mode from the dashboard anytime.' },
       { q: 'How do reviews stay honest?', a: "We use blind reviews: neither party's rating is published until the other reviews — reducing retaliation or flattery." },
-      { q: 'What happens in a dispute?', a: 'You can open an escrow dispute. Our admin team reviews evidence and decides fairly between client refund or freelancer release.' },
+      { q: 'What happens in a dispute?', a: 'Contact our support team via the contact page. After payment protection launches, built-in dispute flows will be available on the platform.' },
     ],
     freelancersSection: {
       subtitle: 'Verified profiles, real reviews, ready to hire in Libya',
@@ -221,7 +221,7 @@ const HOME_CONTENT = {
       title: 'How does {brand} work?',
       subtitle: 'Three simple steps — from browsing in Libya to completing projects in Libyan Dinar',
       detailedGuide: 'Detailed guide',
-      escrow: 'Escrow system',
+      escrow: 'Payment protection — coming soon',
       about: 'About us',
     },
     faqSection: {
@@ -234,11 +234,11 @@ const HOME_CONTENT = {
     },
     resources: {
       title: 'Resources for hiring Libyan freelancers',
-      subtitle: 'Guides, FAQs, and escrow explained in plain language.',
+      subtitle: 'Guides, FAQs, and updates on upcoming payment protection.',
       links: [
         { label: 'Guides', href: '/how-it-works' },
         { label: 'FAQ', href: '/help' },
-        { label: 'Escrow protection', href: '/escrow' },
+        { label: 'Payment protection — coming soon', href: '/escrow' },
       ],
     },
   },

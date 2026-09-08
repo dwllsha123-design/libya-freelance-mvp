@@ -96,6 +96,7 @@ enum NotificationType {
   PRO_EXPIRING_1_DAY
   PRO_EXPIRED
   PRO_RENEWED
+  PERFORMANCE_BADGE_EARNED
 }
 
 enum AdminAuditAction {
@@ -151,6 +152,16 @@ enum AdminAuditAction {
   SUBSCRIPTION_EXTENDED
   SUBSCRIPTION_SUSPENDED
   SUBSCRIPTION_CANCELLED
+  VERIFIED_TALENT_GRANTED
+  VERIFIED_TALENT_REMOVED
+}
+
+enum FreelancerPerformanceLevel {
+  NONE
+  RISING
+  PROVEN
+  TOP_PERFORMER
+  ELITE
 }
 
 enum CommissionPolicyStatus {
@@ -358,6 +369,7 @@ model User {
   subscriptionAdminActions      SubscriptionAdminAction[] @relation("SubscriptionAdminActor")
   profileViewsAsSubject         ProfileViewDaily[]        @relation("ProfileViewSubject")
   productAnalyticsEvents        ProductAnalyticsEvent[]
+  verifiedTalentGrants          FreelancerProfile[]       @relation("VerifiedTalentGrants")
 
   @@index([role])
   @@index([status])
@@ -476,15 +488,28 @@ model FreelancerProfile {
   averageRating     Float                  @default(0)
   /// Limited Pro listing tie-breaker (0 or 1). Quality ranking stays primary.
   proBoostScore     Int                    @default(0)
+  /// Highest earned performance level (Rising → Proven → Top → Elite). Recalculated by BadgeService.
+  performanceLevel  FreelancerPerformanceLevel @default(NONE)
+  /// Last level for which a PERFORMANCE_BADGE_EARNED notification was sent (dedupe).
+  performanceLevelNotified FreelancerPerformanceLevel @default(NONE)
+  /// Verified platform earnings only (escrow/payment releases). Not used for badges until payment protection is live.
+  totalPlatformEarnings Decimal @default(0) @db.Decimal(14, 2)
+  /// Independent admin-granted badge (not part of the performance hierarchy).
+  isVerifiedTalent Boolean @default(false)
+  verifiedTalentAt DateTime?
+  verifiedTalentByAdminId String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
 
   profile   Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
   skills    FreelancerSkill[]
   portfolio PortfolioItem[]
+  verifiedTalentByAdmin User? @relation("VerifiedTalentGrants", fields: [verifiedTalentByAdminId], references: [id], onDelete: SetNull)
 
   @@index([proBoostScore])
   @@index([averageRating])
+  @@index([performanceLevel])
+  @@index([isVerifiedTalent])
 }
 
 model ClientProfile {

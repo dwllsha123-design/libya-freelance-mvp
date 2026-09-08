@@ -28,7 +28,7 @@ const TEMPLATES = {
     budget: '## Timeline & budget',
     budgetNote: '- Please include estimated timeline and budget in Libyan Dinar (LYD) in proposals',
     notes: '## Notes',
-    notesBody: '- Contact via Libyi Freelance for more details',
+    notesBody: '- Contact via Libyan Freelance for more details',
   },
 } as const;
 

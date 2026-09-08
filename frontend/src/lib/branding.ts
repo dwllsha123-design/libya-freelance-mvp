@@ -1,7 +1,7 @@
 export const PLATFORM_NAME_AR = 'ليبي فريلانس';
 /** الاسم المعروض في الشعار — حروف مفصّلة بكشيدة */
 export const PLATFORM_NAME_AR_STYLED = 'لــــيـــــبـــي فريلانس';
-export const PLATFORM_NAME_EN = 'Libyi Freelance';
+export const PLATFORM_NAME_EN = 'Libyan Freelance';
 export const PLATFORM_TAGLINE_AR = 'سوق العمل الحر الليبي';
 export const PLATFORM_COUNTRY_AR = 'ليبيا';
 export const PLATFORM_FLAG = '🇱🇾';

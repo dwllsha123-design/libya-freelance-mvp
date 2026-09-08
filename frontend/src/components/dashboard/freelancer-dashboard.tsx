@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/currency';
 import type { NuqatiDashboard, NuqatiTask } from '@/lib/nuqati';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
+import { FreelancerBadgesSection } from '@/components/badges/freelancer-badges-section';
 
 const SETUP_TASK_KEYS = new Set(['PROFILE_COMPLETE', 'FIRST_PORTFOLIO', 'FIRST_JOB']);
 const PROMO_DISMISS_KEY = 'lf-dashboard-nuqati-promo-dismissed';
@@ -269,6 +270,10 @@ export function FreelancerDashboard() {
             </span>
           </div>
         </header>
+
+        <div className="mt-6">
+          <FreelancerBadgesSection />
+        </div>
 
         <div className="mt-6 grid animate-fade-up gap-3 sm:grid-cols-[1.4fr_1fr]" style={{ animationDelay: '50ms' }}>
           <Link

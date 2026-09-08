@@ -121,7 +121,7 @@ export class SubscriptionsService {
 
     if (!(await this.verification.isIdentityVerified(userId))) {
       throw new PreconditionFailedException(
-        'يجب توثيق الهوية قبل الاشتراك في Libya Freelance Pro',
+        'يجب توثيق الهوية قبل الاشتراك في ليبي فريلانس برو',
       );
     }
 
@@ -383,7 +383,7 @@ export class SubscriptionsService {
     await this.notifications.create(
       subscription.userId,
       isRenewal ? NotificationType.PRO_RENEWED : NotificationType.PRO_ACTIVATED,
-      isRenewal ? 'تم تجديد اشتراك Pro' : 'تم تفعيل Libya Freelance Pro',
+      isRenewal ? 'تم تجديد اشتراك Pro' : 'تم تفعيل ليبي فريلانس برو',
       `اشتراكك فعّال حتى ${expiresAt.toISOString().slice(0, 10)}.`,
       `/dashboard/pro`,
     );
@@ -454,7 +454,7 @@ export class SubscriptionsService {
         row.userId,
         NotificationType.PRO_EXPIRED,
         'انتهى اشتراك Pro',
-        'انتهى اشتراك Libya Freelance Pro. يمكنك التجديد في أي وقت. بياناتك محفوظة.',
+        'انتهى اشتراك ليبي فريلانس برو. يمكنك التجديد في أي وقت. بياناتك محفوظة.',
         `/dashboard/pro`,
       );
     }

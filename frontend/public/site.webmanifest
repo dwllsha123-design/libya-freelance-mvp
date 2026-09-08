@@ -1,7 +1,9 @@
 {
-  "name": "Libya Freelance",
-  "short_name": "Libya Freelance",
-  "description": "سوق العمل الحر الليبي",
+  "name": "Libyan Freelance",
+  "short_name": "Libyan Freelance",
+  "description": "سوق العمل الحر الليبي — ليبي فريلانس",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F9F6F0",

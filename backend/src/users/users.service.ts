@@ -38,6 +38,7 @@ export class UsersService {
             firstName: true,
             lastName: true,
             username: true,
+            profilePhoto: true,
             freelancerProfile: { select: { id: true } },
             clientProfile: { select: { id: true, displayName: true } },
           },

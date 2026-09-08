@@ -145,7 +145,7 @@ export default function ProDashboardPage() {
     <div className="page-gutter mx-auto max-w-2xl space-y-6 py-8">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold text-on-surface">
-          {displayPlan?.nameAr ?? 'Libya Freelance Pro'}
+          {displayPlan?.nameAr ?? 'ليبي فريلانس برو'}
         </h1>
         {me?.isPro ? <ProBadge /> : null}
         {me?.identityVerified ? <IdentityVerifiedBadge /> : null}

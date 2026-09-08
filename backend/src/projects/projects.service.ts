@@ -36,6 +36,7 @@ import {
 import { EscrowService } from '../escrow/escrow.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { BadgeService } from '../badges/badge.service.js';
 
 const projectInclude = {
   category: true,
@@ -82,6 +83,7 @@ export class ProjectsService {
     private readonly escrowService: EscrowService,
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
+    private readonly badges: BadgeService,
   ) {}
 
   async create(clientId: string, dto: CreateProjectDto) {
@@ -514,6 +516,8 @@ export class ProjectsService {
           .onFirstJobCompleted(freelancerId, projectId)
           .catch(() => undefined);
       }
+
+      void this.badges.recalculateForUser(freelancerId).catch(() => undefined);
     }
 
     return this.formatManageProject(updated);

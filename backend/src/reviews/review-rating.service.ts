@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma, ProjectStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
@@ -36,7 +36,12 @@ export class ReviewRatingService {
     if (!user?.profile) return;
 
     const aggregate = await tx.review.aggregate({
-      where: { reviewedUserId: userId, isVisible: true },
+      where: {
+        reviewedUserId: userId,
+        isVisible: true,
+        // Only reviews tied to completed projects count toward reputation.
+        project: { status: ProjectStatus.COMPLETED },
+      },
       _avg: { rating: true },
       _count: { rating: true },
     });

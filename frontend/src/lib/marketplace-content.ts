@@ -157,7 +157,7 @@ export function getCategorySeoTitle(name: string, locale: AppLocale = 'ar') {
 
 export function getCitySeoTitle(name: string, locale: AppLocale = 'ar') {
   return locale === 'en'
-    ? `Freelancers & projects in ${name} | Libyi Freelance`
+    ? `Freelancers & projects in ${name} | Libyan Freelance`
     : `مستقلون ومشاريع في ${name} | ليبي فريلانس`;
 }
 

@@ -28,6 +28,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   switchRole: (role: 'FREELANCER' | 'CLIENT') => Promise<AuthUser>;
+  updateProfilePhoto: (profilePhoto: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -145,6 +146,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [accessToken, applySession],
   );
 
+  const updateProfilePhoto = useCallback((profilePhoto: string | null) => {
+    setUser((prev) => {
+      if (!prev?.profile) return prev;
+      return {
+        ...prev,
+        profile: { ...prev.profile, profilePhoto },
+      };
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -155,8 +166,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshSession,
       switchRole,
+      updateProfilePhoto,
     }),
-    [user, accessToken, isLoading, login, register, logout, refreshSession, switchRole],
+    [
+      user,
+      accessToken,
+      isLoading,
+      login,
+      register,
+      logout,
+      refreshSession,
+      switchRole,
+      updateProfilePhoto,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

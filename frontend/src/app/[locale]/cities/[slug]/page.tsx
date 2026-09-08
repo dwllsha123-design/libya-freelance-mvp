@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: getCitySeoTitle(name, appLocale),
     description: getLocalizedDescription(city, appLocale),
     path: `/cities/${city.slug}`,
+    locale: appLocale,
   });
 }
 

@@ -109,7 +109,7 @@ export const DEFAULT_SETTINGS: Record<PlatformSettingKey, unknown> = {
   maintenanceMessage: '',
   maintenanceStartsAt: null,
   maintenanceEndsAt: null,
-  platformName: 'Libya Freelance',
+  platformName: 'Libyan Freelance',
   supportEmail: 'support@libyanfreelance.ly',
   currency: 'LYD',
   privacyPolicyUrl: 'https://libyanfreelance.ly/privacy',

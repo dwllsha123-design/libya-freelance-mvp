@@ -1,0 +1,35 @@
+{
+  "sectionTitle": "الشارات",
+  "currentLevelLabel": "مستواك الحالي",
+  "nextLevelLabel": "المستوى التالي",
+  "noLevelYet": "لا توجد شارة أداء بعد",
+  "openRequirements": "عرض متطلبات الشارات وتقدمك",
+  "modalTitle": "متطلبات الشارات وتقدمك",
+  "modalSubtitle": "تابع تقدمك واعرف ما تحتاجه للوصول إلى المستوى التالي.",
+  "close": "إغلاق",
+  "projectsLabel": "المشاريع المكتملة",
+  "ratingLabel": "التقييم",
+  "progressToNext": "{current} / {required} مشاريع للوصول إلى {next}",
+  "ratingProgress": "التقييم: {current} / {required}",
+  "independentBadge": "شارة مستقلة",
+  "adminGrantedHint": "تُمنح يدويًا من إدارة المنصة",
+  "levels": {
+    "NONE": "بدون مستوى",
+    "RISING": "مستقل صاعد",
+    "PROVEN": "مستقل مُثبت",
+    "TOP_PERFORMER": "أداء متميز",
+    "ELITE": "مستقل نخبة",
+    "VERIFIED_TALENT": "موهبة موثقة"
+  },
+  "tooltips": {
+    "RISING": "أكمل هذا المستقل مشروعين أو أكثر وحافظ على تقييم 4.5 أو أعلى.",
+    "PROVEN": "أكمل هذا المستقل 10 مشاريع أو أكثر وحافظ على تقييم 4.7 أو أعلى.",
+    "TOP_PERFORMER": "أكمل هذا المستقل 25 مشروعًا أو أكثر وحافظ على تقييم 4.8 أو أعلى.",
+    "ELITE": "من أعلى مستويات الأداء في ليبي فريلانس.",
+    "VERIFIED_TALENT": "تم التحقق من هذا الحساب واعتماده بواسطة إدارة ليبي فريلانس."
+  },
+  "earned": "مكتسبة",
+  "locked": "غير مكتسبة بعد",
+  "loadFailed": "تعذر تحميل الشارات",
+  "loginRequired": "يرجى تسجيل الدخول"
+}

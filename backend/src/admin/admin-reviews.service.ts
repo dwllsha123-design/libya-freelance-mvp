@@ -3,6 +3,7 @@ import { AdminAuditAction, Prisma } from '@prisma/client';
 import { ReviewRatingService } from '../reviews/review-rating.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AdminAuditService } from './admin-audit.service.js';
+import { BadgeService } from '../badges/badge.service.js';
 import type { AdminReviewsQueryDto } from './dto/admin.dto.js';
 
 const reviewInclude = {
@@ -37,6 +38,7 @@ export class AdminReviewsService {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
     private readonly ratingService: ReviewRatingService,
+    private readonly badges: BadgeService,
   ) {}
 
   async list(query: AdminReviewsQueryDto) {
@@ -136,6 +138,8 @@ export class AdminReviewsService {
         tx,
       );
     });
+
+    void this.badges.recalculateForUser(review.reviewedUserId).catch(() => undefined);
 
     return this.getById(reviewId);
   }

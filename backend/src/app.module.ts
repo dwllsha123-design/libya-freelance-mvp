@@ -31,6 +31,7 @@ import { ReferenceDataModule } from './reference-data/reference-data.module.js';
 import { AgreementsModule } from './agreements/agreements.module.js';
 import { VerificationModule } from './verification/verification.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
+import { BadgesModule } from './badges/badges.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { PresenceModule } from './presence/presence.module.js';
 
@@ -67,6 +68,7 @@ import { PresenceModule } from './presence/presence.module.js';
     AgreementsModule,
     VerificationModule,
     SubscriptionsModule,
+    BadgesModule,
   ],
   controllers: [HealthController],
   providers: [

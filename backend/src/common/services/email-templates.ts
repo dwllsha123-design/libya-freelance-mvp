@@ -8,7 +8,7 @@ export type TransactionalEmailContent = {
 };
 
 const BRAND_AR = 'ليبي فريلانس';
-const BRAND_EN = 'Libya Freelance';
+const BRAND_EN = 'Libyan Freelance';
 
 function escapeHtml(value: string): string {
   return value
