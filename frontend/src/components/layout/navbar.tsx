@@ -15,6 +15,8 @@ import { DemoVideoModal } from '@/components/layout/demo-video-modal';
 import { UserAccountMenu } from '@/components/account/user-account-menu';
 import { UserAvatarSkeleton } from '@/components/account/user-avatar';
 import { useIsClient } from '@/hooks/use-is-client';
+import { isStaffRole } from '@/lib/roles';
+import { StaffReturnToAdminLink } from '@/components/admin/staff-return-to-admin-link';
 
 function NavLink({
   href,
@@ -142,6 +144,9 @@ export function Navbar() {
     t('roleClient');
   const canUseMarketplace =
     user?.role === 'CLIENT' || user?.role === 'FREELANCER';
+  const isStaffVisitor = isStaffRole(user?.role);
+  /** Staff browse public pages as visitors — no marketplace account chrome. */
+  const showMarketplaceSession = Boolean(user) && !isStaffVisitor;
 
   const browseMenu = [
     {
@@ -164,7 +169,7 @@ export function Navbar() {
     },
   ];
 
-  const activityMenu = user
+  const activityMenu = showMarketplaceSession
     ? [
         {
           href: '/dashboard',
@@ -172,7 +177,7 @@ export function Navbar() {
           desc: t('dashboardDesc'),
           icon: '◱',
         },
-        ...(user.role === 'FREELANCER'
+        ...(user?.role === 'FREELANCER'
           ? [
               {
                 href: '/dashboard/proposals',
@@ -268,7 +273,7 @@ export function Navbar() {
           </NavLink>
           <NavDropdown label={t('findWork')} items={browseMenu} />
           <NavDropdown label={t('myActivity')} items={activityMenu} />
-          {user ? (
+          {showMarketplaceSession ? (
             <Link
               href="/messages"
               className="relative inline-flex items-center whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink xl:px-4"
@@ -301,9 +306,11 @@ export function Navbar() {
           </div>
           {isLoading ? (
             <UserAvatarSkeleton />
-          ) : user ? (
+          ) : isStaffVisitor ? (
+            <StaffReturnToAdminLink className="hidden sm:inline" />
+          ) : showMarketplaceSession ? (
             <>
-              {user.role === 'FREELANCER' ? (
+              {user?.role === 'FREELANCER' ? (
                 <div className="hidden xl:block">
                   <NuqatiBadge />
                 </div>
@@ -394,7 +401,12 @@ export function Navbar() {
                 <NavLink href="/#how-it-works" onNavigate={closeMobile}>
                   {t('howItWorksFull')}
                 </NavLink>
-                {user ? (
+                {isStaffVisitor ? (
+                  <div className="mb-3 rounded-2xl border border-line bg-cream-deep/60 p-3">
+                    <StaffReturnToAdminLink />
+                  </div>
+                ) : null}
+                {showMarketplaceSession && user ? (
                   <>
                     <div className="mb-3 rounded-2xl border border-line bg-cream-deep/60 p-3">
                       <p className="font-display text-sm font-bold text-ink">

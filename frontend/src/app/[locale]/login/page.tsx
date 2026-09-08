@@ -2,7 +2,7 @@
 
 import { useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   AuthCard,
@@ -17,23 +17,26 @@ import { createLoginSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
 import { buildAuthHref, resolvePostAuthPath } from '@/lib/auth-redirect';
 import { getAdminLoginHref, isStaffRole } from '@/lib/roles';
+import { useLocale } from 'next-intl';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next');
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const locale = useLocale();
   const t = useTranslations('auth');
   const tBrand = useTranslations('brand');
   const tValidation = useTranslations('validation');
   const loginSchema = useMemo(() => createLoginSchema(tValidation), [tValidation]);
   const [error, setError] = useState<string | null>(null);
+  const [staffBlocked, setStaffBlocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setStaffBlocked(false);
 
     const formData = new FormData(event.currentTarget);
     const payload = {
@@ -53,16 +56,19 @@ function LoginForm() {
     try {
       const user = await login(parsed.data.email, parsed.data.password, 'platform');
       if (isStaffRole(user.role)) {
-        window.location.assign(getAdminLoginHref(locale));
+        await logout();
+        setStaffBlocked(true);
+        setError(t('staffUseAdminLogin'));
         return;
       }
       router.push(resolvePostAuthPath(nextPath));
     } catch (err) {
       if (
         err instanceof ApiError &&
-        /بوابة الإدارة|admin/i.test(err.message)
+        /حساب إداري|لوحة الإدارة|staff account|admin panel/i.test(err.message)
       ) {
-        window.location.assign(getAdminLoginHref(locale));
+        setStaffBlocked(true);
+        setError(t('staffUseAdminLogin'));
         return;
       }
       setError(err instanceof ApiError ? err.message : t('loginFailed'));
@@ -88,7 +94,18 @@ function LoginForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? <div className={authErrorClassName}>{error}</div> : null}
+        {error ? (
+          <div className={authErrorClassName}>
+            <p>{error}</p>
+            {staffBlocked ? (
+              <p className="mt-2">
+                <a href={getAdminLoginHref(locale)} className={authLinkClassName}>
+                  {t('staffAdminLoginLink')}
+                </a>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div>
           <label htmlFor="email" className={authLabelClassName}>

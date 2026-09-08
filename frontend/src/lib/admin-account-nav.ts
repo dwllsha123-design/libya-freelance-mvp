@@ -36,17 +36,18 @@ export function isAdminInternalAccountHref(href: string): boolean {
   );
 }
 
-/** Marketplace routes staff must never be sent to from admin UI. */
+/** Marketplace account/action routes staff must never open from admin UI. */
+export {
+  STAFF_BLOCKED_MARKETPLACE_PREFIXES,
+  isStaffBlockedMarketplacePath as isForbiddenStaffMarketplacePath,
+} from '@/lib/staff-marketplace-access';
+
+/** @deprecated Use STAFF_BLOCKED_MARKETPLACE_PREFIXES */
 export const FORBIDDEN_STAFF_MARKETPLACE_PATHS = [
   '/profile',
   '/settings',
   '/dashboard',
   '/dashboard/profile',
+  '/messages',
+  '/notifications',
 ] as const;
-
-export function isForbiddenStaffMarketplacePath(href: string): boolean {
-  const path = (href.split('?')[0] ?? href).replace(/\/$/, '') || '/';
-  return FORBIDDEN_STAFF_MARKETPLACE_PATHS.some(
-    (forbidden) => path === forbidden || path.startsWith(`${forbidden}/`),
-  );
-}

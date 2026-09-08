@@ -217,6 +217,7 @@
   "systemStatusOk": "النظام يعمل",
   "ownerProfile": "الحساب",
   "myAccount": "حسابي",
+  "returnToAdminPanel": "العودة إلى لوحة الإدارة",
   "staffAccountTitle": "حسابي",
   "staffAccountSubtitle": "معلومات حساب الإدارة فقط — بدون بيانات السوق",
   "staffFullName": "الاسم الكامل",

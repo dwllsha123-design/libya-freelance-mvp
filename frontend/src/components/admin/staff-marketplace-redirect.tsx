@@ -6,9 +6,11 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { isAdminLoginPath, isAdminPath } from '@/lib/site-urls';
 import { getAdminHomeHref, isStaffRole } from '@/lib/roles';
+import { isStaffBlockedMarketplacePath } from '@/lib/staff-marketplace-access';
 
 /**
- * Hard fallback: staff sessions on marketplace surfaces are sent back to admin.
+ * Redirect staff only from authenticated marketplace account/action routes.
+ * Public marketing and browse pages remain viewable.
  */
 export function StaffMarketplaceRedirect({
   children,
@@ -22,6 +24,7 @@ export function StaffMarketplaceRedirect({
   useEffect(() => {
     if (isLoading || !user || !isStaffRole(user.role)) return;
     if (isAdminPath(pathname) || isAdminLoginPath(pathname)) return;
+    if (!isStaffBlockedMarketplacePath(pathname)) return;
     window.location.assign(getAdminHomeHref(locale));
   }, [user, isLoading, pathname, locale]);
 

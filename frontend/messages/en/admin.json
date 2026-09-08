@@ -217,6 +217,7 @@
   "systemStatusOk": "System OK",
   "ownerProfile": "Account",
   "myAccount": "My account",
+  "returnToAdminPanel": "Back to admin panel",
   "staffAccountTitle": "My account",
   "staffAccountSubtitle": "Staff account details only — no marketplace data",
   "staffFullName": "Full name",

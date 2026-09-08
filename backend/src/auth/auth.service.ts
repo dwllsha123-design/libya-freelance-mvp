@@ -156,9 +156,9 @@ export class AuthService {
           'حسابات المنصة لا يمكنها دخول لوحة الإدارة',
         );
       }
-    } else if (isStaffRole(user.role)) {
+} else if (isStaffRole(user.role)) {
       throw new ForbiddenException(
-        'حسابات الإدارة تسجّل الدخول عبر بوابة الإدارة فقط',
+        'هذا حساب إداري. استخدم لوحة الإدارة.',
       );
     } else if (!isPlatformRole(user.role)) {
       throw new ForbiddenException('نوع الحساب غير صالح لتسجيل الدخول');
