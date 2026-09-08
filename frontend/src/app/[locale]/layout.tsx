@@ -11,6 +11,7 @@ import { SocketProvider } from '@/contexts/socket-context';
 import { PresenceProvider } from '@/hooks/use-presence';
 import { AppChrome } from '@/components/layout/app-chrome';
 import { WebPushEnabler } from '@/components/notifications/web-push-enabler';
+import { StaffMarketplaceRedirect } from '@/components/admin/staff-marketplace-redirect';
 import { routing, type AppLocale } from '@/i18n/routing';
 
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
@@ -127,7 +128,9 @@ export default async function LocaleLayout({
               <SocketProvider>
                 <PresenceProvider>
                   <WebPushEnabler />
-                  <AppChrome>{children}</AppChrome>
+                  <StaffMarketplaceRedirect>
+                    <AppChrome>{children}</AppChrome>
+                  </StaffMarketplaceRedirect>
                 </PresenceProvider>
               </SocketProvider>
             </AuthProvider>

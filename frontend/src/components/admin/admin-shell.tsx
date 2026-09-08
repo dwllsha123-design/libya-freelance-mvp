@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { useAuth } from '@/contexts/auth-context';
 import { useAdminApi, type AdminSearchResult } from '@/hooks/use-admin';
 import { getSiteUrl } from '@/lib/site-urls';
+import { AdminAccountMenu } from '@/components/admin/admin-account-menu';
 
 type NavItem = {
   href: string;
@@ -133,13 +134,11 @@ export function AdminShell({
   title?: string;
 }) {
   const t = useTranslations('admin');
-  const tNav = useTranslations('nav');
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const api = useAdminApi();
   const siteUrl = getSiteUrl();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -161,7 +160,6 @@ export function AdminShell({
   useEffect(() => {
     const closeTimer = window.setTimeout(() => {
       setDrawerOpen(false);
-      setProfileOpen(false);
       setSearchOpen(false);
     }, 0);
     return () => window.clearTimeout(closeTimer);
@@ -415,35 +413,7 @@ export function AdminShell({
                 {t('systemStatusOk')}
               </span>
               <LanguageSwitcher />
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  className="rounded-xl border px-3 py-2 text-sm"
-                >
-                  {t('ownerProfile')}
-                </button>
-                {profileOpen ? (
-                  <div className="absolute left-0 mt-2 w-44 rounded-xl border bg-white py-1 shadow-lg">
-                    <a href={siteUrl} className="block px-3 py-2 text-sm hover:bg-slate-50">
-                      {t('myAccount')}
-                    </a>
-                    <Link
-                      href="/admin/security"
-                      className="block px-3 py-2 text-sm hover:bg-slate-50"
-                    >
-                      {t('securityCenter')}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => void logout()}
-                      className="block w-full px-3 py-2 text-right text-sm text-red-600 hover:bg-slate-50"
-                    >
-                      {tNav('logout')}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              <AdminAccountMenu />
             </div>
           </div>
         </header>
