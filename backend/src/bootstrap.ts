@@ -31,6 +31,7 @@ export function configureApp(app: NestExpressApplication) {
     expressApp.use('/api/auth/register', authRateLimiters.register);
     expressApp.use('/api/auth/forgot-password', authRateLimiters.forgotPassword);
     expressApp.use('/api/auth/reset-password', authRateLimiters.resetPassword);
+    expressApp.use('/api/auth/change-password', authRateLimiters.changePassword);
     expressApp.use('/api/auth/refresh', authRateLimiters.refresh);
   }
 

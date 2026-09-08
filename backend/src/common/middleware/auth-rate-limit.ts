@@ -31,5 +31,6 @@ export const authRateLimiters = {
   register: createAuthRateLimiter(5),
   forgotPassword: createAuthRateLimiter(5),
   resetPassword: createAuthRateLimiter(10),
+  changePassword: createAuthRateLimiter(10),
   refresh: createAuthRateLimiter(30),
 };

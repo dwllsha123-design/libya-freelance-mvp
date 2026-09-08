@@ -7,6 +7,10 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role } from '@prisma/client';
+import {
+  PASSWORD_COMPLEXITY_MESSAGE,
+  PASSWORD_COMPLEXITY_REGEX,
+} from '../password.util.js';
 
 export class RegisterDto {
   @IsString()
@@ -22,9 +26,8 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  @Matches(PASSWORD_COMPLEXITY_REGEX, {
+    message: PASSWORD_COMPLEXITY_MESSAGE,
   })
   password!: string;
 

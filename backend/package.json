@@ -27,6 +27,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:demo": "tsx prisma/seed-demo.ts",
     "admin:create": "tsx prisma/scripts/create-admin.ts",
+    "admin:bootstrap": "node prisma/scripts/bootstrap-super-admin.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

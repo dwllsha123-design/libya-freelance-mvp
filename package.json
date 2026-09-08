@@ -13,6 +13,7 @@
     "typecheck:api": "npm run typecheck --prefix backend",
     "typecheck:web": "npm run typecheck --prefix frontend",
     "test:api": "npm run test --prefix backend",
+    "admin:bootstrap": "npm run admin:bootstrap --prefix backend",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "test:db:start": "docker compose -f docker-compose.test.yml up -d --wait",

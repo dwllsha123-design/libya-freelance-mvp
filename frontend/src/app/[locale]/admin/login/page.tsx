@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+import { useRouter, Link } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { createLoginSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
@@ -105,6 +105,12 @@ export default function AdminLoginPage() {
             {isSubmitting ? tAuth('loginSubmitting') : t('adminLoginButton')}
           </button>
         </form>
+
+        <p className="mt-4 text-center text-sm">
+          <Link href="/forgot-password" className="text-primary hover:underline">
+            {tAuth('forgotPassword')}
+          </Link>
+        </p>
 
         <p className="mt-6 text-center text-xs text-slate-400">{t('adminLoginNoPublicRegister')}</p>
       </div>

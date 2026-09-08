@@ -9,9 +9,11 @@ import {
   AdminPageHeader,
   AdminPanel,
 } from '@/components/admin/admin-layout-ui';
+import { ChangePasswordForm } from '@/components/account/change-password-form';
 
 export default function AdminSecurityPage() {
   const t = useTranslations('admin');
+  const tAuth = useTranslations('auth');
   const api = useAdminApi();
   const [stats, setStats] = useState<AdminDashboardOverview | null>(null);
 
@@ -41,6 +43,11 @@ export default function AdminSecurityPage() {
         />
         <AdminKpiCard label={t('sessionsRevokedNote')} value="—" hint={t('sessionsRevokedHint')} />
       </div>
+
+      <AdminPanel title={tAuth('changePasswordSection')}>
+        <p className="mb-4 text-sm text-slate-600">{tAuth('changePasswordHint')}</p>
+        <ChangePasswordForm />
+      </AdminPanel>
 
       <AdminPanel
         title={t('recentSecurityActions')}

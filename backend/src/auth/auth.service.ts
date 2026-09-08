@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import { Role, UserStatus, ProductAnalyticsEventType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PUBLIC_ROLES } from './constants.js';
-import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
@@ -23,10 +22,12 @@ import {
   hashToken,
   parseDurationToMs,
 } from '../common/utils/token.util.js';
+import { hashPassword, verifyPassword } from './password.util.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { SwitchRoleDto } from './dto/switch-role.dto.js';
 import type {
+  ChangePasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto/password.dto.js';
@@ -35,8 +36,6 @@ import type {
   JwtPayload,
   SafeUser,
 } from './types/auth-user.type.js';
-
-const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
@@ -70,7 +69,7 @@ export class AuthService {
       throw new ConflictException('البريد الإلكتروني مستخدم بالفعل');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const passwordHash = await hashPassword(dto.password);
     const username = await this.usersService.generateUniqueUsername(
       dto.firstName,
       dto.lastName,
@@ -141,7 +140,7 @@ export class AuthService {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
     }
 
-    const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const passwordValid = await verifyPassword(dto.password, user.passwordHash);
 
     if (!passwordValid) {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
@@ -281,7 +280,7 @@ export class AuthService {
       throw new BadRequestException('رمز إعادة التعيين غير صالح أو منتهي');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const passwordHash = await hashPassword(dto.password);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
@@ -300,6 +299,59 @@ export class AuthService {
     await this.realtimeSessions.disconnectUser(resetToken.userId);
 
     return { message: 'تم تحديث كلمة المرور بنجاح' };
+  }
+
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    if (dto.newPassword !== dto.confirmNewPassword) {
+      throw new BadRequestException('كلمتا المرور الجديدتان غير متطابقتين');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'كلمة المرور الجديدة يجب أن تختلف عن الحالية',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true, status: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('المستخدم غير موجود');
+    }
+
+    assertUserCanAuthenticate(user.status);
+
+    const currentValid = await verifyPassword(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!currentValid) {
+      throw new BadRequestException('كلمة المرور الحالية غير صحيحة');
+    }
+
+    const passwordHash = await hashPassword(dto.newPassword);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+        },
+      }),
+      this.prisma.refreshToken.deleteMany({
+        where: { userId },
+      }),
+    ]);
+
+    await this.realtimeSessions.disconnectUser(userId);
+
+    return { message: 'تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مجددًا.' };
   }
 
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
