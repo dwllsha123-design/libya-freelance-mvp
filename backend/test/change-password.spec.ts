@@ -107,7 +107,7 @@ describe('RolesGuard SUPER_ADMIN + non-admin', () => {
     } as never;
   }
 
-  it('allows SUPER_ADMIN on ADMIN-required routes', () => {
+  it('allows SUPER_ADMIN on ADMIN routes; rejects FREELANCER', () => {
     const reflector = {
       getAllAndOverride: vi.fn().mockReturnValue([Role.ADMIN]),
     };
@@ -117,13 +117,6 @@ describe('RolesGuard SUPER_ADMIN + non-admin', () => {
         makeContext({ role: Role.SUPER_ADMIN, status: 'ACTIVE' }),
       ),
     ).toBe(true);
-  });
-
-  it('rejects FREELANCER on ADMIN-required routes', () => {
-    const reflector = {
-      getAllAndOverride: vi.fn().mockReturnValue([Role.ADMIN]),
-    };
-    const guard = new RolesGuard(reflector as never);
     expect(() =>
       guard.canActivate(
         makeContext({ role: Role.FREELANCER, status: 'ACTIVE' }),

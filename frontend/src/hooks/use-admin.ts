@@ -148,6 +148,7 @@ export function useAdminApi() {
         password: string;
         firstName: string;
         lastName: string;
+        role?: 'ADMIN' | 'MODERATOR';
         permissions?: string[];
       }) =>
         authenticatedRequest<{ id: string; email: string; role: string }>(

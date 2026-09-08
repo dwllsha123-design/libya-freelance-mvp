@@ -49,6 +49,7 @@ export default function AdminStaffPage() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [staffRole, setStaffRole] = useState<'ADMIN' | 'MODERATOR'>('ADMIN');
   const [createPerms, setCreatePerms] = useState<string[]>([]);
 
   async function reload() {
@@ -82,12 +83,14 @@ export default function AdminStaffPage() {
         password,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        role: staffRole,
         permissions: createPerms,
       });
       setEmail('');
       setPassword('');
       setFirstName('');
       setLastName('');
+      setStaffRole('ADMIN');
       setCreatePerms([]);
       await reload();
     } catch (err) {
@@ -182,7 +185,7 @@ export default function AdminStaffPage() {
                       <StatusBadge label={row.status} tone={userStatusTone(row.status)} />
                     </td>
                     <td className="px-3 py-2">
-                      {isOwner && row.role === 'ADMIN' ? (
+                      {isOwner && (row.role === 'ADMIN' || row.role === 'MODERATOR') ? (
                         <div className="flex flex-col gap-1">
                           <button
                             type="button"
@@ -298,6 +301,19 @@ export default function AdminStaffPage() {
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full rounded-xl border px-3 py-2"
               />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block">{t('tableRole')}</span>
+              <select
+                value={staffRole}
+                onChange={(e) =>
+                  setStaffRole(e.target.value === 'MODERATOR' ? 'MODERATOR' : 'ADMIN')
+                }
+                className="w-full rounded-xl border px-3 py-2"
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="MODERATOR">MODERATOR</option>
+              </select>
             </label>
             <label className="block text-sm">
               <span className="mb-1 block">{t('adminLastName')}</span>

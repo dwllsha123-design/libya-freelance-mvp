@@ -11,6 +11,7 @@ enum Role {
   FREELANCER
   CLIENT
   ADMIN
+  MODERATOR
   SUPER_ADMIN
 }
 

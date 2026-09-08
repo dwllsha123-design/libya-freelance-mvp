@@ -7,9 +7,10 @@ import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { getSiteUrl, isAdminLoginPath } from '@/lib/site-urls';
+import { isStaffRole } from '@/lib/roles';
 
 function isStaff(role: string | undefined) {
-  return role === 'ADMIN' || role === 'SUPER_ADMIN';
+  return isStaffRole(role);
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

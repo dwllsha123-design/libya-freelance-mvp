@@ -13,7 +13,7 @@ import { AdminPageHeader } from '@/components/admin/admin-layout-ui';
 import { StatusBadge, userStatusTone } from '@/components/admin/status-badge';
 import { useAdminApi } from '@/hooks/use-admin';
 
-const ROLES = ['', 'CLIENT', 'FREELANCER', 'ADMIN', 'SUPER_ADMIN'] as const;
+const ROLES = ['', 'CLIENT', 'FREELANCER', 'ADMIN', 'MODERATOR', 'SUPER_ADMIN'] as const;
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'BANNED'] as const;
 
 export default function AdminUsersPage() {

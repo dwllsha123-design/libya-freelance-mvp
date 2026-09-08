@@ -2,7 +2,7 @@
 
 import { useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   AuthCard,
@@ -16,12 +16,14 @@ import { useAuth } from '@/contexts/auth-context';
 import { createLoginSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
 import { buildAuthHref, resolvePostAuthPath } from '@/lib/auth-redirect';
+import { getAdminLoginHref, isStaffRole } from '@/lib/roles';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next');
   const { login } = useAuth();
+  const locale = useLocale();
   const t = useTranslations('auth');
   const tBrand = useTranslations('brand');
   const tValidation = useTranslations('validation');
@@ -49,9 +51,20 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login(parsed.data.email, parsed.data.password);
+      const user = await login(parsed.data.email, parsed.data.password, 'platform');
+      if (isStaffRole(user.role)) {
+        window.location.assign(getAdminLoginHref(locale));
+        return;
+      }
       router.push(resolvePostAuthPath(nextPath));
     } catch (err) {
+      if (
+        err instanceof ApiError &&
+        /بوابة الإدارة|admin/i.test(err.message)
+      ) {
+        window.location.assign(getAdminLoginHref(locale));
+        return;
+      }
       setError(err instanceof ApiError ? err.message : t('loginFailed'));
     } finally {
       setIsSubmitting(false);

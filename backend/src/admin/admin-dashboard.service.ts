@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PresenceService } from '../presence/presence.service.js';
+import { STAFF_ROLES } from '../auth/constants.js';
 
 export type DashboardRange = '7d' | '30d' | '3m' | '6m' | '12m';
 
@@ -54,7 +55,7 @@ export class AdminDashboardService {
       this.prisma.user.count({ where: { role: Role.FREELANCER } }),
       this.prisma.user.count({ where: { role: Role.CLIENT } }),
       this.prisma.user.count({
-        where: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } },
+        where: { role: { in: STAFF_ROLES } },
       }),
       this.prisma.user.count({ where: { status: UserStatus.SUSPENDED } }),
       this.prisma.user.count({ where: { status: UserStatus.BANNED } }),

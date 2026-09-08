@@ -9,6 +9,7 @@ import { Role, UserStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import type { AuthUser } from '../../auth/types/auth-user.type.js';
+import { roleSatisfies } from '../../auth/constants.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -39,14 +40,8 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('تم حظر حسابك');
     }
 
-    if (!requiredRoles.includes(user.role)) {
-      // SUPER_ADMIN inherits all ADMIN panel access
-      const adminSatisfied =
-        user.role === Role.SUPER_ADMIN &&
-        requiredRoles.includes(Role.ADMIN);
-      if (!adminSatisfied) {
-        throw new ForbiddenException('ليس لديك صلاحية للوصول');
-      }
+    if (!roleSatisfies(user.role, requiredRoles)) {
+      throw new ForbiddenException('ليس لديك صلاحية للوصول');
     }
 
     return true;

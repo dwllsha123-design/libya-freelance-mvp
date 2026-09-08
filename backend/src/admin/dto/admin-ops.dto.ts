@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
@@ -22,6 +23,7 @@ import {
   AdminPermission,
   BroadcastAudience,
   FeaturedEntityType,
+  Role,
 } from '@prisma/client';
 
 export class PatchPlatformSettingsDto {
@@ -172,6 +174,11 @@ export class CreateStaffAdminDto {
   @MinLength(2)
   @MaxLength(60)
   lastName!: string;
+
+  /** ADMIN or MODERATOR only — SUPER_ADMIN is bootstrap/owner exclusive. */
+  @IsOptional()
+  @IsIn([Role.ADMIN, Role.MODERATOR])
+  role?: Role;
 
   @IsOptional()
   @IsArray()

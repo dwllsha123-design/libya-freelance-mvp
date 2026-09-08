@@ -7,5 +7,7 @@ describe('auth constants', () => {
     expect(PUBLIC_ROLES).toContain(Role.FREELANCER);
     expect(PUBLIC_ROLES).toContain(Role.CLIENT);
     expect(PUBLIC_ROLES).not.toContain(Role.ADMIN);
+    expect(PUBLIC_ROLES).not.toContain(Role.SUPER_ADMIN);
+    expect(PUBLIC_ROLES).not.toContain(Role.MODERATOR);
   });
 });

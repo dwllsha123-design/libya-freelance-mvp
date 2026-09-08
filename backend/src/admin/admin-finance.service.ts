@@ -18,6 +18,7 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { STAFF_ROLES } from '../auth/constants.js';
 import { AdminAuditService } from '../admin/admin-audit.service.js';
 import { CommercialAuditService } from '../commercial/commercial-audit.service.js';
 import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
@@ -951,7 +952,7 @@ export class AdminFinanceService {
 
   async listStaffAdmins() {
     const users = await this.prisma.user.findMany({
-      where: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } },
+      where: { role: { in: STAFF_ROLES } },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

@@ -16,7 +16,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   accessToken: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, audience?: 'platform' | 'admin') => Promise<AuthUser>;
   register: (payload: {
     firstName: string;
     lastName: string;
@@ -84,10 +84,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearSession, refreshSession]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (
+      email: string,
+      password: string,
+      audience: 'platform' | 'admin' = 'platform',
+    ) => {
       const response = await apiRequest<AuthResponse>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, audience }),
       });
 
       applySession(response);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect } from 'react';
 import { ClientDashboard } from '@/components/dashboard/client-dashboard';
@@ -8,10 +8,12 @@ import { FreelancerDashboard } from '@/components/dashboard/freelancer-dashboard
 import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { hasCompletedClientOnboarding } from '@/lib/client-onboarding';
+import { getAdminHomeHref, isStaffRole } from '@/lib/roles';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { profile, isLoading: profileLoading } = useProfileData();
@@ -19,13 +21,18 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading || profileLoading || !user) return;
 
+    if (isStaffRole(user.role)) {
+      window.location.assign(getAdminHomeHref(locale));
+      return;
+    }
+
     if (
       user.role === 'CLIENT' &&
       !hasCompletedClientOnboarding(profile?.client)
     ) {
       router.replace('/dashboard/complete-profile');
     }
-  }, [authLoading, profileLoading, user, profile, router]);
+  }, [authLoading, profileLoading, user, profile, router, locale]);
 
   if (authLoading || (user?.role === 'CLIENT' && profileLoading)) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -42,17 +49,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (user.role === 'ADMIN') {
-    return (
-      <div className="page-gutter page-shell page-shell--app page-shell--padded">
-        <h1 className="text-3xl font-bold text-on-surface">{t('title')}</h1>
-        <p className="mt-4 text-slate-600">
-          <Link href="/admin" className="font-semibold text-primary">
-            {t('goToAdmin')}
-          </Link>
-        </p>
-      </div>
-    );
+  if (isStaffRole(user.role)) {
+    return <div className="p-8 text-center text-slate-500">{t('redirecting')}</div>;
   }
 
   if (user.role === 'CLIENT') {

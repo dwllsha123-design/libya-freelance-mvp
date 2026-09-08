@@ -31,7 +31,7 @@ export class AdminPermissionGuard implements CanActivate {
 
     if (user.role === Role.SUPER_ADMIN) return true;
 
-    if (user.role !== Role.ADMIN) {
+    if (user.role !== Role.ADMIN && user.role !== Role.MODERATOR) {
       throw new ForbiddenException('غير مصرح');
     }
 

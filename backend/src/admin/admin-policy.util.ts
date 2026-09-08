@@ -9,7 +9,11 @@ export function assertAdminCanModerateUser(
     throw new ForbiddenException('لا يمكنك تعديل حسابك الإداري من هنا');
   }
 
-  if (target.role === Role.ADMIN || target.role === Role.SUPER_ADMIN) {
+  if (
+    target.role === Role.ADMIN ||
+    target.role === Role.MODERATOR ||
+    target.role === Role.SUPER_ADMIN
+  ) {
     throw new ForbiddenException('لا يمكن تعديل حساب إداري آخر');
   }
 }

@@ -1,6 +1,6 @@
 import {
   IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsString,
   Matches,
@@ -35,7 +35,8 @@ export class RegisterDto {
   @IsNotEmpty()
   confirmPassword!: string;
 
-  @IsEnum(Role, {
+  /** Public registration: CLIENT / FREELANCER only — never staff. */
+  @IsIn([Role.FREELANCER, Role.CLIENT], {
     message: 'Role must be FREELANCER or CLIENT',
   })
   role!: Role;

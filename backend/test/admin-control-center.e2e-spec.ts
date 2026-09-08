@@ -57,7 +57,7 @@ describe('Admin Control Center E2E', () => {
     const login = await authAgent(app)
       .post('/api/auth/login')
       .set(CLIENT_HEADER)
-      .send({ email: 'owner@e2e.ly', password: 'Password1!' });
+      .send({ email: 'owner@e2e.ly', password: 'Password1!', audience: 'admin' });
     expect(login.status).toBe(200);
     const token = login.body.accessToken as string;
 
@@ -131,7 +131,7 @@ describe('Admin Control Center E2E', () => {
     const login = await authAgent(app)
       .post('/api/auth/login')
       .set(CLIENT_HEADER)
-      .send({ email: 'owner@e2e.ly', password: 'Password1!' });
+      .send({ email: 'owner@e2e.ly', password: 'Password1!', audience: 'admin' });
     const token = login.body.accessToken as string;
 
     await authAgent(app)
@@ -177,7 +177,7 @@ describe('Admin Control Center E2E', () => {
     const login = await authAgent(app)
       .post('/api/auth/login')
       .set(CLIENT_HEADER)
-      .send({ email: 'owner@e2e.ly', password: 'Password1!' });
+      .send({ email: 'owner@e2e.ly', password: 'Password1!', audience: 'admin' });
     const token = login.body.accessToken as string;
 
     const cms = await authAgent(app)
@@ -229,7 +229,7 @@ describe('Admin Control Center E2E', () => {
     const login = await authAgent(app)
       .post('/api/auth/login')
       .set(CLIENT_HEADER)
-      .send({ email: 'owner@e2e.ly', password: 'Password1!' });
+      .send({ email: 'owner@e2e.ly', password: 'Password1!', audience: 'admin' });
     const token = login.body.accessToken as string;
 
     const created = await authAgent(app)
@@ -249,7 +249,7 @@ describe('Admin Control Center E2E', () => {
     const staffLogin = await authAgent(app)
       .post('/api/auth/login')
       .set(CLIENT_HEADER)
-      .send({ email: 'staff@e2e.ly', password: 'Password1!' });
+      .send({ email: 'staff@e2e.ly', password: 'Password1!', audience: 'admin' });
     const staffToken = staffLogin.body.accessToken as string;
 
     const denied = await authAgent(app)

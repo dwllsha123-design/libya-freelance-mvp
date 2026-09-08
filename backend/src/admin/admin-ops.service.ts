@@ -17,7 +17,6 @@ import {
   UserStatus,
   NotificationType,
 } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AdminAuditService } from './admin-audit.service.js';
@@ -25,6 +24,8 @@ import { assertInternalTargetUrl } from '../notifications/notification-url.util.
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
+import { hashPassword } from '../auth/password.util.js';
+import { CREATABLE_STAFF_ROLES, STAFF_ROLES } from '../auth/constants.js';
 import {
   ALL_FEATURE_FLAGS,
   CMS_KEYS,
@@ -47,7 +48,6 @@ import type {
   UpdateBannerDto,
 } from './dto/admin-ops.dto.js';
 
-const BCRYPT_ROUNDS = 12;
 const BROADCAST_BATCH = 200;
 
 @Injectable()
@@ -436,7 +436,7 @@ export class AdminOpsService {
 
   async listStaffAdmins() {
     const users = await this.prisma.user.findMany({
-      where: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } },
+      where: { role: { in: STAFF_ROLES } },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -473,7 +473,14 @@ export class AdminOpsService {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException('البريد مستخدم بالفعل');
 
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const staffRole = dto.role ?? Role.ADMIN;
+    if (!CREATABLE_STAFF_ROLES.includes(staffRole)) {
+      throw new BadRequestException(
+        'يمكن إنشاء حسابات ADMIN أو MODERATOR فقط',
+      );
+    }
+
+    const passwordHash = await hashPassword(dto.password);
     const username = `admin-${randomBytes(4).toString('hex')}`;
 
     const user = await this.prisma.$transaction(async (tx) => {
@@ -481,7 +488,7 @@ export class AdminOpsService {
         data: {
           email,
           passwordHash,
-          role: Role.ADMIN,
+          role: staffRole,
           status: UserStatus.ACTIVE,
           emailVerified: true,
           mustChangePassword: true,
@@ -507,7 +514,7 @@ export class AdminOpsService {
         AdminAuditAction.ADMIN_CREATED,
         'User',
         created.id,
-        { email, permissions },
+        { email, role: staffRole, permissions },
         tx,
       );
       return created;
@@ -523,8 +530,8 @@ export class AdminOpsService {
 
   async assignPermissions(actorId: string, adminId: string, dto: AssignAdminPermissionsDto) {
     const target = await this.prisma.user.findUnique({ where: { id: adminId } });
-    if (!target || target.role !== Role.ADMIN) {
-      throw new BadRequestException('الصلاحيات تُمنح لحسابات ADMIN فقط');
+    if (!target || (target.role !== Role.ADMIN && target.role !== Role.MODERATOR)) {
+      throw new BadRequestException('الصلاحيات تُمنح لحسابات ADMIN و MODERATOR فقط');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -593,7 +600,7 @@ export class AdminOpsService {
       throw new ForbiddenException('لا يمكنك تعديل حسابك من هنا');
     }
     const target = await this.prisma.user.findUnique({ where: { id: adminId } });
-    if (!target || target.role !== Role.ADMIN) {
+    if (!target || (target.role !== Role.ADMIN && target.role !== Role.MODERATOR)) {
       throw new ForbiddenException('لا يمكن تعديل هذا الحساب');
     }
     const superCount = await this.prisma.user.count({
@@ -872,7 +879,7 @@ export class AdminOpsService {
     const [users, projects, investors] = await Promise.all([
       this.prisma.user.findMany({
         where: {
-          role: { in: [Role.CLIENT, Role.FREELANCER, Role.ADMIN, Role.SUPER_ADMIN] },
+          role: { in: [...STAFF_ROLES, Role.CLIENT, Role.FREELANCER] },
           OR: [
             { email: { contains: term, mode: 'insensitive' } },
             { profile: { username: { contains: term, mode: 'insensitive' } } },

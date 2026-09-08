@@ -7,10 +7,12 @@ import { useAuth } from '@/contexts/auth-context';
 import { createLoginSchema } from '@/lib/schemas/create-schemas';
 import { ApiError } from '@/lib/api';
 import { Logo } from '@/components/brand/logo';
+import { getSiteUrl } from '@/lib/site-urls';
+import { isStaffRole } from '@/lib/roles';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const t = useTranslations('admin');
   const tAuth = useTranslations('auth');
   const tValidation = useTranslations('validation');
@@ -36,17 +38,21 @@ export default function AdminLoginPage() {
 
     setIsSubmitting(true);
     try {
-      const user = await login(parsed.data.email, parsed.data.password);
-      if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      const user = await login(parsed.data.email, parsed.data.password, 'admin');
+      if (!isStaffRole(user.role) || user.status !== 'ACTIVE') {
+        await logout();
         setError(t('adminLoginNotStaff'));
-        return;
-      }
-      if (user.status !== 'ACTIVE') {
-        setError(t('accessDenied'));
         return;
       }
       router.replace('/admin');
     } catch (err) {
+      if (
+        err instanceof ApiError &&
+        /المنصة|platform|لوحة الإدارة/i.test(err.message)
+      ) {
+        window.location.assign(getSiteUrl());
+        return;
+      }
       setError(err instanceof ApiError ? err.message : tAuth('loginFailed'));
     } finally {
       setIsSubmitting(false);

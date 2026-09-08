@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role, UserStatus, ProductAnalyticsEventType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { PUBLIC_ROLES } from './constants.js';
+import { isPlatformRole, isStaffRole, PUBLIC_ROLES } from './constants.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
@@ -147,6 +148,21 @@ export class AuthService {
     }
 
     assertUserCanAuthenticate(user.status);
+
+    const audience = dto.audience ?? 'platform';
+    if (audience === 'admin') {
+      if (!isStaffRole(user.role)) {
+        throw new ForbiddenException(
+          'حسابات المنصة لا يمكنها دخول لوحة الإدارة',
+        );
+      }
+    } else if (isStaffRole(user.role)) {
+      throw new ForbiddenException(
+        'حسابات الإدارة تسجّل الدخول عبر بوابة الإدارة فقط',
+      );
+    } else if (!isPlatformRole(user.role)) {
+      throw new ForbiddenException('نوع الحساب غير صالح لتسجيل الدخول');
+    }
 
     const tokens = await this.issueTokens(user);
 

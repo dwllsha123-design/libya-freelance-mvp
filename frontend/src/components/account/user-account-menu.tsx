@@ -31,6 +31,7 @@ import {
   IconUser,
 } from '@/components/account/account-menu-icons';
 import { useIsClient } from '@/hooks/use-is-client';
+import { isStaffRole } from '@/lib/roles';
 
 type MenuItem = {
   href: string;
@@ -117,7 +118,7 @@ function AccountMenuPanel({
 
   const isFreelancer = user?.role === 'FREELANCER';
   const isClient = user?.role === 'CLIENT';
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isAdmin = isStaffRole(user?.role);
   const canSwitch =
     (user?.hasClientProfile || user?.hasFreelancerProfile) &&
     (isClient || isFreelancer);

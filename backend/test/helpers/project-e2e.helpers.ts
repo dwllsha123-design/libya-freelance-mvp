@@ -70,7 +70,7 @@ export async function registerAdmin(
   const login = await authAgent(app)
     .post('/api/auth/login')
     .set(CLIENT_HEADER)
-    .send({ email, password: 'Password1' })
+    .send({ email, password: 'Password1', audience: 'admin' })
     .expect(200);
 
   return {
