@@ -6,6 +6,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import {
   calculateFeesFromPercent,
   FALLBACK_COMMISSION_PERCENT,
@@ -29,7 +30,10 @@ type Tx = Prisma.TransactionClient | PrismaService;
 
 @Injectable()
 export class CommissionResolutionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly launchProgram: LaunchProgramService,
+  ) {}
 
   async resolveForProject(
     projectId: string,
@@ -37,6 +41,27 @@ export class CommissionResolutionService {
     asOf: Date = new Date(),
     client: Tx = this.prisma,
   ): Promise<ResolvedCommission> {
+    const launch = await this.launchProgram.getConfig(
+      client === this.prisma ? undefined : (client as Prisma.TransactionClient),
+    );
+    if (launch.enabled) {
+      const fees = calculateFeesFromPercent(
+        amount,
+        launch.freelancerCommissionPercent,
+      );
+      return {
+        commissionPercent: fees.commissionPercent,
+        platformFee: fees.platformFee,
+        freelancerPayout: fees.freelancerPayout,
+        source: CommissionSource.PLATFORM_DEFAULT,
+        platformCommissionPolicyId: null,
+        categoryCommissionOverrideId: null,
+        projectCommissionOverrideId: null,
+        minimumCommissionAmount: null,
+        maximumCommissionAmount: null,
+      };
+    }
+
     const project = await client.project.findUnique({
       where: { id: projectId },
       select: { id: true, categoryId: true },
@@ -306,9 +331,16 @@ export class CommissionResolutionService {
     platform?: Awaited<ReturnType<CommissionResolutionService['getActivePlatformPolicy']>>,
   ): Promise<ResolvedCommission> {
     const policy = platform ?? (await this.getActivePlatformPolicy(asOf, client));
-    const percent = policy
-      ? Number(policy.defaultCommissionPercentage)
-      : FALLBACK_COMMISSION_PERCENT;
+    const launch = await this.launchProgram.getConfig(
+      client === this.prisma ? undefined : (client as Prisma.TransactionClient),
+    );
+    // During launch program, use centralized launch commission (default 0%).
+    // Project/category overrides still win when present (checked earlier).
+    const percent = launch.enabled
+      ? launch.freelancerCommissionPercent
+      : policy
+        ? Number(policy.defaultCommissionPercentage)
+        : FALLBACK_COMMISSION_PERCENT;
     const min = policy?.minimumCommissionAmount
       ? Number(policy.minimumCommissionAmount)
       : null;

@@ -35,8 +35,10 @@ import {
 } from '../reviews/review-validation.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { BadgeService } from '../badges/badge.service.js';
+import { ProductAnalyticsEventType } from '@prisma/client';
 
 const projectInclude = {
   category: true,
@@ -84,6 +86,7 @@ export class ProjectsService {
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
     private readonly badges: BadgeService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   async create(clientId: string, dto: CreateProjectDto) {
@@ -149,6 +152,12 @@ export class ProjectsService {
         include: projectInclude,
       });
     });
+
+    await this.launchProgram
+      .trackAnalytics(clientId, ProductAnalyticsEventType.CLIENT_PROJECT_CREATED, {
+        projectId: project!.id,
+      })
+      .catch(() => undefined);
 
     return this.formatManageProject(project!);
   }

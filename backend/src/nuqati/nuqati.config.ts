@@ -1,7 +1,7 @@
 export const NUQATI_BRAND_AR = 'نقاطي';
 
 export const NUQATI_REASON_LABELS: Record<string, string> = {
-  WELCOME_BONUS: 'مكافأة الترحيب',
+  WELCOME_BONUS: 'نقاط ترحيبية — مكافأة التسجيل في Libyan Freelance',
   DAILY_LOGIN: 'تسجيل دخول يومي',
   PROFILE_COMPLETE: 'إكمال الملف الشخصي',
   FIRST_PORTFOLIO: 'أول عنصر في معرض الأعمال',
@@ -16,13 +16,19 @@ export const NUQATI_REASON_LABELS: Record<string, string> = {
   SOCIAL_SHARE: 'مشاركة على وسائل التواصل',
 };
 
+/**
+ * Non-launch Nuqati economy (streaks, daily login, packages…).
+ * Launch welcome / profile-completion amounts come from LaunchProgramState.
+ */
 export const NUQATI_CONFIG = {
-  welcomeBonus: 40,
+  /** @deprecated Prefer LaunchProgramService welcomePoints (default 55). */
+  welcomeBonus: 55,
   dailyLoginReward: 1,
   dailyLoginMonthlyCap: 15,
   proposalSubmitCost: 10,
   monthlyApplyReward: 5,
-  profileCompleteReward: 10,
+  /** @deprecated Prefer LaunchProgramService profileCompletionReward (default 5). */
+  profileCompleteReward: 5,
   firstPortfolioReward: 10,
   firstJobReward: 20,
   socialShareReward: 20,
@@ -38,7 +44,7 @@ export const NUQATI_CONFIG = {
     { id: 'p500', points: 500, priceLyd: 120 },
   ],
   monthlyEarnableFromTasks: 64,
-  profileEarnable: 30,
+  profileEarnable: 25,
   achievementsEarnable: 110,
   streakEarnable: 85,
 } as const;
@@ -56,7 +62,7 @@ export const NUQATI_TASK_DEFINITIONS: NuqatiTaskDefinition[] = [
   {
     key: 'PROFILE_COMPLETE',
     titleAr: 'أكمل ملفك الشخصي',
-    descriptionAr: 'أضف المسمى، النبذة، المهارات، والمدينة.',
+    descriptionAr: 'أكمل ملفك بنسبة 80٪ على الأقل واحصل على نقاط إضافية.',
     reward: NUQATI_CONFIG.profileCompleteReward,
     category: 'profile',
   },

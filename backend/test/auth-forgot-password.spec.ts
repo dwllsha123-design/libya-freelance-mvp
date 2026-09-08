@@ -36,6 +36,7 @@ describe('forgotPassword account-enumeration protection', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
   });
 

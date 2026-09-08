@@ -8,6 +8,7 @@ import { RealtimeModule } from '../realtime/realtime.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AgreementsModule } from '../agreements/agreements.module.js';
 import { BadgesModule } from '../badges/badges.module.js';
+import { LaunchModule } from '../launch/launch.module.js';
 import { AdminAuditModule } from './admin-audit.module.js';
 import { AdminAuditController } from './admin-audit.controller.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
@@ -38,6 +39,7 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     AgreementsModule,
     AdminAuditModule,
     BadgesModule,
+    LaunchModule,
   ],
   controllers: [
     AdminController,

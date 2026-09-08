@@ -111,6 +111,7 @@ export default function FreelancerProfilePage() {
               <FreelancerBadgeChip
                 level={profile.freelancer?.performanceLevel}
                 verifiedTalent={Boolean(profile.freelancer?.isVerifiedTalent)}
+                foundingFreelancer={Boolean(profile.freelancer?.isFoundingFreelancer)}
               />
             </div>
             <PresenceText presence={presence} className="mt-1 text-sm" />

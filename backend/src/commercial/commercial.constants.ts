@@ -1,6 +1,6 @@
 export const ESCROW_CURRENCY = 'LYD';
 /** Fallback only when no platform policy row exists (should not happen after migration seed). */
-export const FALLBACK_COMMISSION_PERCENT = 10;
+export const FALLBACK_COMMISSION_PERCENT = 0;
 
 export function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;

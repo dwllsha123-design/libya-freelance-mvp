@@ -40,5 +40,10 @@ export type FreelancerBadgesResponse = {
     earned: boolean;
     adminGranted: boolean;
   };
+  foundingFreelancer?: {
+    earned: boolean;
+    awardedAt: string | null;
+    slotNumber: number | null;
+  };
   nextLevelProgress: PerformanceBadgeProgress | null;
 };

@@ -78,6 +78,7 @@ export function FreelancerCard({
             <FreelancerBadgeChip
               level={freelancer.freelancer?.performanceLevel}
               verifiedTalent={Boolean(freelancer.freelancer?.isVerifiedTalent)}
+              foundingFreelancer={Boolean(freelancer.freelancer?.isFoundingFreelancer)}
               compact
             />
           </div>

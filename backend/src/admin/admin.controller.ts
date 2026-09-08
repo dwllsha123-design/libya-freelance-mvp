@@ -33,6 +33,7 @@ import { EscrowService } from '../escrow/escrow.service.js';
 import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
 import { BadgeService } from '../badges/badge.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
@@ -48,11 +49,17 @@ export class AdminController {
     private readonly escrow: EscrowService,
     private readonly agreements: AgreementsService,
     private readonly badges: BadgeService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   @Get('dashboard')
   getDashboard(@Query('range') range?: '7d' | '30d' | '3m' | '6m' | '12m') {
     return this.dashboard.getOverview(range);
+  }
+
+  @Get('launch-program')
+  getLaunchProgram() {
+    return this.launchProgram.getAdminOverview();
   }
 
   @Get('users')

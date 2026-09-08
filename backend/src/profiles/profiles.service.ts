@@ -528,6 +528,7 @@ export class ProfilesService {
       isPro: badges.isPro,
       performanceLevel: badges.performanceLevel,
       isVerifiedTalent: badges.isVerifiedTalent,
+      isFoundingFreelancer: badges.isFoundingFreelancer,
     };
   }
 
@@ -562,6 +563,7 @@ export class ProfilesService {
       isPro,
       performanceLevel: fp.performanceLevel ?? 'NONE',
       isVerifiedTalent: fp.isVerifiedTalent ?? false,
+      isFoundingFreelancer: fp.isFoundingFreelancer ?? false,
     };
   }
 }

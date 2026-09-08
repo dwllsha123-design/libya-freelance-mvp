@@ -19,14 +19,16 @@
     "PROVEN": "Proven Freelancer",
     "TOP_PERFORMER": "Top Performer",
     "ELITE": "Elite Freelancer",
-    "VERIFIED_TALENT": "Verified Talent"
+    "VERIFIED_TALENT": "Verified Talent",
+    "FOUNDING_FREELANCER": "Founding Freelancer"
   },
   "tooltips": {
     "RISING": "This freelancer completed 2+ projects and maintains a 4.5+ rating.",
     "PROVEN": "This freelancer completed 10+ projects and maintains a 4.7+ rating.",
     "TOP_PERFORMER": "This freelancer completed 25+ projects and maintains a 4.8+ rating.",
     "ELITE": "Among the highest performance levels on Libyan Freelance.",
-    "VERIFIED_TALENT": "This account was reviewed and endorsed by Libyan Freelance admins."
+    "VERIFIED_TALENT": "This account was reviewed and endorsed by Libyan Freelance admins.",
+    "FOUNDING_FREELANCER": "One of the early freelancers who joined and helped build the Libyan Freelance community."
   },
   "earned": "Earned",
   "locked": "Not earned yet",

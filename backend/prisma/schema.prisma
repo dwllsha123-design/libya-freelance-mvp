@@ -97,6 +97,9 @@ enum NotificationType {
   PRO_EXPIRED
   PRO_RENEWED
   PERFORMANCE_BADGE_EARNED
+  WELCOME_POINTS_AWARDED
+  PROFILE_COMPLETION_REWARD
+  FOUNDING_FREELANCER_AWARDED
 }
 
 enum AdminAuditAction {
@@ -498,6 +501,11 @@ model FreelancerProfile {
   isVerifiedTalent Boolean @default(false)
   verifiedTalentAt DateTime?
   verifiedTalentByAdminId String?
+  /// Early-member status (Launch Program). Separate from performance / Verified Talent.
+  isFoundingFreelancer Boolean @default(false)
+  foundingFreelancerAt DateTime?
+  /// 1..limit unique permanent slot; assigned atomically when qualified.
+  foundingSlotNumber Int? @unique
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
 
@@ -510,6 +518,7 @@ model FreelancerProfile {
   @@index([averageRating])
   @@index([performanceLevel])
   @@index([isVerifiedTalent])
+  @@index([isFoundingFreelancer])
 }
 
 model ClientProfile {
@@ -1693,6 +1702,27 @@ enum ProductAnalyticsEventType {
   PRO_ACTIVATED
   PRO_RENEWED
   PRO_EXPIRED
+  SIGNUP_COMPLETED
+  WELCOME_POINTS_AWARDED
+  PROFILE_COMPLETION_REWARD_AWARDED
+  FOUNDING_FREELANCER_AWARDED
+  PROPOSAL_SUBMITTED
+  PROPOSAL_POINTS_DEDUCTED
+  CLIENT_PROJECT_CREATED
+}
+
+/// Singleton row for Launch Program configuration + founding counter (id = "default").
+model LaunchProgramState {
+  id                            String   @id @default("default")
+  enabled                       Boolean  @default(true)
+  freelancerCommissionPercent   Decimal  @default(0) @db.Decimal(5, 2)
+  welcomePoints                 Int      @default(55)
+  profileCompletionReward       Int      @default(5)
+  profileCompletionThreshold    Int      @default(80)
+  foundingFreelancerLimit       Int      @default(1000)
+  /// Permanent founding badges awarded (never exceeds foundingFreelancerLimit).
+  foundingPermanentCount        Int      @default(0)
+  updatedAt                     DateTime @updatedAt
 }
 
 model ProductAnalyticsEvent {

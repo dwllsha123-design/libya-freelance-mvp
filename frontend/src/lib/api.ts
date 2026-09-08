@@ -131,6 +131,7 @@ export interface PublicProfile {
     isPro?: boolean;
     performanceLevel?: 'NONE' | 'RISING' | 'PROVEN' | 'TOP_PERFORMER' | 'ELITE';
     isVerifiedTalent?: boolean;
+    isFoundingFreelancer?: boolean;
     skills: Skill[];
     portfolio?: {
       count: number;

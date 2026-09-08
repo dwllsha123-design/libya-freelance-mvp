@@ -34,6 +34,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { BadgesModule } from './badges/badges.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { PresenceModule } from './presence/presence.module.js';
+import { LaunchModule } from './launch/launch.module.js';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { PresenceModule } from './presence/presence.module.js';
     VerificationModule,
     SubscriptionsModule,
     BadgesModule,
+    LaunchModule,
   ],
   controllers: [HealthController],
   providers: [

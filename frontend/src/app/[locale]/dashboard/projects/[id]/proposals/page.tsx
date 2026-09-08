@@ -172,6 +172,7 @@ export default function ProjectProposalsPage() {
                   <FreelancerBadgeChip
                     level={proposal.freelancer?.performanceLevel}
                     verifiedTalent={Boolean(proposal.freelancer?.isVerifiedTalent)}
+                    foundingFreelancer={Boolean(proposal.freelancer?.isFoundingFreelancer)}
                     compact
                   />
                 </div>

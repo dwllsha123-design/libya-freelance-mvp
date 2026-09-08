@@ -26,6 +26,7 @@ import arMarketing from '../../../messages/ar/marketing.json';
 import arAgreements from '../../../messages/ar/agreements.json';
 import arBadges from '../../../messages/ar/badges.json';
 import arAccountMenu from '../../../messages/ar/account-menu.json';
+import arLaunch from '../../../messages/ar/launch.json';
 
 import enCommon from '../../../messages/en/common.json';
 import enBrand from '../../../messages/en/brand.json';
@@ -53,6 +54,7 @@ import enMarketing from '../../../messages/en/marketing.json';
 import enAgreements from '../../../messages/en/agreements.json';
 import enBadges from '../../../messages/en/badges.json';
 import enAccountMenu from '../../../messages/en/account-menu.json';
+import enLaunch from '../../../messages/en/launch.json';
 
 const MESSAGES = {
   ar: {
@@ -82,6 +84,7 @@ const MESSAGES = {
     agreements: arAgreements,
     badges: arBadges,
     accountMenu: arAccountMenu,
+    launch: arLaunch,
   },
   en: {
     common: enCommon,
@@ -110,6 +113,7 @@ const MESSAGES = {
     agreements: enAgreements,
     badges: enBadges,
     accountMenu: enAccountMenu,
+    launch: enLaunch,
   },
 } as const;
 

@@ -16,6 +16,7 @@ import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-con
 import { formatBudgetRange } from '@/lib/currency';
 import { Reveal, Pill } from '@/components/ui/motion';
 import { PrayerTimes } from '@/components/home/prayer-times';
+import { LaunchHomeSections } from '@/components/launch/launch-home-sections';
 import type { AppLocale } from '@/i18n/routing';
 import type { PaginatedProjects, ProjectListItem } from '@/lib/schemas/project';
 
@@ -242,6 +243,8 @@ export function HomeLanding() {
           ))}
         </div>
       </section>
+
+      <LaunchHomeSections />
 
       <section className="page-gutter page-section bg-cream-deep/60">
         <div className="mx-auto max-w-6xl">

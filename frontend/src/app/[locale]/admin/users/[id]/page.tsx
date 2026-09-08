@@ -12,6 +12,7 @@ import type { AppLocale } from '@/i18n/routing';
 
 export default function AdminUserDetailPage() {
   const t = useTranslations('admin');
+  const tLaunch = useTranslations('launch');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
   const params = useParams<{ id: string }>();
@@ -61,6 +62,8 @@ export default function AdminUserDetailPage() {
 
   const freelancer = user.freelancer as Record<string, unknown> | null;
   const client = user.client as Record<string, unknown> | null;
+  const launch = user.launch as Record<string, unknown> | null;
+  const launchConfig = (launch?.config as Record<string, unknown> | undefined) ?? null;
 
   const pendingTitle =
     pending === 'ban'
@@ -148,6 +151,52 @@ export default function AdminUserDetailPage() {
           </div>
         </AdminPanel>
       </div>
+
+      {launch ? (
+        <AdminPanel title={tLaunch('adminUserLaunch')}>
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <p>
+              {tLaunch('adminUserBalance')}:{' '}
+              {String(launch.balance ?? '—')}
+            </p>
+            <p>
+              {tLaunch('adminUserCompletion')}:{' '}
+              {launch.profileCompletionPercent != null
+                ? `${String(launch.profileCompletionPercent)}%`
+                : '—'}
+            </p>
+            <p>
+              {tLaunch('adminUserWelcome')}:{' '}
+              {launch.welcomeAwarded ? tLaunch('adminYes') : tLaunch('adminNo')}
+            </p>
+            <p>
+              {tLaunch('adminUserProfileReward')}:{' '}
+              {launch.profileRewardAwarded ? tLaunch('adminYes') : tLaunch('adminNo')}
+            </p>
+            <p>
+              {tLaunch('adminUserFounding')}:{' '}
+              {launch.isFoundingFreelancer ? tLaunch('adminYes') : tLaunch('adminNo')}
+            </p>
+            <p>
+              {tLaunch('adminUserFoundingSlot')}:{' '}
+              {launch.foundingSlotNumber != null ? String(launch.foundingSlotNumber) : '—'}
+            </p>
+            {launchConfig ? (
+              <>
+                <p>
+                  {tLaunch('adminWelcomePoints')}:{' '}
+                  {String(launchConfig.welcomePoints ?? '—')}
+                </p>
+                <p>
+                  {tLaunch('adminCommission')}:{' '}
+                  {String(launchConfig.freelancerCommissionPercent ?? '—')}%
+                </p>
+              </>
+            ) : null}
+          </div>
+          <p className="mt-3 text-xs text-slate-500">{tLaunch('paymentDisclaimer')}</p>
+        </AdminPanel>
+      ) : null}
 
       <AdminPanel title={t('adminActions')}>
         <div className="flex flex-wrap gap-2">

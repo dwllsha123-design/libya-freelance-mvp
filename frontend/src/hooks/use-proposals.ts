@@ -45,6 +45,7 @@ export interface ClientProposal {
     completedProjects: number;
     performanceLevel?: 'NONE' | 'RISING' | 'PROVEN' | 'TOP_PERFORMER' | 'ELITE';
     isVerifiedTalent?: boolean;
+    isFoundingFreelancer?: boolean;
     skills: { name: string; slug: string }[];
     portfolio?: {
       count: number;

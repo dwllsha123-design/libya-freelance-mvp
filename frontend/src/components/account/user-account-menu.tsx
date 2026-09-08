@@ -7,6 +7,7 @@ import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { authenticatedRequest } from '@/lib/api';
 import { useNuqatiBalance, useNuqatiApi } from '@/hooks/use-nuqati';
+import { useLaunchApi } from '@/hooks/use-launch';
 import { useUnreadNotificationCount } from '@/hooks/use-notifications';
 import type { FreelancerBadgesResponse } from '@/lib/badges';
 import type { AppLocale } from '@/i18n/routing';
@@ -99,15 +100,19 @@ function AccountMenuPanel({
   isSwitching: boolean;
 }) {
   const t = useTranslations('accountMenu');
+  const tLaunch = useTranslations('launch');
   const locale = useLocale() as AppLocale;
   const { user, accessToken } = useAuth();
   const { balance } = useNuqatiBalance();
   const nuqatiApi = useNuqatiApi();
+  const launchApi = useLaunchApi();
   const { count: unread } = useUnreadNotificationCount();
   const [badges, setBadges] = useState<FreelancerBadgesResponse | null>(null);
   const [profileTask, setProfileTask] = useState<{
     completed: boolean;
     reward: number;
+    percent?: number;
+    fromLaunch?: boolean;
   } | null>(null);
 
   const isFreelancer = user?.role === 'FREELANCER';
@@ -125,20 +130,51 @@ function AccountMenuPanel({
         if (!cancelled) setBadges(res);
       })
       .catch(() => undefined);
-    nuqatiApi
-      .getDashboard()
-      .then((dash) => {
+
+    launchApi
+      .getMyStatus()
+      .then((launch) => {
         if (cancelled) return;
-        const task = dash.tasks.find((item) => item.key === 'PROFILE_COMPLETE');
-        if (task) {
-          setProfileTask({ completed: task.completed, reward: task.reward });
+        if (launch.config.enabled && !launch.profileRewardAwarded) {
+          setProfileTask({
+            completed: false,
+            reward: launch.config.profileCompletionReward,
+            percent: launch.profileCompletionPercent,
+            fromLaunch: true,
+          });
+          return;
         }
+        if (launch.profileRewardAwarded) {
+          setProfileTask({ completed: true, reward: launch.config.profileCompletionReward });
+          return;
+        }
+        // Fall back to Nuqati task if launch did not provide a CTA
+        return nuqatiApi.getDashboard().then((dash) => {
+          if (cancelled) return;
+          const task = dash.tasks.find((item) => item.key === 'PROFILE_COMPLETE');
+          if (task) {
+            setProfileTask({ completed: task.completed, reward: task.reward });
+          }
+        });
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (cancelled) return;
+        return nuqatiApi
+          .getDashboard()
+          .then((dash) => {
+            if (cancelled) return;
+            const task = dash.tasks.find((item) => item.key === 'PROFILE_COMPLETE');
+            if (task) {
+              setProfileTask({ completed: task.completed, reward: task.reward });
+            }
+          })
+          .catch(() => undefined);
+      });
+
     return () => {
       cancelled = true;
     };
-  }, [accessToken, isFreelancer, nuqatiApi]);
+  }, [accessToken, isFreelancer, nuqatiApi, launchApi]);
 
   if (!user) return null;
 
@@ -273,6 +309,7 @@ function AccountMenuPanel({
                 <FreelancerBadgeChip
                   level={badges.currentLevel}
                   verifiedTalent={badges.verifiedTalent}
+                  foundingFreelancer={Boolean(badges.foundingFreelancer?.earned)}
                   compact
                 />
               </div>
@@ -303,7 +340,12 @@ function AccountMenuPanel({
           >
             <p className="text-xs font-semibold text-ink">{t('profileCompleteTitle')}</p>
             <p className="mt-1 text-xs text-ink-soft">
-              {t('profileCompleteCta', { points: profileTask.reward })}
+              {profileTask.fromLaunch && typeof profileTask.percent === 'number'
+                ? tLaunch('profileCompleteCta', {
+                    percent: profileTask.percent,
+                    points: profileTask.reward,
+                  })
+                : t('profileCompleteCta', { points: profileTask.reward })}
             </p>
           </Link>
         ) : null}

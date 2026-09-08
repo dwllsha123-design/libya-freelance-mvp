@@ -3,6 +3,7 @@ import { CommissionPolicyStatus, ProjectStatus, Role, UserStatus } from '@prisma
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PaymentService } from '../payments/payment.service.js';
 import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import { FALLBACK_COMMISSION_PERCENT } from '../commercial/commercial.constants.js';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class PlatformService {
     private readonly prisma: PrismaService,
     private readonly payments: PaymentService,
     private readonly commission: CommissionResolutionService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   async getPublicStats() {
@@ -96,10 +98,15 @@ export class PlatformService {
       orderBy: { effectiveFrom: 'desc' },
     });
 
-    return {
-      defaultCommissionPercentage: policy
+    const launch = await this.launchProgram.getConfig();
+    const percent = launch.enabled
+      ? launch.freelancerCommissionPercent
+      : policy
         ? Number(policy.defaultCommissionPercentage)
-        : FALLBACK_COMMISSION_PERCENT,
+        : FALLBACK_COMMISSION_PERCENT;
+
+    return {
+      defaultCommissionPercentage: percent,
       minimumCommissionAmount: policy?.minimumCommissionAmount
         ? Number(policy.minimumCommissionAmount)
         : null,
@@ -108,6 +115,9 @@ export class PlatformService {
         : null,
       currency: 'LYD',
       effectiveFrom: policy?.effectiveFrom ?? null,
+      launchProgramEnabled: launch.enabled,
+      paymentProtectionActive: false,
+      paymentProtectionStatus: 'COMING_SOON' as const,
     };
   }
 

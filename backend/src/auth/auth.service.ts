@@ -6,13 +6,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Role, UserStatus } from '@prisma/client';
+import { Role, UserStatus, ProductAnalyticsEventType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PUBLIC_ROLES } from './constants.js';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import { UsersService } from '../users/users.service.js';
 import { EmailService } from '../common/services/email.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
@@ -47,6 +48,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly realtimeSessions: RealtimeSessionService,
     private readonly nuqatiService: NuqatiService,
+    private readonly launchProgram: LaunchProgramService,
     private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
@@ -107,16 +109,23 @@ export class AuthService {
 
       if (dto.role === Role.FREELANCER) {
         await tx.freelancerProfile.create({ data: { profileId } });
-        await this.nuqatiService.onFreelancerRegistered(createdUser.id, tx);
       } else if (dto.role === Role.CLIENT) {
         await tx.clientProfile.create({ data: { profileId } });
       }
+
+      await this.nuqatiService.awardWelcomeBonus(createdUser.id, tx);
 
       return createdUser;
     });
 
     await this.createEmailVerificationToken(user.id, user.email);
     const tokens = await this.issueTokens(user);
+
+    await this.launchProgram
+      .trackAnalytics(user.id, ProductAnalyticsEventType.SIGNUP_COMPLETED, {
+        role: dto.role,
+      })
+      .catch(() => undefined);
 
     return {
       user: this.toSafeUser(user),
@@ -322,6 +331,10 @@ export class AuthService {
       }),
     ]);
 
+    await this.launchProgram
+      .evaluateFoundingFreelancer(verificationToken.userId)
+      .catch(() => undefined);
+
     return { message: 'تم التحقق من البريد الإلكتروني بنجاح' };
   }
 
@@ -380,7 +393,7 @@ export class AuthService {
           await tx.freelancerProfile.create({
             data: { profileId: user.profile!.id },
           });
-          await this.nuqatiService.onFreelancerRegistered(user.id, tx);
+          await this.nuqatiService.awardWelcomeBonus(user.id, tx);
         }
 
         if (dto.role === Role.CLIENT && !user.profile!.clientProfile) {

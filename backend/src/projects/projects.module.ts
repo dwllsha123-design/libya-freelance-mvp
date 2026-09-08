@@ -4,6 +4,7 @@ import { EscrowModule } from '../escrow/escrow.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
 import { BadgesModule } from '../badges/badges.module.js';
+import { LaunchModule } from '../launch/launch.module.js';
 import { ProjectsController } from './projects.controller.js';
 import { ProjectsService } from './projects.service.js';
 
@@ -14,6 +15,7 @@ import { ProjectsService } from './projects.service.js';
     NuqatiModule,
     PlatformModule,
     BadgesModule,
+    LaunchModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],

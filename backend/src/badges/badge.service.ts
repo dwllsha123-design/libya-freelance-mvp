@@ -97,6 +97,9 @@ export class BadgeService {
                 performanceLevel: true,
                 isVerifiedTalent: true,
                 verifiedTalentAt: true,
+                isFoundingFreelancer: true,
+                foundingFreelancerAt: true,
+                foundingSlotNumber: true,
               },
             },
           },
@@ -112,12 +115,19 @@ export class BadgeService {
     const currentLevel = this.resolveLevel(stats);
     const fp = user.profile.freelancerProfile;
 
-    return this.buildProgressPayload({
-      currentLevel,
-      verifiedTalent: fp.isVerifiedTalent,
-      verifiedTalentAt: fp.verifiedTalentAt,
-      stats,
-    });
+    return {
+      ...this.buildProgressPayload({
+        currentLevel,
+        verifiedTalent: fp.isVerifiedTalent,
+        verifiedTalentAt: fp.verifiedTalentAt,
+        stats,
+      }),
+      foundingFreelancer: {
+        earned: fp.isFoundingFreelancer,
+        awardedAt: fp.foundingFreelancerAt?.toISOString() ?? null,
+        slotNumber: fp.foundingSlotNumber,
+      },
+    };
   }
 
   buildProgressPayload(input: {

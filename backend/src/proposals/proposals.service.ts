@@ -27,7 +27,9 @@ import { acceptProposalInTransaction } from './proposal-acceptance.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { ProductAnalyticsEventType } from '@prisma/client';
 import {
   PROPOSAL_BOOST_BOARD_LIMIT,
   PROPOSAL_BOOST_MAX,
@@ -49,6 +51,7 @@ const freelancerPublicSelect = {
           averageRating: true,
           performanceLevel: true,
           isVerifiedTalent: true,
+          isFoundingFreelancer: true,
           skills: {
             include: { skill: { select: { name: true, slug: true } } },
           },
@@ -91,6 +94,7 @@ export class ProposalsService {
     private readonly agreements: AgreementsService,
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   async submit(freelancerId: string, projectId: string, dto: CreateProposalDto) {
@@ -173,6 +177,13 @@ export class ProposalsService {
       `تلقيت عرضاً جديداً على مشروع "${project.title}"`,
       `/dashboard/projects/${projectId}/proposals`,
     );
+
+    await this.launchProgram
+      .trackAnalytics(freelancerId, ProductAnalyticsEventType.PROPOSAL_SUBMITTED, {
+        proposalId: proposal.id,
+        projectId,
+      })
+      .catch(() => undefined);
 
     return this.formatFreelancerProposal(proposal);
   }
@@ -591,6 +602,7 @@ export class ProposalsService {
             completedProjects: fp?.completedProjects ?? 0,
             performanceLevel: fp?.performanceLevel ?? 'NONE',
             isVerifiedTalent: fp?.isVerifiedTalent ?? false,
+            isFoundingFreelancer: fp?.isFoundingFreelancer ?? false,
             skills: fp?.skills.map((s) => ({
               name: s.skill.name,
               slug: s.skill.slug,

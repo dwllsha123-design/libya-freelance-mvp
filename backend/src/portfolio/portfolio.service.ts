@@ -9,6 +9,7 @@ import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { STORAGE_SERVICE, type StorageService } from '../storage/storage.interface.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import type {
@@ -37,6 +38,7 @@ export class PortfolioService {
     private readonly prisma: PrismaService,
     @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
     private readonly nuqatiService: NuqatiService,
+    private readonly launchProgram: LaunchProgramService,
     private readonly platformPolicy: PlatformPolicyService,
     private readonly subscriptions: SubscriptionsService,
   ) {}
@@ -193,6 +195,8 @@ export class PortfolioService {
     });
 
     void this.nuqatiService.onPortfolioItemCreated(userId, item.id).catch(() => undefined);
+    void this.nuqatiService.checkProfileComplete(userId).catch(() => undefined);
+    void this.launchProgram.evaluateFoundingFreelancer(userId).catch(() => undefined);
 
     return this.formatItem(item);
   }

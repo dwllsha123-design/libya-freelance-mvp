@@ -3,6 +3,7 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PortfolioModule } from '../portfolio/portfolio.module.js';
 import { EscrowModule } from '../escrow/escrow.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
+import { LaunchModule } from '../launch/launch.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
 import { AgreementsModule } from '../agreements/agreements.module.js';
 import { ProposalsController } from './proposals.controller.js';
@@ -15,6 +16,7 @@ import { ProposalsService } from './proposals.service.js';
     forwardRef(() => EscrowModule),
     forwardRef(() => AgreementsModule),
     NuqatiModule,
+    LaunchModule,
     PlatformModule,
   ],
   controllers: [ProposalsController],

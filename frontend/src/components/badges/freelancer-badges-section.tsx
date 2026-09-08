@@ -61,6 +61,7 @@ export function FreelancerBadgesSection() {
           <FreelancerBadgeChip
             level={data.currentLevel}
             verifiedTalent={data.verifiedTalent}
+            foundingFreelancer={Boolean(data.foundingFreelancer?.earned)}
           />
         ) : null}
       </div>

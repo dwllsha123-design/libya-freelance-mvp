@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { AdminAuditService } from './admin-audit.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
 import {
   assertAdminCanModerateUser,
   assertValidStatusTransition,
@@ -43,6 +44,7 @@ export class AdminUsersService {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
     private readonly realtimeSessions: RealtimeSessionService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   async list(query: AdminUsersQueryDto) {
@@ -107,7 +109,12 @@ export class AdminUsersService {
       throw new NotFoundException('المستخدم غير موجود');
     }
 
-    return this.formatUserDetail(user);
+    const detail = this.formatUserDetail(user);
+    const launch = await this.launchProgram.getUserLaunchStatus(id);
+    return {
+      ...detail,
+      launch,
+    };
   }
 
   async suspend(adminId: string, userId: string) {
@@ -225,6 +232,9 @@ export class AdminUsersService {
               performanceLevel: freelancer.performanceLevel,
               isVerifiedTalent: freelancer.isVerifiedTalent,
               verifiedTalentAt: freelancer.verifiedTalentAt,
+              isFoundingFreelancer: freelancer.isFoundingFreelancer,
+              foundingFreelancerAt: freelancer.foundingFreelancerAt,
+              foundingSlotNumber: freelancer.foundingSlotNumber,
             }
           : null,
       client:
@@ -261,6 +271,9 @@ export class AdminUsersService {
               performanceLevel: freelancer.performanceLevel,
               isVerifiedTalent: freelancer.isVerifiedTalent,
               verifiedTalentAt: freelancer.verifiedTalentAt,
+              isFoundingFreelancer: freelancer.isFoundingFreelancer,
+              foundingFreelancerAt: freelancer.foundingFreelancerAt,
+              foundingSlotNumber: freelancer.foundingSlotNumber,
             }
           : null,
       client:

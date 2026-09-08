@@ -2,17 +2,24 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  NotificationType,
   PaymentStatus,
   PointsTransactionType,
   Prisma,
+  ProductAnalyticsEventType,
   Role,
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { LaunchProgramService } from '../launch/launch.service.js';
+import {
+  calculateProfileCompletion,
+  meetsProfileCompletionThreshold,
+} from '../profiles/profile-completion.util.js';
 import {
   NUQATI_CONFIG,
   NUQATI_REASON_LABELS,
@@ -48,6 +55,8 @@ export class NuqatiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly notifications: NotificationsService,
+    private readonly launchProgram: LaunchProgramService,
   ) {}
 
   async getDashboard(userId: string, role: Role) {
@@ -273,16 +282,69 @@ export class NuqatiService {
   }
 
   async onFreelancerRegistered(userId: string, tx?: Tx) {
-    await this.credit(
-      userId,
-      NUQATI_CONFIG.welcomeBonus,
-      PointsTransactionType.EARN,
-      'WELCOME_BONUS',
-      'مكافأة ترحيب عند التسجيل!',
-      undefined,
-      tx,
-    );
-    await this.markTaskDone(userId, 'WELCOME_BONUS', '', tx);
+    return this.awardWelcomeBonus(userId, tx);
+  }
+
+  /**
+   * Exactly-once welcome points for a new account (ledger + task completion).
+   * Safe across logout, role switch, profile edits, and concurrent retries.
+   */
+  async awardWelcomeBonus(userId: string, tx?: Tx) {
+    const run = async (db: Tx) => {
+      const config = await this.launchProgram.getConfig(db);
+      const amount = config.welcomePoints;
+
+      // Claim idempotency row first (unique userId+taskKey+periodKey)
+      try {
+        await db.pointsTaskCompletion.create({
+          data: {
+            userId,
+            taskKey: 'WELCOME_BONUS',
+            periodKey: '',
+            progress: 1,
+          },
+        });
+      } catch (err) {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          return null;
+        }
+        throw err;
+      }
+
+      await this.credit(
+        userId,
+        amount,
+        PointsTransactionType.EARN,
+        'WELCOME_BONUS',
+        'مكافأة التسجيل في Libyan Freelance',
+        undefined,
+        db,
+      );
+
+      await this.notifications.create(
+        userId,
+        NotificationType.WELCOME_POINTS_AWARDED,
+        'مرحبًا بك في Libyan Freelance 🎉',
+        `تمت إضافة ${amount} نقطة ترحيبية إلى حسابك.`,
+        '/dashboard/nuqati',
+        db,
+      );
+
+      await this.launchProgram.trackAnalytics(
+        userId,
+        ProductAnalyticsEventType.WELCOME_POINTS_AWARDED,
+        { amount },
+        db,
+      );
+
+      return { awarded: amount };
+    };
+
+    if (tx) return run(tx);
+    return this.prisma.$transaction((inner) => run(inner));
   }
 
   async onFreelancerLogin(userId: string) {
@@ -366,36 +428,61 @@ export class NuqatiService {
     const submitCost = NUQATI_CONFIG.proposalSubmitCost;
     const total = submitCost + boost;
 
-    const wallet = await this.ensureWallet(userId, tx);
-    if (wallet.balance < total) {
+    await this.ensureWallet(userId, tx);
+
+    // Atomic conditional debit — prevents concurrent overdraft
+    const updated = await tx.$queryRaw<{ balance: number }[]>`
+      UPDATE "PointsWallet"
+      SET balance = balance - ${total},
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "userId" = ${userId}
+        AND balance >= ${total}
+      RETURNING balance
+    `;
+
+    if (!updated.length) {
       throw new BadRequestException(
         boost > 0
-          ? `رصيد نقاطي غير كافٍ. تحتاج ${total} نقاط (تقديم ${submitCost} + تعزيز ${boost}).`
-          : `رصيد نقاطي غير كافٍ. تحتاج ${submitCost} نقاط لتقديم عرض.`,
+          ? `ليس لديك نقاط كافية لإرسال هذا العرض. تحتاج ${total} نقاط (تقديم ${submitCost} + تعزيز ${boost}).`
+          : 'ليس لديك نقاط كافية لإرسال هذا العرض.',
       );
     }
 
-    await this.debit(
-      userId,
-      submitCost,
-      PointsTransactionType.SPEND,
-      'PROPOSAL_SUBMIT',
-      'تكلفة تقديم عرض على مشروع',
-      proposalId,
-      tx,
-    );
+    const balanceAfterSubmit = updated[0].balance + boost;
+    const balanceAfter = updated[0].balance;
+
+    await tx.pointsTransaction.create({
+      data: {
+        userId,
+        amount: -submitCost,
+        type: PointsTransactionType.SPEND,
+        reasonKey: 'PROPOSAL_SUBMIT',
+        descriptionAr: 'تكلفة تقديم عرض على مشروع',
+        referenceId: proposalId,
+        balanceAfter: balanceAfterSubmit,
+      },
+    });
 
     if (boost > 0) {
-      await this.debit(
-        userId,
-        boost,
-        PointsTransactionType.SPEND,
-        'PROPOSAL_BOOST',
-        `تعزيز ظهور العرض بـ ${boost} نقطة`,
-        proposalId,
-        tx,
-      );
+      await tx.pointsTransaction.create({
+        data: {
+          userId,
+          amount: -boost,
+          type: PointsTransactionType.SPEND,
+          reasonKey: 'PROPOSAL_BOOST',
+          descriptionAr: `تعزيز ظهور العرض بـ ${boost} نقطة`,
+          referenceId: proposalId,
+          balanceAfter,
+        },
+      });
     }
+
+    await this.launchProgram.trackAnalytics(
+      userId,
+      ProductAnalyticsEventType.PROPOSAL_POINTS_DEDUCTED,
+      { proposalId, submitCost, boost, total },
+      tx,
+    );
   }
 
   async onProposalSubmitted(userId: string, proposalId: string, tx?: Tx) {
@@ -447,39 +534,96 @@ export class NuqatiService {
   }
 
   async checkProfileComplete(userId: string) {
+    const config = await this.launchProgram.getConfig();
     const profile = await this.prisma.profile.findUnique({
       where: { userId },
       include: {
         freelancerProfile: {
-          include: { skills: true },
+          include: {
+            skills: true,
+            portfolio: { where: { isVisible: true }, select: { id: true } },
+          },
         },
         city: true,
       },
     });
 
-    if (!profile?.freelancerProfile) return;
+    if (!profile?.freelancerProfile) return null;
 
-    const done = await this.prisma.pointsTaskCompletion.findFirst({
-      where: { userId, taskKey: 'PROFILE_COMPLETE' },
+    const completion = calculateProfileCompletion({
+      profilePhoto: profile.profilePhoto,
+      professionalTitle: profile.freelancerProfile.professionalTitle,
+      bio: profile.bio,
+      cityId: profile.cityId,
+      skillCount: profile.freelancerProfile.skills.length,
+      portfolioCount: profile.freelancerProfile.portfolio.length,
     });
-    if (done) return;
 
-    const complete =
-      Boolean(profile.freelancerProfile.professionalTitle?.trim()) &&
-      Boolean(profile.bio?.trim()) &&
-      profile.freelancerProfile.skills.length > 0 &&
-      Boolean(profile.cityId);
-
-    if (!complete) return;
-
-    await this.markTaskDone(userId, 'PROFILE_COMPLETE', '');
-    await this.credit(
-      userId,
-      NUQATI_CONFIG.profileCompleteReward,
-      PointsTransactionType.EARN,
-      'PROFILE_COMPLETE',
-      'أكملت ملفك الشخصي!',
+    const meets = meetsProfileCompletionThreshold(
+      completion.percent,
+      config.profileCompletionThreshold,
     );
+
+    let rewardAwarded = false;
+
+    if (meets) {
+      try {
+        await this.prisma.pointsTaskCompletion.create({
+          data: {
+            userId,
+            taskKey: 'PROFILE_COMPLETE',
+            periodKey: '',
+            progress: 1,
+          },
+        });
+
+        await this.credit(
+          userId,
+          config.profileCompletionReward,
+          PointsTransactionType.EARN,
+          'PROFILE_COMPLETE',
+          'إكمال الملف الشخصي',
+        );
+
+        await this.notifications.create(
+          userId,
+          NotificationType.PROFILE_COMPLETION_REWARD,
+          'أحسنت!',
+          `تمت إضافة ${config.profileCompletionReward} نقاط بعد إكمال ملفك الشخصي.`,
+          '/dashboard/nuqati',
+        );
+
+        await this.launchProgram.trackAnalytics(
+          userId,
+          ProductAnalyticsEventType.PROFILE_COMPLETION_REWARD_AWARDED,
+          {
+            amount: config.profileCompletionReward,
+            percent: completion.percent,
+          },
+        );
+
+        rewardAwarded = true;
+      } catch (err) {
+        if (
+          !(
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === 'P2002'
+          )
+        ) {
+          throw err;
+        }
+      }
+    }
+
+    await this.launchProgram.evaluateFoundingFreelancer(userId).catch(() => undefined);
+
+    return {
+      percent: completion.percent,
+      meetsThreshold: meets,
+      rewardAwarded,
+      rewardAmount: config.profileCompletionReward,
+      missing: completion.missing,
+    };
   }
 
   async onFirstJobCompleted(userId: string, projectId: string) {
@@ -595,17 +739,23 @@ export class NuqatiService {
 
   private async getTasks(userId: string) {
     const period = monthKey();
-    const completions = await this.prisma.pointsTaskCompletion.findMany({
-      where: { userId },
-    });
-
-    const streak = await this.prisma.pointsStreakState.findUnique({
-      where: { userId },
-    });
+    const [completions, streak, launch] = await Promise.all([
+      this.prisma.pointsTaskCompletion.findMany({
+        where: { userId },
+      }),
+      this.prisma.pointsStreakState.findUnique({
+        where: { userId },
+      }),
+      this.launchProgram.getConfig(),
+    ]);
 
     return NUQATI_TASK_DEFINITIONS.map((task) => {
       let progress = 0;
       let completed = false;
+      const reward =
+        task.key === 'PROFILE_COMPLETE'
+          ? launch.profileCompletionReward
+          : task.reward;
 
       if (task.key === 'STREAK_7' || task.key === 'STREAK_15' || task.key === 'STREAK_30') {
         const milestone = Number(task.key.split('_')[1]);
@@ -630,6 +780,7 @@ export class NuqatiService {
 
       return {
         ...task,
+        reward,
         progress,
         maxProgress: task.maxProgress ?? 1,
         completed,
