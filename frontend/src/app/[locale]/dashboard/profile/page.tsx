@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { ProfilePhotoUpload } from '@/components/profile/profile-photo-upload';
 import { getLocalizedCityName } from '@/lib/locale-content';
-import { PROFILE_COUNTRIES } from '@/lib/profile-location';
+import { PROFILE_COUNTRIES, getCountryFlag } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { useState } from 'react';
@@ -33,6 +33,7 @@ export default function ProfileEditPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
   if (authLoading || isLoading) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -46,6 +47,9 @@ export default function ProfileEditPage() {
       </div>
     );
   }
+
+  const countryValue = selectedCountry ?? profile?.country ?? 'Libya';
+  const selectedFlag = getCountryFlag(countryValue);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,22 +127,37 @@ export default function ProfileEditPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium">{t('country')}</label>
-              <select
-                name="country"
-                defaultValue={profile.country || 'Libya'}
-                className="w-full rounded-lg border px-3 py-2"
-              >
-                <option value="">{tProjects('choose')}</option>
-                {PROFILE_COUNTRIES.map((country) => (
-                  <option key={country.value} value={country.value}>
-                    {locale === 'en' ? country.nameEn : country.nameAr}
-                  </option>
-                ))}
-                {profile.country &&
-                !PROFILE_COUNTRIES.some((c) => c.value === profile.country) ? (
-                  <option value={profile.country}>{profile.country}</option>
+              <div className="flex items-center gap-2">
+                {selectedFlag ? (
+                  <span
+                    aria-hidden="true"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant/40 bg-surface-container-low text-2xl leading-none"
+                  >
+                    {selectedFlag}
+                  </span>
                 ) : null}
-              </select>
+                <select
+                  name="country"
+                  value={countryValue}
+                  onChange={(event) => setSelectedCountry(event.target.value)}
+                  className="w-full rounded-lg border px-3 py-2"
+                >
+                  <option value="">{tProjects('choose')}</option>
+                  {PROFILE_COUNTRIES.map((country) => (
+                    <option key={country.value} value={country.value}>
+                      {country.flag} {locale === 'en' ? country.nameEn : country.nameAr}
+                    </option>
+                  ))}
+                  {profile.country &&
+                  !PROFILE_COUNTRIES.some((c) => c.value === profile.country) ? (
+                    <option value={profile.country}>
+                      {[getCountryFlag(profile.country), profile.country]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </option>
+                  ) : null}
+                </select>
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">{t('region')}</label>

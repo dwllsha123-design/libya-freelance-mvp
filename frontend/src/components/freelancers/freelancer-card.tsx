@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import type { PublicProfile } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import { getLocalizedCityName } from '@/lib/locale-content';
+import { getCountryFlag } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { isFreelancerVerified } from '@/lib/freelancer-trust';
 import { VerifiedBadge } from '@/components/trust/verified-badge';
@@ -30,6 +31,7 @@ export function FreelancerCard({
   const hourlyRate = freelancer.freelancer?.hourlyRate;
   const verified = isFreelancerVerified(freelancer);
   const reviewCount = freelancer.reviews?.reviewCount;
+  const countryFlag = getCountryFlag(freelancer.country);
 
   return (
     <Link
@@ -63,8 +65,21 @@ export function FreelancerCard({
             {freelancer.freelancer?.professionalTitle ?? t('defaultTitle')}
           </p>
           {freelancer.city ? (
-            <p className="mt-1 text-xs text-on-surface-variant">
-              📍 {getLocalizedCityName(freelancer.city, locale)}
+            <p className="mt-1 flex items-center gap-1 text-xs text-on-surface-variant">
+              {countryFlag ? (
+                <span aria-hidden="true" className="text-sm leading-none">
+                  {countryFlag}
+                </span>
+              ) : (
+                <span aria-hidden="true">📍</span>
+              )}
+              <span>{getLocalizedCityName(freelancer.city, locale)}</span>
+            </p>
+          ) : countryFlag ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-on-surface-variant">
+              <span aria-hidden="true" className="text-sm leading-none">
+                {countryFlag}
+              </span>
             </p>
           ) : null}
         </div>
