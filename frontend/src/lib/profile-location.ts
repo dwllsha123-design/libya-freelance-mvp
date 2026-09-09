@@ -5,5 +5,6 @@ export const PROFILE_COUNTRIES = [
   { value: 'Egypt', nameAr: 'مصر', nameEn: 'Egypt' },
   { value: 'Algeria', nameAr: 'الجزائر', nameEn: 'Algeria' },
   { value: 'Morocco', nameAr: 'المغرب', nameEn: 'Morocco' },
+  { value: 'Netherlands', nameAr: 'هولندا', nameEn: 'Netherlands' },
   { value: 'Other', nameAr: 'أخرى', nameEn: 'Other' },
 ] as const;

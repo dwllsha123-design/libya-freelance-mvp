@@ -100,6 +100,19 @@ export const REFERENCE_CITIES: ReferenceCity[] = [
   { nameAr: 'مكناس', slug: 'meknes', country: 'Morocco', sortOrder: 7 },
   { nameAr: 'وجدة', slug: 'oujda', country: 'Morocco', sortOrder: 8 },
   { nameAr: 'عن بُعد', slug: 'remote', country: 'Morocco', sortOrder: 99, isRemote: true },
+
+  // Netherlands
+  { nameAr: 'أمستردام', slug: 'amsterdam', country: 'Netherlands', sortOrder: 1 },
+  { nameAr: 'روتردام', slug: 'rotterdam', country: 'Netherlands', sortOrder: 2 },
+  { nameAr: 'لاهاي', slug: 'the-hague', country: 'Netherlands', sortOrder: 3 },
+  { nameAr: 'أوتريخت', slug: 'utrecht', country: 'Netherlands', sortOrder: 4 },
+  { nameAr: 'آيندهوفن', slug: 'eindhoven', country: 'Netherlands', sortOrder: 5 },
+  { nameAr: 'خرونينغن', slug: 'groningen', country: 'Netherlands', sortOrder: 6 },
+  { nameAr: 'تيلبورغ', slug: 'tilburg', country: 'Netherlands', sortOrder: 7 },
+  { nameAr: 'ألميري', slug: 'almere', country: 'Netherlands', sortOrder: 8 },
+  { nameAr: 'بريدا', slug: 'breda', country: 'Netherlands', sortOrder: 9 },
+  { nameAr: 'نايميخن', slug: 'nijmegen', country: 'Netherlands', sortOrder: 10 },
+  { nameAr: 'عن بُعد', slug: 'remote', country: 'Netherlands', sortOrder: 99, isRemote: true },
 ];
 
 export function slugifySkillName(value: string): string {
