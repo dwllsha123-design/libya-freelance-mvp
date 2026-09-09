@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { ProfilePhotoUpload } from '@/components/profile/profile-photo-upload';
 import { getLocalizedCityName } from '@/lib/locale-content';
+import { PROFILE_COUNTRIES, getCountryFlag, filterCitiesForCountry } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { useState } from 'react';
@@ -32,6 +33,26 @@ export default function ProfileEditPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+
+  const countryValue = selectedCountry ?? profile?.country ?? 'Libya';
+  const selectedFlag = getCountryFlag(countryValue);
+  const citiesForCountry = filterCitiesForCountry(cities, countryValue);
+  const cityValue =
+    selectedCityId ??
+    (profile?.city && citiesForCountry.some((city) => city.id === profile.city?.id)
+      ? profile.city.id
+      : '');
+
+  function handleCountryChange(nextCountry: string) {
+    setSelectedCountry(nextCountry);
+    const nextCities = filterCitiesForCountry(cities, nextCountry);
+    const currentId = selectedCityId ?? profile?.city?.id ?? '';
+    if (currentId && !nextCities.some((city) => city.id === currentId)) {
+      setSelectedCityId('');
+    }
+  }
 
   if (authLoading || isLoading) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -60,9 +81,9 @@ export default function ProfileEditPage() {
         lastName: String(formData.get('lastName') ?? ''),
         username: String(formData.get('username') ?? ''),
         bio: String(formData.get('bio') ?? ''),
+        country: String(formData.get('country') ?? '') || undefined,
         cityId: String(formData.get('cityId') ?? '') || undefined,
         workMode: String(formData.get('workMode') ?? 'ON_SITE'),
-        phone: String(formData.get('phone') ?? ''),
         professionalTitle: String(formData.get('professionalTitle') ?? ''),
         displayName: String(formData.get('displayName') ?? ''),
       });
@@ -121,27 +142,62 @@ export default function ProfileEditPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">{t('city')}</label>
-              <select name="cityId" defaultValue={profile.city?.id ?? ''} className="w-full rounded-lg border px-3 py-2">
-                <option value="">{tProjects('choose')}</option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>{getLocalizedCityName(city, locale)}</option>
-                ))}
-              </select>
+              <label className="mb-1 block text-sm font-medium">{t('country')}</label>
+              <div className="flex items-center gap-2">
+                {selectedFlag ? (
+                  <span
+                    aria-hidden="true"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant/40 bg-surface-container-low text-2xl leading-none"
+                  >
+                    {selectedFlag}
+                  </span>
+                ) : null}
+                <select
+                  name="country"
+                  value={countryValue}
+                  onChange={(event) => handleCountryChange(event.target.value)}
+                  className="w-full rounded-lg border px-3 py-2"
+                >
+                  <option value="">{tProjects('choose')}</option>
+                  {PROFILE_COUNTRIES.map((country) => (
+                    <option key={country.value} value={country.value}>
+                      {country.flag} {locale === 'en' ? country.nameEn : country.nameAr}
+                    </option>
+                  ))}
+                  {profile.country &&
+                  !PROFILE_COUNTRIES.some((c) => c.value === profile.country) ? (
+                    <option value={profile.country}>
+                      {[getCountryFlag(profile.country), profile.country]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </option>
+                  ) : null}
+                </select>
+              </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">{t('workMode')}</label>
-              <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
-                <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
-                <option value="REMOTE">{tProjects('workModeRemote')}</option>
-                <option value="HYBRID">{tProjects('workModeHybrid')}</option>
+              <label className="mb-1 block text-sm font-medium">{t('region')}</label>
+              <select
+                name="cityId"
+                value={cityValue}
+                onChange={(event) => setSelectedCityId(event.target.value)}
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">{tProjects('choose')}</option>
+                {citiesForCountry.map((city) => (
+                  <option key={city.id} value={city.id}>{getLocalizedCityName(city, locale)}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">{t('phoneOptional')}</label>
-            <input name="phone" className="w-full rounded-lg border px-3 py-2" />
+            <label className="mb-1 block text-sm font-medium">{t('workMode')}</label>
+            <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
+              <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
+              <option value="REMOTE">{tProjects('workModeRemote')}</option>
+              <option value="HYBRID">{tProjects('workModeHybrid')}</option>
+            </select>
           </div>
 
           {user.role === 'FREELANCER' ? (

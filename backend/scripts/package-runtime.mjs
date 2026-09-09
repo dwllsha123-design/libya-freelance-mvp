@@ -66,7 +66,10 @@ cpSync(
   { recursive: true },
 );
 
-const forbidden = ['prisma', 'deepmerge-ts', '@prisma/config', 'vitest', 'typescript'];
+// Prisma 6 installs `prisma` / `@prisma/config` / `deepmerge-ts` / `typescript`
+// as transitive peers of `@prisma/client` even with --omit=dev. Only fail on
+// tools that must never ship in the runtime image.
+const forbidden = ['vitest', '@nestjs/cli', '@nestjs/schematics', 'oxlint', 'prettier'];
 const leaked = forbidden.filter((pkg) =>
   existsSync(join(bundleDir, 'node_modules', pkg)),
 );
@@ -80,6 +83,10 @@ assert(
   'Generated .prisma client missing from bundle',
 );
 
+const prismaTransitive = ['prisma', 'deepmerge-ts', '@prisma/config', 'typescript'].filter(
+  (pkg) => existsSync(join(bundleDir, 'node_modules', pkg)),
+);
+
 writeFileSync(
   join(bundleDir, 'RUNTIME_MANIFEST.json'),
   JSON.stringify(
@@ -87,9 +94,10 @@ writeFileSync(
       packagedAt: new Date().toISOString(),
       nodeStartCommand: 'node dist/main.js',
       prismaClientCopiedFrom: 'build-stage node_modules/.prisma',
-      devPackagesExcluded: forbidden.filter(
+      forbiddenDevPackagesExcluded: forbidden.filter(
         (pkg) => !existsSync(join(bundleDir, 'node_modules', pkg)),
       ),
+      prismaTransitivePresent: prismaTransitive,
       prismaCliInBundle: existsSync(join(bundleDir, 'node_modules', 'prisma')),
     },
     null,

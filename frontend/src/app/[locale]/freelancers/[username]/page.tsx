@@ -12,6 +12,7 @@ import { FreelancerTrustStats } from '@/components/trust/freelancer-trust-stats'
 import { isFreelancerVerified, getVerificationCriteria } from '@/lib/freelancer-trust';
 import { formatCurrency } from '@/lib/currency';
 import { getLocalizedCityName } from '@/lib/locale-content';
+import { getCountryFlag } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 
 function isSafeUrl(url: string) {
@@ -64,6 +65,7 @@ export default function FreelancerProfilePage() {
   const rating = profile.freelancer?.averageRating ?? 0;
   const completed = profile.freelancer?.completedProjects ?? 0;
   const hourlyRate = profile.freelancer?.hourlyRate;
+  const countryFlag = getCountryFlag(profile.country);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -96,14 +98,24 @@ export default function FreelancerProfilePage() {
             <p className="mt-2 text-lg text-on-surface-variant">
               {profile.freelancer?.professionalTitle ?? t('defaultTitle')}
             </p>
-            <p className="mt-1 text-sm text-on-surface-variant">
-              {profile.city ? getLocalizedCityName(profile.city, locale) : '—'} ·{' '}
-              {t('memberSince', {
-                date: new Date(profile.joinDate).toLocaleDateString(numberLocale, {
-                  year: 'numeric',
-                  month: 'long',
-                }),
-              })}
+            <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-on-surface-variant">
+              {countryFlag ? (
+                <span aria-hidden="true" className="text-base leading-none">
+                  {countryFlag}
+                </span>
+              ) : null}
+              <span>
+                {profile.city ? getLocalizedCityName(profile.city, locale) : '—'}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {t('memberSince', {
+                  date: new Date(profile.joinDate).toLocaleDateString(numberLocale, {
+                    year: 'numeric',
+                    month: 'long',
+                  }),
+                })}
+              </span>
             </p>
 
             <div className="mt-4">

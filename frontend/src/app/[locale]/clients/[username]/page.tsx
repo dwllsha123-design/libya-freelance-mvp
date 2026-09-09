@@ -9,6 +9,7 @@ import { ProfileReviewsSection } from '@/components/rating/profile-reviews-secti
 import { RatingSummary } from '@/components/rating/review-card';
 import { getLocalizedCityName } from '@/lib/locale-content';
 import { getCityBySlug } from '@/lib/marketplace-content';
+import { getCountryFlag } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 
 export default function ClientProfilePage() {
@@ -53,6 +54,7 @@ export default function ClientProfilePage() {
   const cityName = cityRecord
     ? getLocalizedCityName(cityRecord, locale)
     : profile.city?.nameAr ?? '—';
+  const countryFlag = getCountryFlag(profile.country);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -61,8 +63,15 @@ export default function ClientProfilePage() {
       </h1>
       <p className="mt-2 text-slate-600">@{profile.username}</p>
       {profile.bio ? <p className="mt-6 text-slate-700">{profile.bio}</p> : null}
-      <p className="mt-4 text-sm text-slate-500">
-        {cityName} · {t('projectsPosted', { count: profile.client?.projectsPosted ?? 0 })}
+      <p className="mt-4 flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+        {countryFlag ? (
+          <span aria-hidden="true" className="text-base leading-none">
+            {countryFlag}
+          </span>
+        ) : null}
+        <span>
+          {cityName} · {t('projectsPosted', { count: profile.client?.projectsPosted ?? 0 })}
+        </span>
       </p>
       {profile.reviews && profile.reviews.reviewCount > 0 ? (
         <div className="mt-2">

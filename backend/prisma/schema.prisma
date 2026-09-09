@@ -377,7 +377,9 @@ model EmailVerificationToken {
 model City {
   id        String   @id @default(uuid())
   nameAr    String   @unique
+  nameEn    String?
   slug      String   @unique
+  country   String   @default("Libya")
   isRemote  Boolean  @default(false)
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
@@ -388,6 +390,7 @@ model City {
   projects Project[]
 
   @@index([isActive, sortOrder])
+  @@index([country, isActive, sortOrder])
 }
 
 model Profile {

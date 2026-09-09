@@ -96,7 +96,9 @@ export function ProjectFiltersSidebar({
     [t],
   );
 
-  const locationCities = cities.filter((c) => !c.isRemote);
+  const locationCities = cities.filter(
+    (c) => !c.isRemote && (c.country ?? 'Libya') === 'Libya',
+  );
 
   return (
     <div className="space-y-4 rounded-xl border bg-white p-4">
