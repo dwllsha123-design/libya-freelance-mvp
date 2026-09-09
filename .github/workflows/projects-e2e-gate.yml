@@ -1,0 +1,61 @@
+name: Projects E2E Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [railway/production-ready]
+
+jobs:
+  projects-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: libya_freelance_test
+          POSTGRES_PASSWORD: libya_freelance_test
+          POSTGRES_DB: libya_freelance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U libya_freelance_test -d libya_freelance_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://libya_freelance_test:libya_freelance_test@localhost:5432/libya_freelance_test?schema=public
+      REQUIRE_E2E: '1'
+      NODE_ENV: test
+      PORT: 4000
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      PAYMENT_DRIVER: simulated
+      PAYMENT_CURRENCY: LYD
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npx prisma migrate status
+      - run: npm run prisma:seed
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Projects E2E (work-mode gate)
+        run: npx vitest run --config ./vitest.config.e2e.ts test/projects.e2e-spec.ts
+      - run: npm run build
