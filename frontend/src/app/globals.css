@@ -29,6 +29,7 @@
   --surface-container: #f3efe6;
   --outline-variant: var(--line);
   --error: #ba1a1a;
+  color-scheme: light;
 }
 
 .dark {
@@ -57,6 +58,7 @@
   --surface-container-low: #1e293b;
   --surface-container: #243044;
   --outline-variant: var(--line);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -283,6 +285,25 @@ button,
 select,
 textarea {
   font: inherit;
+}
+
+/* Native select/option contrast (fixes white-on-white popup in dark mode). */
+select {
+  background-color: var(--surface);
+  color: var(--on-surface);
+  border-color: var(--outline-variant);
+}
+
+select option,
+select optgroup {
+  background-color: var(--surface);
+  color: var(--on-surface);
+}
+
+.dark select:disabled {
+  background-color: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  opacity: 0.8;
 }
 
 /* Shared horizontal padding: phone → tablet → laptop → desktop → large */

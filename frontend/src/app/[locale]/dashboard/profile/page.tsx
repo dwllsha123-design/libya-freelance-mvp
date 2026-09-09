@@ -179,7 +179,7 @@ export default function ProfileEditPage() {
                 value={selectedCityId}
                 onChange={(e) => setSelectedCityId(e.target.value)}
                 disabled={!selectedCountry || selectedCountry === 'Other'}
-                className="w-full rounded-lg border px-3 py-2 disabled:bg-slate-50 disabled:opacity-70"
+                className="w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 text-on-surface disabled:bg-surface-container-low disabled:text-on-surface-variant disabled:opacity-80"
               >
                 <option value="">{tProjects('choose')}</option>
                 {citiesForCountry.map((city) => (
