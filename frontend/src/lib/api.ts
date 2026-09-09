@@ -47,7 +47,9 @@ export interface AuthResponse {
 export interface City {
   id: string;
   nameAr: string;
+  nameEn?: string | null;
   slug: string;
+  country?: string;
   isRemote: boolean;
 }
 

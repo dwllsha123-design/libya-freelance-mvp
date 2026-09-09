@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { ProfilePhotoUpload } from '@/components/profile/profile-photo-upload';
 import { getLocalizedCityName } from '@/lib/locale-content';
-import { PROFILE_COUNTRIES, getCountryFlag } from '@/lib/profile-location';
+import { PROFILE_COUNTRIES, getCountryFlag, filterCitiesForCountry } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { useState } from 'react';
@@ -34,6 +34,25 @@ export default function ProfileEditPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+
+  const countryValue = selectedCountry ?? profile?.country ?? 'Libya';
+  const selectedFlag = getCountryFlag(countryValue);
+  const citiesForCountry = filterCitiesForCountry(cities, countryValue);
+  const cityValue =
+    selectedCityId ??
+    (profile?.city && citiesForCountry.some((city) => city.id === profile.city?.id)
+      ? profile.city.id
+      : '');
+
+  function handleCountryChange(nextCountry: string) {
+    setSelectedCountry(nextCountry);
+    const nextCities = filterCitiesForCountry(cities, nextCountry);
+    const currentId = selectedCityId ?? profile?.city?.id ?? '';
+    if (currentId && !nextCities.some((city) => city.id === currentId)) {
+      setSelectedCityId('');
+    }
+  }
 
   if (authLoading || isLoading) {
     return <div className="p-8 text-center text-slate-500">{tCommon('loadingPage')}</div>;
@@ -47,9 +66,6 @@ export default function ProfileEditPage() {
       </div>
     );
   }
-
-  const countryValue = selectedCountry ?? profile?.country ?? 'Libya';
-  const selectedFlag = getCountryFlag(countryValue);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -139,7 +155,7 @@ export default function ProfileEditPage() {
                 <select
                   name="country"
                   value={countryValue}
-                  onChange={(event) => setSelectedCountry(event.target.value)}
+                  onChange={(event) => handleCountryChange(event.target.value)}
                   className="w-full rounded-lg border px-3 py-2"
                 >
                   <option value="">{tProjects('choose')}</option>
@@ -161,9 +177,14 @@ export default function ProfileEditPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">{t('region')}</label>
-              <select name="cityId" defaultValue={profile.city?.id ?? ''} className="w-full rounded-lg border px-3 py-2">
+              <select
+                name="cityId"
+                value={cityValue}
+                onChange={(event) => setSelectedCityId(event.target.value)}
+                className="w-full rounded-lg border px-3 py-2"
+              >
                 <option value="">{tProjects('choose')}</option>
-                {cities.map((city) => (
+                {citiesForCountry.map((city) => (
                   <option key={city.id} value={city.id}>{getLocalizedCityName(city, locale)}</option>
                 ))}
               </select>

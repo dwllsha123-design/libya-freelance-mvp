@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -99,6 +100,16 @@ export class ProfilesService {
 
       if (!city) {
         throw new NotFoundException('المدينة غير موجودة');
+      }
+
+      const nextCountry = dto.country ?? profile.country;
+      if (
+        nextCountry &&
+        nextCountry !== 'Other' &&
+        !city.isRemote &&
+        city.country !== nextCountry
+      ) {
+        throw new BadRequestException('المدينة غير متاحة لهذا البلد');
       }
     }
 
@@ -313,7 +324,9 @@ export class ProfilesService {
         ? {
             id: profile.city.id,
             nameAr: profile.city.nameAr,
+            nameEn: profile.city.nameEn,
             slug: profile.city.slug,
+            country: profile.city.country,
             isRemote: profile.city.isRemote,
           }
         : null,
