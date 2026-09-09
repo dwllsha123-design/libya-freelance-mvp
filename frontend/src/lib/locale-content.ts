@@ -1,21 +1,21 @@
 import type { AppLocale } from '@/i18n/routing';
 
 export function getLocalizedCityName(
-  city: { nameAr: string; nameEn?: string },
+  city: { nameAr: string; nameEn?: string | null },
   locale: AppLocale,
 ): string {
   return locale === 'en' && city.nameEn ? city.nameEn : city.nameAr;
 }
 
 export function getLocalizedCategoryName(
-  category: { nameAr: string; nameEn?: string },
+  category: { nameAr: string; nameEn?: string | null },
   locale: AppLocale,
 ): string {
   return locale === 'en' && category.nameEn ? category.nameEn : category.nameAr;
 }
 
 export function getLocalizedDescription(
-  item: { description: string; descriptionEn?: string },
+  item: { description: string; descriptionEn?: string | null },
   locale: AppLocale,
 ): string {
   return locale === 'en' && item.descriptionEn ? item.descriptionEn : item.description;
