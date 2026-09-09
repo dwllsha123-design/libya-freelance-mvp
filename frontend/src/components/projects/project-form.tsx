@@ -9,6 +9,8 @@ import { createProjectFormSchema } from '@/lib/schemas/create-schemas';
 import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
+import { useWorkModeConfig } from '@/contexts/work-mode-context';
+import { DEFAULT_WORK_MODE, type WorkModeValue } from '@/lib/work-mode';
 
 export interface ProjectFormValues {
   title: string;
@@ -19,7 +21,7 @@ export interface ProjectFormValues {
   budgetMin: number;
   budgetMax: number;
   experienceLevel: 'ENTRY' | 'INTERMEDIATE' | 'EXPERT';
-  workMode: 'ON_SITE' | 'REMOTE' | 'HYBRID';
+  workMode: WorkModeValue;
   cityId?: string;
   deadline?: string;
 }
@@ -44,7 +46,7 @@ const defaultValues: ProjectFormValues = {
   budgetMin: 0,
   budgetMax: 0,
   experienceLevel: 'INTERMEDIATE',
-  workMode: 'REMOTE',
+  workMode: DEFAULT_WORK_MODE,
 };
 
 function mapInitialToValues(initial: ManageProject): ProjectFormValues {
@@ -77,6 +79,7 @@ export function ProjectForm({
   const tCommon = useTranslations('common');
   const tValidation = useTranslations('validation');
   const locale = useLocale() as AppLocale;
+  const { showPicker, isEnabled } = useWorkModeConfig();
 
   const projectFormSchema = useMemo(
     () => createProjectFormSchema((key) => tValidation(key)),
@@ -289,17 +292,34 @@ export function ProjectForm({
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm">{t('workMode')}</label>
-            <select
-              value={values.workMode}
-              onChange={(e) => update('workMode', e.target.value as ProjectFormValues['workMode'])}
-              className="w-full rounded-lg border px-3 py-2"
-            >
-              <option value="REMOTE">{t('workModeRemote')}</option>
-              <option value="ON_SITE">{t('workModeOnSite')}</option>
-              <option value="HYBRID">{t('workModeHybrid')}</option>
-            </select>
+            {showPicker ? (
+              <select
+                value={values.workMode}
+                onChange={(e) =>
+                  update('workMode', e.target.value as ProjectFormValues['workMode'])
+                }
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="REMOTE">{t('workModeRemote')}</option>
+                <option value="ON_SITE">{t('workModeOnSite')}</option>
+                <option value="HYBRID">{t('workModeHybrid')}</option>
+              </select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-palm/10 px-3 py-1.5 text-sm font-medium text-palm-deep">
+                  {values.workMode === 'HYBRID'
+                    ? t('workModeHybrid')
+                    : values.workMode === 'ON_SITE'
+                      ? t('workModeOnSite')
+                      : t('workModeRemote')}
+                  {!isEnabled(values.workMode) ? (
+                    <span className="ms-1 opacity-70">({t('workModeInactive')})</span>
+                  ) : null}
+                </span>
+              </div>
+            )}
           </div>
-          {values.workMode !== 'REMOTE' ? (
+          {showPicker && values.workMode !== 'REMOTE' ? (
             <div>
               <label className="mb-1 block text-sm">{t('city')}</label>
               <select

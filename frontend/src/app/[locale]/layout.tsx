@@ -7,6 +7,7 @@ import { IBM_Plex_Sans_Arabic, Inter, Readex_Pro } from 'next/font/google';
 import '../globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
+import { WorkModeProvider } from '@/contexts/work-mode-context';
 import { SocketProvider } from '@/contexts/socket-context';
 import { PresenceProvider } from '@/hooks/use-presence';
 import { AppChrome } from '@/components/layout/app-chrome';
@@ -125,6 +126,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <AuthProvider>
+              <WorkModeProvider>
               <SocketProvider>
                 <PresenceProvider>
                   <WebPushEnabler />
@@ -133,6 +135,7 @@ export default async function LocaleLayout({
                   </StaffMarketplaceRedirect>
                 </PresenceProvider>
               </SocketProvider>
+              </WorkModeProvider>
             </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

@@ -4,7 +4,7 @@
   "username": "Username",
   "city": "City",
   "country": "Country",
-  "workMode": "Work mode",
+  "workMode": "Service Delivery Mode",
   "photo": "Profile photo",
   "uploadPhoto": "Choose photo",
   "uploading": "Uploading...",

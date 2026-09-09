@@ -468,7 +468,9 @@ model Profile {
   bio          String?
   cityId       String?
   country      String   @default("Libya")
-  workMode     WorkMode @default(ON_SITE)
+  /// Preference only — Project.workMode is authoritative per engagement.
+  /// Future: Freelancer.defaultWorkMode; per-service modes when Service exists.
+  workMode     WorkMode @default(REMOTE)
   phone        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -589,6 +591,9 @@ model Project {
   currency           String                  @default("LYD")
   experienceLevel    ProjectExperienceLevel  @default(INTERMEDIATE)
   deadline           DateTime?
+  /// Authoritative service-delivery mode for this project.
+  /// Domain retains ON_SITE/HYBRID; product enables modes via `enabledWorkModes`.
+  /// Future onsite: country/city/area/radius can extend City relation without blocking REMOTE.
   workMode           WorkMode                @default(REMOTE)
   cityId             String?
   status             ProjectStatus           @default(DRAFT)

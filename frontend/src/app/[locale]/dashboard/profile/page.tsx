@@ -10,6 +10,8 @@ import { PROFILE_COUNTRIES } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { useMemo, useState } from 'react';
+import { useWorkModeConfig } from '@/contexts/work-mode-context';
+import type { WorkModeValue } from '@/lib/work-mode';
 
 export default function ProfileEditPage() {
   const t = useTranslations('profile');
@@ -17,6 +19,7 @@ export default function ProfileEditPage() {
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
+  const { showPicker, isEnabled, defaultWorkMode } = useWorkModeConfig();
   const { user, accessToken, isLoading: authLoading, updateProfilePhoto } = useAuth();
   const {
     profile,
@@ -85,7 +88,9 @@ export default function ProfileEditPage() {
         bio: String(formData.get('bio') ?? ''),
         country: String(formData.get('country') ?? '') || undefined,
         cityId: String(formData.get('cityId') ?? '') || undefined,
-        workMode: String(formData.get('workMode') ?? 'ON_SITE'),
+        workMode: showPicker
+          ? String(formData.get('workMode') ?? defaultWorkMode)
+          : defaultWorkMode,
         professionalTitle: String(formData.get('professionalTitle') ?? ''),
         displayName: String(formData.get('displayName') ?? ''),
         presenceVisibility: String(formData.get('presenceVisibility') ?? 'EVERYONE'),
@@ -186,11 +191,24 @@ export default function ProfileEditPage() {
 
           <div>
             <label className="mb-1 block text-sm font-medium">{t('workMode')}</label>
-            <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
-              <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
-              <option value="REMOTE">{tProjects('workModeRemote')}</option>
-              <option value="HYBRID">{tProjects('workModeHybrid')}</option>
-            </select>
+            {showPicker ? (
+              <select name="workMode" defaultValue={profile.workMode} className="w-full rounded-lg border px-3 py-2">
+                <option value="REMOTE">{tProjects('workModeRemote')}</option>
+                <option value="ON_SITE">{tProjects('workModeOnSite')}</option>
+                <option value="HYBRID">{tProjects('workModeHybrid')}</option>
+              </select>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-palm/10 px-3 py-1.5 text-sm font-medium text-palm-deep">
+                  {tProjects('workModeRemote')}
+                </span>
+                {!isEnabled(profile.workMode as WorkModeValue) ? (
+                  <span className="text-xs text-on-surface-variant">
+                    ({tProjects('workModePreferenceHint')})
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {user.role === 'FREELANCER' ? (

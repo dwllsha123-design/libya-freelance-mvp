@@ -133,13 +133,13 @@ function validateLocation(
 ): void {
   if (!workMode) {
     if (required) {
-      throw new BadRequestException('نمط العمل مطلوب');
+      throw new BadRequestException('طريقة تقديم الخدمة مطلوبة');
     }
     return;
   }
 
   if (workMode === WorkMode.REMOTE && cityId) {
-    throw new BadRequestException('المشاريع عن بُعد لا تتطلب مدينة');
+    throw new BadRequestException('الخدمات عن بُعد لا تتطلب مدينة');
   }
 
   if (
@@ -147,7 +147,7 @@ function validateLocation(
     required &&
     !cityId
   ) {
-    throw new BadRequestException('يجب اختيار المدينة لهذا نمط العمل');
+    throw new BadRequestException('يجب اختيار المدينة لطريقة تقديم الخدمة هذه');
   }
 }
 

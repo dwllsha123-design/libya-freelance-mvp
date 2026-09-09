@@ -413,7 +413,7 @@ describe('Projects E2E (PostgreSQL)', () => {
     expect(Array.isArray(list.body.items)).toBe(true);
   });
 
-  it('20. City/workMode filter works', async (ctx) => {
+  it('20. City/workMode filter works for REMOTE', async (ctx) => {
     if (!dbReady) ctx.skip();
 
     const client = await registerUser(app, 'CLIENT', 'city-filter');
@@ -423,9 +423,311 @@ describe('Projects E2E (PostgreSQL)', () => {
       .set('Authorization', `Bearer ${client.accessToken}`)
       .send(
         validProjectPayload(categoryId, [skillId], {
+          workMode: 'REMOTE',
+          title: 'مشروع عن بُعد للتحقق من فلتر طريقة التقديم',
+        }),
+      )
+      .expect(201);
+
+    expect(created.body.workMode).toBe('REMOTE');
+
+    await authAgent(app)
+      .post(`/api/projects/${created.body.id}/publish`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .expect(201);
+
+    const list = await authAgent(app)
+      .get('/api/projects?workMode=REMOTE')
+      .set(CLIENT_HEADER)
+      .expect(200);
+
+    expect(
+      list.body.items.some((p: { slug: string }) => p.slug === created.body.slug),
+    ).toBe(true);
+  });
+
+  it('20b. Disabled work modes rejected on create; default is REMOTE', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const client = await registerUser(app, 'CLIENT', 'work-mode-gate');
+
+    const defaultPayload = validProjectPayload(categoryId, [skillId], {
+      title: 'مشروع افتراضي لطريقة التقديم عن بُعد',
+    });
+    delete (defaultPayload as { workMode?: string }).workMode;
+
+    const defaultCreate = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(defaultPayload)
+      .expect(201);
+
+    expect(defaultCreate.body.workMode).toBe('REMOTE');
+    expect(defaultCreate.body.city).toBeNull();
+
+    const remoteOk = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          workMode: 'REMOTE',
+          title: 'مشروع عن بُعد صريح مسموح',
+        }),
+      )
+      .expect(201);
+    expect(remoteOk.body.workMode).toBe('REMOTE');
+
+    // REMOTE + cityId: backend normalizes city away (service-delivery semantics).
+    const remoteWithCity = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          workMode: 'REMOTE',
+          cityId,
+          title: 'مشروع عن بُعد مع مدينة يتم تجاهلها',
+        }),
+      )
+      .expect(201);
+    expect(remoteWithCity.body.workMode).toBe('REMOTE');
+    expect(remoteWithCity.body.city).toBeNull();
+
+    await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
           workMode: 'ON_SITE',
           cityId,
-          title: 'مشروع في الموقع بمدينة طرابلس للاختبار',
+          title: 'مشروع حضوري مرفوض في الإصدار الحالي',
+        }),
+      )
+      .expect(400);
+
+    await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          workMode: 'HYBRID',
+          cityId,
+          title: 'مشروع هجين مرفوض في الإصدار الحالي',
+        }),
+      )
+      .expect(400);
+  });
+
+  it('20c. Historical workMode preserved; switch to disabled mode rejected', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const client = await registerUser(app, 'CLIENT', 'work-mode-hist');
+    const created = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          title: 'مشروع تاريخي لطريقة تقديم الخدمة',
+        }),
+      )
+      .expect(201);
+
+    await prisma.project.update({
+      where: { id: created.body.id },
+      data: { workMode: 'ON_SITE', cityId },
+    });
+
+    const hybridSibling = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          title: 'مشروع تاريخي هجين لطريقة تقديم الخدمة',
+        }),
+      )
+      .expect(201);
+
+    await prisma.project.update({
+      where: { id: hybridSibling.body.id },
+      data: { workMode: 'HYBRID', cityId },
+    });
+
+    const readOnSite = await authAgent(app)
+      .get(`/api/projects/${created.body.id}/manage`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .expect(200);
+    expect(readOnSite.body.workMode).toBe('ON_SITE');
+
+    const readHybrid = await authAgent(app)
+      .get(`/api/projects/${hybridSibling.body.id}/manage`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .expect(200);
+    expect(readHybrid.body.workMode).toBe('HYBRID');
+
+    // Unrelated field update must not silently convert historical mode.
+    const updatedDescOnly = await authAgent(app)
+      .patch(`/api/projects/${created.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({
+        description:
+          'وصف محدّث دون إرسال طريقة تقديم الخدمة حتى لا يُحوَّل النمط التاريخي تلقائياً.',
+      })
+      .expect(200);
+    expect(updatedDescOnly.body.workMode).toBe('ON_SITE');
+
+    const updatedKeep = await authAgent(app)
+      .patch(`/api/projects/${created.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({
+        description:
+          'وصف محدّث مع الإبقاء على طريقة التقديم التاريخية الحضورية دون تغيير النمط نفسه في الطلب.',
+        workMode: 'ON_SITE',
+        cityId,
+      })
+      .expect(200);
+    expect(updatedKeep.body.workMode).toBe('ON_SITE');
+
+    // REMOTE project cannot switch to disabled modes.
+    const remoteProject = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          title: 'مشروع عن بُعد لتحديث طريقة التقديم',
+        }),
+      )
+      .expect(201);
+
+    const remoteUpdated = await authAgent(app)
+      .patch(`/api/projects/${remoteProject.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({
+        description:
+          'تحديث مشروع عن بُعد يبقى ناجحاً مع الحفاظ على طريقة التقديم عن بُعد.',
+      })
+      .expect(200);
+    expect(remoteUpdated.body.workMode).toBe('REMOTE');
+
+    await authAgent(app)
+      .patch(`/api/projects/${remoteProject.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({ workMode: 'ON_SITE', cityId })
+      .expect(400);
+
+    await authAgent(app)
+      .patch(`/api/projects/${remoteProject.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({ workMode: 'HYBRID', cityId })
+      .expect(400);
+
+    await authAgent(app)
+      .patch(`/api/projects/${created.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({ workMode: 'HYBRID', cityId })
+      .expect(400);
+
+    const remoteOk = await authAgent(app)
+      .patch(`/api/projects/${created.body.id}`)
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({ workMode: 'REMOTE', cityId: null })
+      .expect(200);
+
+    expect(remoteOk.body.workMode).toBe('REMOTE');
+    expect(remoteOk.body.city).toBeNull();
+  });
+
+  it('20d. Profile workMode preference enforces enabled modes', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const freelancer = await registerUser(app, 'FREELANCER', 'work-mode-profile');
+
+    await authAgent(app)
+      .patch('/api/profiles/me')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${freelancer.accessToken}`)
+      .send({ workMode: 'ON_SITE' })
+      .expect(400);
+
+    await authAgent(app)
+      .patch('/api/profiles/me')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${freelancer.accessToken}`)
+      .send({ workMode: 'HYBRID' })
+      .expect(400);
+
+    const remotePref = await authAgent(app)
+      .patch('/api/profiles/me')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${freelancer.accessToken}`)
+      .send({ workMode: 'REMOTE' })
+      .expect(200);
+
+    expect(remotePref.body.workMode).toBe('REMOTE');
+  });
+
+  it('20e. Public site-config exposes enabledWorkModes=REMOTE only', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const res = await authAgent(app)
+      .get('/api/platform/site-config')
+      .set(CLIENT_HEADER)
+      .expect(200);
+
+    expect(res.body.settings.enabledWorkModes).toEqual(['REMOTE']);
+
+    const enumRows = await prisma.$queryRawUnsafe<Array<{ enumlabel: string }>>(
+      `SELECT e.enumlabel
+       FROM pg_type t
+       JOIN pg_enum e ON t.oid = e.enumtypid
+       WHERE t.typname = 'WorkMode'
+       ORDER BY e.enumsortorder`,
+    );
+    expect(enumRows.map((r) => r.enumlabel)).toEqual([
+      'ON_SITE',
+      'REMOTE',
+      'HYBRID',
+    ]);
+
+    const defaultRow = await prisma.$queryRawUnsafe<
+      Array<{ column_default: string | null }>
+    >(
+      `SELECT column_default
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'Profile'
+         AND column_name = 'workMode'`,
+    );
+    expect(String(defaultRow[0]?.column_default ?? '')).toContain('REMOTE');
+  });
+
+  it('20f. Search accepts workMode query without breaking other filters', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const client = await registerUser(app, 'CLIENT', 'work-mode-search');
+    const created = await authAgent(app)
+      .post('/api/projects')
+      .set(CLIENT_HEADER)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send(
+        validProjectPayload(categoryId, [skillId], {
+          title: 'مشروع للبحث عن طريقة التقديم عن بُعد',
         }),
       )
       .expect(201);
@@ -436,14 +738,19 @@ describe('Projects E2E (PostgreSQL)', () => {
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);
 
-    const list = await authAgent(app)
-      .get('/api/projects?city=tripoli&workMode=ON_SITE')
+    const byMode = await authAgent(app)
+      .get('/api/projects?workMode=REMOTE&sort=newest')
       .set(CLIENT_HEADER)
       .expect(200);
-
     expect(
-      list.body.items.some((p: { slug: string }) => p.slug === created.body.slug),
+      byMode.body.items.some((p: { slug: string }) => p.slug === created.body.slug),
     ).toBe(true);
+
+    const emptyMode = await authAgent(app)
+      .get('/api/projects?sort=newest&limit=5')
+      .set(CLIENT_HEADER)
+      .expect(200);
+    expect(Array.isArray(emptyMode.body.items)).toBe(true);
   });
 
   it('21. Sort works', async (ctx) => {

@@ -78,7 +78,6 @@ async function main() {
   const marketingSkill = await prisma.skill.findFirst({
     where: { slug: 'digital-marketing' },
   });
-  const tripoli = await prisma.city.findFirst({ where: { slug: 'tripoli' } });
 
   if (demoClient.profile && category && reactSkill && nextSkill) {
     const demoProjects: Array<{
@@ -110,8 +109,7 @@ async function main() {
         budgetMin: 8000,
         budgetMax: 15000,
         slug: 'demo-delivery-app-d4e5f6',
-        workMode: WorkMode.HYBRID,
-        cityId: tripoli?.id,
+        workMode: WorkMode.REMOTE,
         categoryId: category.id,
         skillIds: [reactSkill.id, nextSkill.id],
       },
@@ -150,8 +148,7 @@ async function main() {
               budgetMin: 5000,
               budgetMax: 12000,
               slug: 'demo-inventory-m4n5o6',
-              workMode: WorkMode.ON_SITE,
-              cityId: tripoli?.id,
+              workMode: WorkMode.REMOTE,
               categoryId: category.id,
               skillIds: [nodeSkill.id, nextSkill.id],
             },
@@ -185,6 +182,19 @@ async function main() {
         });
         console.log(`Demo project seeded: ${project.slug}`);
       }
+    }
+
+    // Demo/test data only: align historical demo slugs with remote-only release.
+    const demoSlugs = demoProjects.map((d) => d.slug);
+    const normalized = await prisma.project.updateMany({
+      where: {
+        slug: { in: demoSlugs },
+        workMode: { in: [WorkMode.ON_SITE, WorkMode.HYBRID] },
+      },
+      data: { workMode: WorkMode.REMOTE, cityId: null },
+    });
+    if (normalized.count > 0) {
+      console.log(`Normalized ${normalized.count} demo project(s) to REMOTE.`);
     }
   }
 

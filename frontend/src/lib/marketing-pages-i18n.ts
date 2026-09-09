@@ -289,7 +289,7 @@ const AR_CONTENT: MarketingPagesContent = {
           },
           {
             q: 'هل يمكنني العمل عن بُعد؟',
-            a: 'نعم. يمكنك تحديد نمط العمل (حضوري، عن بُعد، أو هجين) في ملفك الشخصي.',
+            a: 'نعم. المنصة تدعم حالياً تقديم الخدمات عن بُعد. طرق التقديم الحضوري والهجين مخططة لإصدارات لاحقة.',
           },
         ],
       },
@@ -696,7 +696,7 @@ const EN_CONTENT: MarketingPagesContent = {
           },
           {
             q: 'Can I work remotely?',
-            a: 'Yes. You can set your work mode (on-site, remote, or hybrid) in your profile.',
+            a: 'Yes. The platform currently supports remote service delivery only. On-site and hybrid modes are planned for later releases.',
           },
         ],
       },

@@ -93,6 +93,9 @@ export class ProjectsService {
     await this.platformPolicy.assertProjectsAllowed(Role.CLIENT);
     await this.assertClient(clientId);
 
+    const workMode = await this.platformPolicy.resolveProjectWorkMode(dto.workMode);
+    const cityId = workMode === WorkMode.REMOTE ? null : dto.cityId ?? null;
+
     validateProjectForDraft({
       title: dto.title,
       description: dto.description,
@@ -101,8 +104,8 @@ export class ProjectsService {
       budgetMin: dto.budgetMin,
       budgetMax: dto.budgetMax,
       deadline: dto.deadline ? new Date(dto.deadline) : undefined,
-      workMode: dto.workMode,
-      cityId: dto.cityId,
+      workMode,
+      cityId,
     });
 
     if (dto.categoryId) {
@@ -131,8 +134,8 @@ export class ProjectsService {
           currency: PROJECT_CURRENCY,
           experienceLevel: dto.experienceLevel ?? 'INTERMEDIATE',
           deadline: dto.deadline ? new Date(dto.deadline) : null,
-          workMode: dto.workMode ?? WorkMode.REMOTE,
-          cityId: dto.workMode === WorkMode.REMOTE ? null : dto.cityId ?? null,
+          workMode,
+          cityId,
           status: ProjectStatus.DRAFT,
           clientId,
         },
@@ -228,7 +231,17 @@ export class ProjectsService {
       }
     }
 
-    const merged = this.mergeProjectData(existing, dto);
+    const resolvedWorkMode =
+      dto.workMode !== undefined
+        ? dto.workMode === existing.workMode
+          ? existing.workMode
+          : await this.platformPolicy.resolveProjectWorkMode(dto.workMode)
+        : existing.workMode;
+
+    const merged = this.mergeProjectData(existing, {
+      ...dto,
+      workMode: resolvedWorkMode,
+    });
 
     validateProjectForDraft(merged);
 
@@ -253,11 +266,11 @@ export class ProjectsService {
           ...(dto.deadline !== undefined && {
             deadline: dto.deadline ? new Date(dto.deadline) : null,
           }),
-          ...(dto.workMode !== undefined && { workMode: dto.workMode }),
+          ...(dto.workMode !== undefined && { workMode: resolvedWorkMode }),
           ...(dto.workMode !== undefined || dto.cityId !== undefined
             ? {
                 cityId:
-                  (dto.workMode ?? existing.workMode) === WorkMode.REMOTE
+                  resolvedWorkMode === WorkMode.REMOTE
                     ? null
                     : (dto.cityId ?? existing.cityId),
               }

@@ -6,6 +6,7 @@ import { PortfolioModule } from '../portfolio/portfolio.module.js';
 import { ReviewsModule } from '../reviews/reviews.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
+import { PlatformModule } from '../platform/platform.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
     ReviewsModule,
     NuqatiModule,
     SubscriptionsModule,
+    PlatformModule,
   ],
   controllers: [ProfilesController],
   providers: [ProfilesService],

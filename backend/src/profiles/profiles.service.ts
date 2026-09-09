@@ -27,6 +27,8 @@ import { isFreelancerVerified } from './freelancer-verification.util.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { PresenceService } from '../presence/presence.service.js';
 import type { PresenceSnapshot } from '../presence/presence.types.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { WorkMode } from '@prisma/client';
 
 const profileInclude = {
   city: true,
@@ -73,6 +75,7 @@ export class ProfilesService {
     private readonly nuqatiService: NuqatiService,
     private readonly subscriptions: SubscriptionsService,
     private readonly presence: PresenceService,
+    private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
   async getMyProfile(userId: string) {
@@ -132,6 +135,12 @@ export class ProfilesService {
       }
     }
 
+    // Profile.workMode is a preference only — Project.workMode is authoritative per engagement.
+    let nextWorkMode: WorkMode | undefined;
+    if (dto.workMode !== undefined) {
+      nextWorkMode = await this.platformPolicy.resolveProjectWorkMode(dto.workMode);
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const profileUpdate: Prisma.ProfileUpdateInput = {
         ...(dto.firstName !== undefined && { firstName: dto.firstName.trim() }),
@@ -144,7 +153,7 @@ export class ProfilesService {
           city: dto.cityId ? { connect: { id: dto.cityId } } : { disconnect: true },
         }),
         ...(dto.country !== undefined && { country: dto.country }),
-        ...(dto.workMode !== undefined && { workMode: dto.workMode }),
+        ...(nextWorkMode !== undefined && { workMode: nextWorkMode }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
       };
 

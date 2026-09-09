@@ -6,6 +6,7 @@ import type { Category, City, Skill } from '@/lib/api';
 import type { ProjectFilters } from '@/lib/project-filters';
 import { getLocalizedCategoryName, getLocalizedCityName } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
+import { useWorkModeConfig } from '@/contexts/work-mode-context';
 
 interface ProjectFiltersSidebarProps {
   filters: ProjectFilters;
@@ -56,6 +57,7 @@ export function ProjectFiltersSidebar({
   const t = useTranslations('projects');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
+  const { showFilter } = useWorkModeConfig();
 
   const workModeOptions = useMemo(
     () => [
@@ -154,12 +156,14 @@ export function ProjectFiltersSidebar({
         onChange={(city) => onChange({ city, page: '1' })}
       />
 
-      <SelectField
-        label={t('workMode')}
-        value={filters.workMode}
-        options={workModeOptions}
-        onChange={(workMode) => onChange({ workMode, page: '1' })}
-      />
+      {showFilter ? (
+        <SelectField
+          label={t('workMode')}
+          value={filters.workMode}
+          options={workModeOptions}
+          onChange={(workMode) => onChange({ workMode, page: '1' })}
+        />
+      ) : null}
 
       <SelectField
         label={t('budgetType')}

@@ -21,6 +21,14 @@ import {
   assertSafeHttpsUrl,
   isAppStoreStatus,
 } from './mobile-app.constants.js';
+import {
+  isKnownWorkMode,
+  normalizeEnabledWorkModes,
+  isWorkModeEnabled,
+  resolveDefaultWorkMode,
+  DEFAULT_ENABLED_WORK_MODES,
+} from '../common/work-mode/work-mode.config.js';
+import { WorkMode } from '@prisma/client';
 
 @Injectable()
 export class PlatformPolicyService implements OnModuleInit {
@@ -111,6 +119,33 @@ export class PlatformPolicyService implements OnModuleInit {
     await this.ensureCache();
     const v = this.settingsCache.get(key);
     return typeof v === 'string' ? v : fallback;
+  }
+
+  async getEnabledWorkModes(): Promise<WorkMode[]> {
+    await this.ensureCache();
+    const raw =
+      this.settingsCache.get('enabledWorkModes') ??
+      DEFAULT_SETTINGS.enabledWorkModes ??
+      DEFAULT_ENABLED_WORK_MODES;
+    return normalizeEnabledWorkModes(raw);
+  }
+
+  async assertWorkModeEnabled(mode: WorkMode): Promise<void> {
+    const enabled = await this.getEnabledWorkModes();
+    if (!isWorkModeEnabled(mode, enabled)) {
+      throw new BadRequestException(
+        'طريقة تقديم الخدمة المحددة غير مفعّلة حالياً. المتاح الآن: عن بُعد',
+      );
+    }
+  }
+
+  async resolveProjectWorkMode(requested?: WorkMode | null): Promise<WorkMode> {
+    const enabled = await this.getEnabledWorkModes();
+    if (requested == null) {
+      return resolveDefaultWorkMode(enabled);
+    }
+    await this.assertWorkModeEnabled(requested);
+    return requested;
   }
 
   async isFeatureEnabled(key: FeatureFlagKey, fallback = true): Promise<boolean> {
@@ -229,6 +264,18 @@ export class PlatformPolicyService implements OnModuleInit {
     }
     if (type === 'STRING' && value != null && typeof value !== 'string') {
       throw new ForbiddenException(`القيمة لـ ${key} يجب أن تكون نصًا`);
+    }
+    if (type === 'JSON' && key === 'enabledWorkModes') {
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new BadRequestException(
+          'enabledWorkModes يجب أن تكون مصفوفة غير فارغة من أنماط العمل',
+        );
+      }
+      if (!value.every(isKnownWorkMode)) {
+        throw new BadRequestException(
+          'enabledWorkModes يجب أن تحتوي REMOTE و/أو ON_SITE و/أو HYBRID فقط',
+        );
+      }
     }
     if (key === 'supportEmail' && typeof value === 'string' && value && !value.includes('@')) {
       throw new ForbiddenException('بريد الدعم غير صالح');

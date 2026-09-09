@@ -29,6 +29,8 @@ export const PLATFORM_SETTING_KEYS = [
   'iosStoreUrl',
   'androidStoreUrl',
   'mobileMaintenanceMessage',
+  // Service delivery modes (REMOTE | ON_SITE | HYBRID) — JSON array
+  'enabledWorkModes',
 ] as const;
 
 export type PlatformSettingKey = (typeof PLATFORM_SETTING_KEYS)[number];
@@ -124,6 +126,7 @@ export const DEFAULT_SETTINGS: Record<PlatformSettingKey, unknown> = {
   iosStoreUrl: '',
   androidStoreUrl: '',
   mobileMaintenanceMessage: '',
+  enabledWorkModes: ['REMOTE'],
 };
 
 export function settingTypeFor(key: PlatformSettingKey): 'BOOLEAN' | 'STRING' | 'NUMBER' | 'JSON' {
@@ -139,6 +142,9 @@ export function settingTypeFor(key: PlatformSettingKey): 'BOOLEAN' | 'STRING' | 
     key === 'maintenanceEnabled'
   ) {
     return 'BOOLEAN';
+  }
+  if (key === 'enabledWorkModes') {
+    return 'JSON';
   }
   return 'STRING';
 }
