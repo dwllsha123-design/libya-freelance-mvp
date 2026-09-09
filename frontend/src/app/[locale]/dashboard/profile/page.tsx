@@ -266,14 +266,14 @@ export default function ProfileEditPage() {
                 key={skill.id}
                 type="button"
                 onClick={() => removeSkill(skill.id)}
-                className="rounded-full bg-on-surface px-3 py-1 text-sm text-white"
+                className="rounded-full bg-primary px-3 py-1 text-sm font-medium text-white"
               >
                 {skill.name} ×
               </button>
             ))}
           </div>
           {skills.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">{t('noSkillsYet')}</p>
+            <p className="mt-2 text-sm text-on-surface-variant">{t('noSkillsYet')}</p>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             {allSkills
@@ -283,7 +283,7 @@ export default function ProfileEditPage() {
                   key={skill.id}
                   type="button"
                   onClick={() => addSkill(skill.id)}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-sm"
+                  className="rounded-full border border-outline-variant px-3 py-1 text-sm text-on-surface"
                 >
                   + {skill.name}
                 </button>
