@@ -449,13 +449,9 @@ describe('Proposals E2E (PostgreSQL)', () => {
       fl1.accessToken,
       p1.body.id,
     );
-    await approveProjectAgreement(
-      app,
-      client.accessToken,
-      fl2.accessToken,
-      p2.body.id,
-    );
 
+    // Only one active agreement can exist per project; race accept of the
+    // approved proposal against a second proposal that has no agreement.
     const [res1, res2] = await Promise.allSettled([
       authAgent(app)
         .post(`/api/proposals/${p1.body.id}/accept`)

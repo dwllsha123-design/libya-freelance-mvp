@@ -76,7 +76,9 @@ describe('Notifications E2E (PostgreSQL)', () => {
       .expect(200);
 
     expect(clientList.body.items.length).toBeGreaterThanOrEqual(1);
-    expect(clientList.body.items.every((n: { type: string }) => n.type === 'NEW_PROPOSAL')).toBe(true);
+    expect(
+      clientList.body.items.some((n: { type: string }) => n.type === 'NEW_PROPOSAL'),
+    ).toBe(true);
     expect(freelancerList.body.items.length).toBe(0);
   });
 

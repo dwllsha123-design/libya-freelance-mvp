@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
-import { Role, UserStatus } from '@prisma/client';
+import { Role, UserStatus, AdminPermission } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { seedReferenceData } from '../../prisma/seed-reference.js';
 import {
@@ -63,6 +63,9 @@ export async function registerAdmin(
           lastName: 'اختبار',
           username: `admin-${suffix}`,
         },
+      },
+      adminPermissions: {
+        create: [{ permission: AdminPermission.MANAGE_USERS }],
       },
     },
   });
