@@ -21,6 +21,10 @@ import type {
   ProviderWebhookEvent,
 } from './payment.types.js';
 import { SIMULATED_PAYMENT_PROVIDER } from './providers/simulated-payment.provider.js';
+import {
+  assertMarketplaceFundingAllowed,
+  isMarketplacePaymentProtectionActive,
+} from './payment-protection.policy.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -36,6 +40,7 @@ export class PaymentService {
     const mode = this.provider.capabilities.supportsSyncCapture
       ? 'sync'
       : 'redirect';
+    const protectionActive = isMarketplacePaymentProtectionActive();
 
     return {
       provider: this.provider.name,
@@ -43,7 +48,8 @@ export class PaymentService {
       currency: this.configService.get<string>('payment.currency') ?? 'LYD',
       requiresRedirect: !this.provider.capabilities.supportsSyncCapture,
       supportsRefunds: this.provider.capabilities.supportsRefunds,
-      available: true,
+      /** Marketplace funding UI must use paymentProtectionActive, not this flag. */
+      available: protectionActive,
     };
   }
 
@@ -61,6 +67,7 @@ export class PaymentService {
     escrowId: string,
     options: { returnUrl?: string; cancelUrl?: string } = {},
   ): Promise<InitiateEscrowFundingResult> {
+    assertMarketplaceFundingAllowed();
     const escrow = await this.loadEscrowForClient(clientId, escrowId);
 
     const existingSucceeded = await this.prisma.payment.findFirst({

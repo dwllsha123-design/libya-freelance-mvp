@@ -28,10 +28,11 @@
   "platformFee": "Platform fee",
   "freelancerPayout": "Freelancer payout",
   "openDisputeLabel": "Open dispute: {reason}",
-  "escrowHistory": "Escrow history (simulated)",
-  "escrowHistorySubtitle": "Simulated transactions on {brand} — in Libyan Dinar. Real payment protection coming soon.",
-  "howEscrowWorks": "Payment protection — coming soon",
+  "escrowHistory": "Payment protection (coming later)",
+  "escrowHistorySubtitle": "Libyan Freelance does not receive or hold project funds at this stage. Payment is arranged directly between client and freelancer. Platform payment protection will be introduced later on {brand}.",
+  "howEscrowWorks": "How payment works now",
   "loadFailed": "Failed to load escrow history",
   "loginRequired": "Please sign in",
-  "noTransactions": "No escrow transactions yet."
+  "noTransactions": "No platform-held payments yet — and none are required during this launch phase.",
+  "directPaymentBanner": "Payment is currently made directly between the client and freelancer. Libyan Freelance does not receive or hold project funds at this stage."
 }

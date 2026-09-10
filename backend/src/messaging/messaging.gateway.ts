@@ -312,10 +312,12 @@ export class MessagingGateway
       .to(conversationRoom(body.conversationId))
       .emit('message:new', message);
 
-    this.server.emit('conversation:updated', {
-      conversationId: body.conversationId,
-      lastMessageAt: message.createdAt,
-    });
+    this.server
+      .to(conversationRoom(body.conversationId))
+      .emit('conversation:updated', {
+        conversationId: body.conversationId,
+        lastMessageAt: message.createdAt,
+      });
 
     ack({ message });
   }

@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/e2e-setup.js';
 import {
+  confirmDirectAgreementAndStart,
   createInProgressProject,
   createOpenProject,
   getReferenceIds,
@@ -120,11 +121,12 @@ describe('Reviews E2E (PostgreSQL)', () => {
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(201);
 
-    await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${acceptedProposal.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      acceptedFl.accessToken,
+      acceptedProposal.body.id,
+    );
 
     await authAgent(app)
       .post(`/api/projects/${open.id}/review`)

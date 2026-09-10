@@ -154,13 +154,65 @@ export async function createOpenProject(
   return created.body as { id: string; title: string };
 }
 
+export async function approveProjectAgreement(
+  app: INestApplication,
+  clientToken: string,
+  freelancerToken: string,
+  proposalId: string,
+) {
+  const created = await authAgent(app)
+    .post('/api/agreements')
+    .set(CLIENT_HEADER)
+    .set('Authorization', `Bearer ${clientToken}`)
+    .send({ proposalId })
+    .expect(201);
+
+  await authAgent(app)
+    .post(`/api/agreements/${created.body.id}/accept`)
+    .set(CLIENT_HEADER)
+    .set('Authorization', `Bearer ${clientToken}`)
+    .expect(201);
+
+  await authAgent(app)
+    .post(`/api/agreements/${created.body.id}/accept`)
+    .set(CLIENT_HEADER)
+    .set('Authorization', `Bearer ${freelancerToken}`)
+    .expect(201);
+
+  return created.body as {
+    id: string;
+    proposalId: string;
+    status: string;
+    canConfirmStart?: boolean;
+    canFund?: boolean;
+  };
+}
+
 export async function fundAndAcceptProposal(
   app: INestApplication,
   clientToken: string,
   proposalId: string,
+  freelancerToken: string,
 ) {
+  await approveProjectAgreement(app, clientToken, freelancerToken, proposalId);
+
   return authAgent(app)
     .post(`/api/escrow/fund-and-accept/${proposalId}`)
+    .set(CLIENT_HEADER)
+    .set('Authorization', `Bearer ${clientToken}`)
+    .expect(201);
+}
+
+export async function confirmDirectAgreementAndStart(
+  app: INestApplication,
+  clientToken: string,
+  freelancerToken: string,
+  proposalId: string,
+) {
+  await approveProjectAgreement(app, clientToken, freelancerToken, proposalId);
+
+  return authAgent(app)
+    .post(`/api/proposals/${proposalId}/accept`)
     .set(CLIENT_HEADER)
     .set('Authorization', `Bearer ${clientToken}`)
     .expect(201);
@@ -187,7 +239,13 @@ export async function createInProgressProject(
     .send(validProposalBody)
     .expect(201);
 
-  await fundAndAcceptProposal(app, clientToken, proposal.body.id);
+  // Launch model: start work without platform funding.
+  await confirmDirectAgreementAndStart(
+    app,
+    clientToken,
+    freelancerToken,
+    proposal.body.id,
+  );
 
   return {
     project,

@@ -34,6 +34,7 @@ import {
   assertFreelancerCanRequestCompletion,
 } from '../reviews/review-validation.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
+import { AgreementsService } from '../agreements/agreements.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
@@ -83,6 +84,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly escrowService: EscrowService,
+    private readonly agreements: AgreementsService,
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
     private readonly badges: BadgeService,
@@ -503,6 +505,14 @@ export class ProjectsService {
       }
 
       await this.escrowService.releaseOnComplete(tx, projectId);
+
+      if (project.acceptedProposalId) {
+        await this.agreements.markCompleted(
+          project.acceptedProposalId,
+          clientId,
+          tx,
+        );
+      }
 
       return tx.project.findUniqueOrThrow({
         where: { id: projectId },

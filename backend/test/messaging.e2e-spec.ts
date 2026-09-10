@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/e2e-setup.js';
 import {
+  confirmDirectAgreementAndStart,
   getReferenceIds,
   registerUser,
   seedTestReferenceData,
@@ -339,11 +340,12 @@ describe('Messaging E2E (PostgreSQL)', () => {
       .send(proposalBody)
       .expect(201);
 
-    await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      freelancer.accessToken,
+      proposal.body.id,
+    );
 
     const conv = await authAgent(app)
       .post(`/api/proposals/${proposal.body.id}/conversation`)

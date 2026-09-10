@@ -24,10 +24,10 @@
   "browseProjects": "تصفح المشاريع",
   "loginRequired": "يجب تسجيل الدخول",
   "proposalLabel": "العرض: {price} · {status}",
-  "agreementTitle": "اتفاق العمل والضمان",
+  "agreementTitle": "اتفاق العمل",
   "agreementDays": "{count} يوم عمل",
-  "agreementEscrowHint": "حماية المدفوعات قريبًا. نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة. أي تمويل حالي تجريبي فقط.",
-  "agreementEscrowCta": "سجل الضمان (تجريبي)",
-  "agreementHowCta": "حماية المدفوعات — قريبًا",
+  "agreementEscrowHint": "الدفع يتم مباشرة بين صاحب المشروع والمستقل. ليبي فريلانس لا تستلم أو تحتفظ بقيمة المشروع حاليًا.",
+  "agreementEscrowCta": "عرض الاتفاقات",
+  "agreementHowCta": "كيف يتم الدفع",
   "unknownUser": "مستخدم"
 }

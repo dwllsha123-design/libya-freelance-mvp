@@ -24,6 +24,7 @@ import { acceptProposalInTransaction } from '../proposals/proposal-acceptance.ut
 import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
 import { ESCROW_CURRENCY } from './escrow.constants.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
+import { assertMarketplaceFundingAllowed } from '../payments/payment-protection.policy.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -75,6 +76,7 @@ export class EscrowService {
   }
 
   async prepare(clientId: string, proposalId: string) {
+    assertMarketplaceFundingAllowed();
     await this.agreements.assertApprovedForFunding(proposalId);
     await this.agreements.markPaymentPending(proposalId, clientId);
 
@@ -119,6 +121,7 @@ export class EscrowService {
   }
 
   async fund(clientId: string, escrowId: string) {
+    assertMarketplaceFundingAllowed();
     const escrow = await this.prisma.escrow.findUnique({ where: { id: escrowId } });
     if (!escrow) throw new NotFoundException('الضمان غير موجود');
     if (escrow.clientId !== clientId) throw new ForbiddenException('غير مصرح');
@@ -175,6 +178,7 @@ export class EscrowService {
 
   /** Called after async payment (redirect + webhook) confirms success. */
   async completeFundingAfterPayment(paymentId: string) {
+    assertMarketplaceFundingAllowed();
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
       include: { escrow: true },
@@ -233,6 +237,7 @@ export class EscrowService {
   }
 
   async fundAndAccept(clientId: string, proposalId: string) {
+    assertMarketplaceFundingAllowed();
     await this.agreements.assertApprovedForFunding(proposalId);
     await this.agreements.markPaymentPending(proposalId, clientId);
 
@@ -327,7 +332,8 @@ export class EscrowService {
     if (!escrow) return null;
     if (escrow.status === EscrowStatus.RELEASED) return escrow;
     if (escrow.status !== EscrowStatus.FUNDED) {
-      throw new ConflictException('لا يمكن تحرير الضمان في هذه الحالة');
+      // Unfunded / pending escrow must not block project completion in direct-payment mode.
+      return null;
     }
 
     const settledPercent =
@@ -632,6 +638,7 @@ export class EscrowService {
     clientId: string,
     proposal: Awaited<ReturnType<typeof this.loadProposalForClient>>,
   ) {
+    assertMarketplaceFundingAllowed();
     const amount = Number(proposal.proposedPrice);
     const resolved = await this.commission.resolveForProject(
       proposal.projectId,

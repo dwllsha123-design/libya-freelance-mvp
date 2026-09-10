@@ -29,6 +29,7 @@ import {
   DEFAULT_PAYMENT_TERMS,
   DEFAULT_REVISION_COUNT,
 } from './agreements.constants.js';
+import { isMarketplacePaymentProtectionActive } from '../payments/payment-protection.policy.js';
 import type { CreateAgreementChangeRequestDto } from './dto/agreements.dto.js';
 
 type Tx = Prisma.TransactionClient;
@@ -356,14 +357,14 @@ export class AgreementsService {
         agreement.clientId,
         NotificationType.AGREEMENT_APPROVED,
         'تم اعتماد اتفاق المشروع',
-        `وافق الطرفان على الاتفاق. يمكنك المتابعة إلى التمويل عند الجاهزية.`,
+        `وافق الطرفان على الاتفاق. يمكنك تأكيد الاتفاق وبدء التنفيذ.`,
         `/dashboard/agreements/${agreementId}`,
       );
       await this.notifications.create(
         agreement.freelancerId,
         NotificationType.AGREEMENT_APPROVED,
         'تم اعتماد اتفاق المشروع',
-        `وافق الطرفان على الاتفاق. بانتظار تمويل الضمان لبدء التنفيذ.`,
+        `وافق الطرفان على الاتفاق. بانتظار تأكيد العميل لبدء التنفيذ.`,
         `/dashboard/agreements/${agreementId}`,
       );
     }
@@ -597,12 +598,17 @@ export class AgreementsService {
   }
 
   async assertApprovedForFunding(proposalId: string) {
+    return this.assertApprovedForStart(proposalId);
+  }
+
+  /** Agreement must be approved (or payment-pending legacy) before starting work. */
+  async assertApprovedForStart(proposalId: string) {
     const agreement = await this.prisma.projectAgreement.findUnique({
       where: { proposalId },
     });
     if (!agreement) {
       throw new PreconditionFailedException({
-        message: 'يجب إنشاء واعتماد اتفاق المشروع قبل التمويل',
+        message: 'يجب إنشاء واعتماد اتفاق المشروع قبل بدء التنفيذ',
         code: 'AGREEMENT_REQUIRED',
       });
     }
@@ -611,7 +617,7 @@ export class AgreementsService {
       agreement.status !== ProjectAgreementStatus.PAYMENT_PENDING
     ) {
       throw new PreconditionFailedException({
-        message: 'يجب موافقة الطرفين على اتفاق المشروع قبل التمويل',
+        message: 'يجب موافقة الطرفين على اتفاق المشروع قبل بدء التنفيذ',
         code: 'AGREEMENT_NOT_APPROVED',
         status: agreement.status,
       });
@@ -685,7 +691,6 @@ export class AgreementsService {
       where: { id: agreement.id },
       data: {
         status: ProjectAgreementStatus.ACTIVE,
-        fundedAt: agreement.fundedAt ?? new Date(),
         startedAt: agreement.startedAt ?? new Date(),
       },
     });
@@ -700,6 +705,54 @@ export class AgreementsService {
   ) {
     await this.markFunded(proposalId, actorId, tx);
     return this.markActive(proposalId, actorId, tx);
+  }
+
+  async markCompleted(proposalId: string, actorId: string, tx: Tx) {
+    const agreement = await tx.projectAgreement.findUnique({
+      where: { proposalId },
+    });
+    if (!agreement) return null;
+    if (agreement.status === ProjectAgreementStatus.COMPLETED) {
+      return agreement;
+    }
+
+    const updated = await tx.projectAgreement.update({
+      where: { id: agreement.id },
+      data: {
+        status: ProjectAgreementStatus.COMPLETED,
+        completedAt: agreement.completedAt ?? new Date(),
+      },
+    });
+    await this.writeAudit(
+      tx,
+      agreement.id,
+      actorId,
+      AgreementAuditAction.COMPLETED,
+      {},
+    );
+    return updated;
+  }
+
+  async notifyActivated(proposalId: string) {
+    const agreement = await this.prisma.projectAgreement.findUnique({
+      where: { proposalId },
+      include: { project: { select: { title: true } } },
+    });
+    if (!agreement) return;
+    await this.notifications.create(
+      agreement.freelancerId,
+      NotificationType.PROPOSAL_ACCEPTED,
+      'بدأ تنفيذ المشروع',
+      `تم تأكيد الاتفاق وبدء تنفيذ مشروع "${agreement.project.title}". الدفع يتم مباشرة بين الطرفين خارج المنصة في هذه المرحلة.`,
+      `/dashboard/agreements/${agreement.id}`,
+    );
+    await this.notifications.create(
+      agreement.clientId,
+      NotificationType.AGREEMENT_APPROVED,
+      'بدأ تنفيذ المشروع',
+      `تم تأكيد الاتفاق وبدء تنفيذ مشروع "${agreement.project.title}".`,
+      `/dashboard/agreements/${agreement.id}`,
+    );
   }
 
   async notifyFunded(proposalId: string) {
@@ -936,9 +989,23 @@ export class AgreementsService {
         (agreement.status === ProjectAgreementStatus.PENDING_APPROVAL ||
           agreement.status === ProjectAgreementStatus.APPROVED) &&
         (agreement.clientId === viewerId || agreement.freelancerId === viewerId),
+      /** Escrow funding CTA — only when payment protection is truly active. */
       canFund:
-        agreement.status === ProjectAgreementStatus.APPROVED ||
-        agreement.status === ProjectAgreementStatus.PAYMENT_PENDING,
+        isMarketplacePaymentProtectionActive() &&
+        agreement.clientId === viewerId &&
+        (agreement.status === ProjectAgreementStatus.APPROVED ||
+          agreement.status === ProjectAgreementStatus.PAYMENT_PENDING),
+      /**
+       * Direct-payment launch: client confirms agreement and starts work
+       * without platform funding.
+       */
+      canConfirmStart:
+        !isMarketplacePaymentProtectionActive() &&
+        agreement.clientId === viewerId &&
+        (agreement.status === ProjectAgreementStatus.APPROVED ||
+          agreement.status === ProjectAgreementStatus.PAYMENT_PENDING),
+      paymentProtectionActive: isMarketplacePaymentProtectionActive(),
+      directPaymentMode: !isMarketplacePaymentProtectionActive(),
       currentVersion: version ? this.formatVersion(version) : null,
       recentChangeRequests: agreement.changeRequests.map((c) => ({
         id: c.id,

@@ -17,6 +17,7 @@ import {
   LAUNCH_PROGRAM_STATE_ID,
   type LaunchProgramConfig,
 } from './launch.config.js';
+import { paymentProtectionPublicFlags } from '../payments/payment-protection.policy.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -76,8 +77,7 @@ export class LaunchProgramService {
       foundingFreelancerLimit: config.foundingFreelancerLimit,
       foundingPermanentCount: config.foundingPermanentCount,
       slotsRemaining: config.slotsRemaining,
-      paymentProtectionActive: false,
-      paymentProtectionStatus: 'COMING_SOON' as const,
+      ...paymentProtectionPublicFlags(),
     };
   }
 
@@ -85,8 +85,7 @@ export class LaunchProgramService {
     const config = await this.getConfig();
     return {
       ...config,
-      paymentProtectionActive: false,
-      paymentProtectionStatus: 'COMING_SOON' as const,
+      ...paymentProtectionPublicFlags(),
     };
   }
 
@@ -161,7 +160,7 @@ export class LaunchProgramService {
       foundingFreelancerAt: fp?.foundingFreelancerAt?.toISOString() ?? null,
       role: user.role,
       emailVerified: user.emailVerified,
-      paymentProtectionActive: false,
+      ...paymentProtectionPublicFlags(),
     };
   }
 

@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/e2e-setup.js';
 import {
+  approveProjectAgreement,
   createInProgressProject,
   createOpenProject,
   getReferenceIds,
@@ -78,6 +79,13 @@ describe('MVP security journey E2E (PostgreSQL)', () => {
       .set('Authorization', `Bearer ${freelancer.accessToken}`)
       .send(validProposalBody)
       .expect(201);
+
+    await approveProjectAgreement(
+      app,
+      owner.accessToken,
+      freelancer.accessToken,
+      proposal.body.id,
+    );
 
     await authAgent(app)
       .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)

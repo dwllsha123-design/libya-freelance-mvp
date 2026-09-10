@@ -5,6 +5,7 @@ import { PaymentService } from '../payments/payment.service.js';
 import { CommissionResolutionService } from '../commercial/commission-resolution.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { FALLBACK_COMMISSION_PERCENT } from '../commercial/commercial.constants.js';
+import { paymentProtectionPublicFlags } from '../payments/payment-protection.policy.js';
 
 @Injectable()
 export class PlatformService {
@@ -116,8 +117,7 @@ export class PlatformService {
       currency: 'LYD',
       effectiveFrom: policy?.effectiveFrom ?? null,
       launchProgramEnabled: launch.enabled,
-      paymentProtectionActive: false,
-      paymentProtectionStatus: 'COMING_SOON' as const,
+      ...paymentProtectionPublicFlags(),
     };
   }
 

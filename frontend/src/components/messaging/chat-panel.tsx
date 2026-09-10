@@ -12,9 +12,44 @@ import {
 import { useMessagingSocket } from '@/hooks/use-messaging-socket';
 import { usePresence } from '@/hooks/use-presence';
 import { PresenceText } from '@/components/presence/presence-text';
-import { ApiError } from '@/lib/api';
+import { ApiError, API_BASE_URL, CLIENT_REQUEST_HEADER, CLIENT_REQUEST_VALUE } from '@/lib/api';
 import { parseChatAttachment } from '@/lib/message-attachment';
 import type { AppLocale } from '@/i18n/routing';
+
+async function downloadAuthenticatedAttachment(
+  url: string,
+  accessToken: string | null,
+  fileName: string,
+) {
+  if (!accessToken) return;
+  let resolved = url;
+  if (url.includes('/uploads/chat/')) {
+    resolved = url.replace('/uploads/chat/', `${API_BASE_URL}/media/chat/`);
+  } else if (url.startsWith('/api/media/chat/')) {
+    resolved = `${API_BASE_URL.replace(/\/api\/?$/, '')}${url}`;
+  } else if (url.includes('/api/media/chat/') && !url.startsWith('http')) {
+    resolved = url;
+  }
+
+  // Prefer API media path when absolute URL already points at media/chat.
+  const response = await fetch(resolved, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      [CLIENT_REQUEST_HEADER]: CLIENT_REQUEST_VALUE,
+    },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('download_failed');
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+}
 
 function PaperclipIcon({ className = '' }: { className?: string }) {
   return (
@@ -302,13 +337,13 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
             <p className="mt-1 text-ink-soft">{t('agreementEscrowHint')}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
-                href="/dashboard/escrow"
+                href="/dashboard/agreements"
                 className="rounded-full bg-ember px-3 py-1 text-[11px] font-semibold text-white"
               >
                 {t('agreementEscrowCta')}
               </Link>
               <Link
-                href="/escrow"
+                href="/how-it-works"
                 className="rounded-full border border-line px-3 py-1 text-[11px] font-semibold text-ink"
               >
                 {t('agreementHowCta')}
@@ -339,11 +374,16 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
                   }`}
                 >
                   {attachment ? (
-                    <a
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex max-w-full items-center gap-2 break-all underline-offset-2 hover:underline ${
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void downloadAuthenticatedAttachment(
+                          attachment.url,
+                          accessToken,
+                          attachment.name,
+                        ).catch(() => undefined);
+                      }}
+                      className={`inline-flex max-w-full items-center gap-2 break-all text-left underline-offset-2 hover:underline ${
                         isMine ? 'text-white' : 'text-ember'
                       }`}
                     >
@@ -351,7 +391,7 @@ export function ChatPanel({ conversationId }: { conversationId: string }) {
                       <span className="min-w-0 [overflow-wrap:anywhere]">
                         {attachment.name}
                       </span>
-                    </a>
+                    </button>
                   ) : (
                     <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {m.content}

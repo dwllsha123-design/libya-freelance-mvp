@@ -9,6 +9,7 @@ import {
 } from './helpers/e2e-setup.js';
 import { isValidInternalTargetUrl } from '../src/notifications/notification-url.util.js';
 import {
+  confirmDirectAgreementAndStart,
   createOpenProject,
   getReferenceIds,
   registerUser,
@@ -242,11 +243,12 @@ describe('Notifications E2E (PostgreSQL)', () => {
       .send({ content: 'هل يمكن توضيح المزيد من التفاصيل؟' })
       .expect(201);
 
-    await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      freelancer.accessToken,
+      proposal.body.id,
+    );
 
     await authAgent(app)
       .post(`/api/projects/${open.id}/request-completion`)

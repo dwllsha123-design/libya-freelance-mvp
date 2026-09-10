@@ -64,9 +64,7 @@ export function configureApp(app: NestExpressApplication) {
     prefix: '/uploads/portfolio/',
   });
 
-  app.useStaticAssets(join(process.cwd(), 'uploads', 'chat'), {
-    prefix: '/uploads/chat/',
-  });
+  // Chat attachments are NOT served statically — only via authenticated media routes.
 }
 
 /** Prefer Redis Socket.IO adapter when RedisModule is present and REDIS_URL works. */

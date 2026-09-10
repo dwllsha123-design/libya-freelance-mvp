@@ -89,6 +89,9 @@ export interface ProjectAgreementDetail {
   canAccept: boolean;
   canRequestChange: boolean;
   canFund: boolean;
+  canConfirmStart?: boolean;
+  paymentProtectionActive?: boolean;
+  directPaymentMode?: boolean;
   currentVersion: AgreementVersion | null;
   recentChangeRequests: Array<{
     id: string;

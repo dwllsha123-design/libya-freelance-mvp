@@ -5,9 +5,11 @@ import {
   Param,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -28,6 +30,21 @@ export class MessagingController {
     private readonly messagingService: MessagingService,
     private readonly messagingGateway: MessagingGateway,
   ) {}
+
+  @Get('media/chat/:userId/:filename')
+  downloadChatAttachment(
+    @CurrentUser() user: AuthUser,
+    @Param('userId') ownerUserId: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    return this.messagingService.streamChatAttachment(
+      user.id,
+      ownerUserId,
+      filename,
+      res,
+    );
+  }
 
   @Post('proposals/:proposalId/conversation')
   openForProposal(

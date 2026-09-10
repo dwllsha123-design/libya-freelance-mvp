@@ -8,6 +8,8 @@ import {
   resetDatabase,
 } from './helpers/e2e-setup.js';
 import {
+  approveProjectAgreement,
+  confirmDirectAgreementAndStart,
   getReferenceIds,
   registerUser,
   seedTestReferenceData,
@@ -276,11 +278,12 @@ describe('Proposals E2E (PostgreSQL)', () => {
       .send(validProposal())
       .expect(201);
 
-    const accepted = await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${p1.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    const accepted = await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      fl1.accessToken,
+      p1.body.id,
+    );
 
     expect(accepted.body.status).toBe('ACCEPTED');
 
@@ -363,11 +366,12 @@ describe('Proposals E2E (PostgreSQL)', () => {
       .send(validProposal())
       .expect(201);
 
-    await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      freelancer.accessToken,
+      proposal.body.id,
+    );
 
     await authAgent(app)
       .post(`/api/proposals/${proposal.body.id}/withdraw`)
@@ -439,13 +443,26 @@ describe('Proposals E2E (PostgreSQL)', () => {
       .send(validProposal())
       .expect(201);
 
+    await approveProjectAgreement(
+      app,
+      client.accessToken,
+      fl1.accessToken,
+      p1.body.id,
+    );
+    await approveProjectAgreement(
+      app,
+      client.accessToken,
+      fl2.accessToken,
+      p2.body.id,
+    );
+
     const [res1, res2] = await Promise.allSettled([
       authAgent(app)
-        .post(`/api/escrow/fund-and-accept/${p1.body.id}`)
+        .post(`/api/proposals/${p1.body.id}/accept`)
         .set(CLIENT_HEADER)
         .set('Authorization', `Bearer ${client.accessToken}`),
       authAgent(app)
-        .post(`/api/escrow/fund-and-accept/${p2.body.id}`)
+        .post(`/api/proposals/${p2.body.id}/accept`)
         .set(CLIENT_HEADER)
         .set('Authorization', `Bearer ${client.accessToken}`),
     ]);

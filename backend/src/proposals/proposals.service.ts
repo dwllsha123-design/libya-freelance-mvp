@@ -26,6 +26,7 @@ import {
 import { acceptProposalInTransaction } from './proposal-acceptance.util.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
+import { isMarketplacePaymentProtectionActive } from '../payments/payment-protection.policy.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
@@ -372,8 +373,11 @@ export class ProposalsService {
 
     ProposalStateService.assertCanAccept(proposal.status);
 
-    await this.agreements.assertApprovedForFunding(proposalId);
-    await this.escrowService.assertFundedForAccept(proposalId);
+    await this.agreements.assertApprovedForStart(proposalId);
+
+    if (isMarketplacePaymentProtectionActive()) {
+      await this.escrowService.assertFundedForAccept(proposalId);
+    }
 
     const pendingFreelancerIds = (
       await this.prisma.proposal.findMany({
@@ -392,11 +396,19 @@ export class ProposalsService {
         proposalId,
         proposal.projectId,
       );
-      await this.agreements.markFundedAndActive(proposalId, clientId, tx);
+      if (isMarketplacePaymentProtectionActive()) {
+        await this.agreements.markFundedAndActive(proposalId, clientId, tx);
+      } else {
+        await this.agreements.markActive(proposalId, clientId, tx);
+      }
       return accepted;
     });
 
-    await this.agreements.notifyFunded(proposalId);
+    if (isMarketplacePaymentProtectionActive()) {
+      await this.agreements.notifyFunded(proposalId);
+    } else {
+      await this.agreements.notifyActivated(proposalId);
+    }
 
     await this.notifications.create(
       proposal.freelancerId,

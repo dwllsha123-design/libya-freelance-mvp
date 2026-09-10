@@ -13,6 +13,7 @@ import {
   type ProjectAgreementDetail,
 } from '@/hooks/use-agreements';
 import { useEscrowApi } from '@/hooks/use-escrow';
+import { useProposalsApi } from '@/hooks/use-proposals';
 import { EscrowFundDialog } from '@/components/escrow/escrow-fund-dialog';
 import { ApiError } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
@@ -27,6 +28,7 @@ export default function AgreementDetailPage() {
   const { user, isLoading: authLoading } = useAuth();
   const api = useAgreementsApi();
   const escrowApi = useEscrowApi();
+  const proposalsApi = useProposalsApi();
 
   const [agreement, setAgreement] = useState<ProjectAgreementDetail | null>(null);
   const [timeline, setTimeline] = useState<AgreementTimelineEvent[]>([]);
@@ -36,6 +38,7 @@ export default function AgreementDetailPage() {
   const [isActing, setIsActing] = useState(false);
   const [showChange, setShowChange] = useState(false);
   const [showFund, setShowFund] = useState(false);
+  const [showConfirmStart, setShowConfirmStart] = useState(false);
   const [changeType, setChangeType] = useState<AgreementChangeType>('SCOPE');
   const [changeReason, setChangeReason] = useState('');
   const [proposedAmount, setProposedAmount] = useState('');
@@ -131,6 +134,21 @@ export default function AgreementDetailPage() {
     }
   }
 
+  async function handleConfirmAgreementStart() {
+    if (!agreement) return;
+    setIsActing(true);
+    setError(null);
+    try {
+      await proposalsApi.accept(agreement.proposalId);
+      setShowConfirmStart(false);
+      await reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('actionFailed'));
+    } finally {
+      setIsActing(false);
+    }
+  }
+
   if (authLoading || (user && isLoading)) {
     return <div className="p-8 text-center">{tCommon('loadingPage')}</div>;
   }
@@ -160,6 +178,11 @@ export default function AgreementDetailPage() {
       <p className="mt-2 text-sm text-on-surface-variant">
         {isClient ? t('clientPrompt') : t('freelancerPrompt')}
       </p>
+      {agreement.directPaymentMode ? (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {t('directPaymentNotice')}
+        </p>
+      ) : null}
 
       <div className="mt-4 inline-flex rounded-full bg-surface-container px-3 py-1 text-xs font-medium">
         {t('status')}: {t(`statuses.${agreement.status}`)} ·{' '}
@@ -185,14 +208,16 @@ export default function AgreementDetailPage() {
         <DetailBlock label={t('scope')} value={v.scope} />
         <DetailBlock label={t('deliverables')} value={v.deliverables} />
         <DetailRow
-          label={t('amount')}
+          label={t('agreedValue')}
           value={formatCurrency(v.grossAmount, v.currency, locale)}
         />
-        <DetailRow
-          label={t('platformFee')}
-          value={formatCurrency(v.platformFee, v.currency, locale)}
-        />
-        {showFreelancerNet ? (
+        {agreement.paymentProtectionActive ? (
+          <DetailRow
+            label={t('platformFee')}
+            value={formatCurrency(v.platformFee, v.currency, locale)}
+          />
+        ) : null}
+        {agreement.paymentProtectionActive && showFreelancerNet ? (
           <DetailRow
             label={t('freelancerNet')}
             value={formatCurrency(v.freelancerNet, v.currency, locale)}
@@ -235,7 +260,9 @@ export default function AgreementDetailPage() {
       </section>
 
       {agreement.status === 'APPROVED' || agreement.status === 'PAYMENT_PENDING' ? (
-        <p className="mt-4 text-sm text-emerald-700">{t('approvedHint')}</p>
+        <p className="mt-4 text-sm text-emerald-700">
+          {agreement.directPaymentMode ? t('approvedHintDirect') : t('approvedHint')}
+        </p>
       ) : null}
 
       {agreement.canAccept ? (
@@ -281,6 +308,15 @@ export default function AgreementDetailPage() {
               className="rounded-lg border px-4 py-2 text-sm"
             >
               {t('requestChange')}
+            </button>
+          ) : null}
+          {isClient && agreement.canConfirmStart ? (
+            <button
+              type="button"
+              onClick={() => setShowConfirmStart(true)}
+              className="rounded-lg bg-primary px-4 py-2 text-sm text-white"
+            >
+              {t('confirmAgreementCta')}
             </button>
           ) : null}
           {isClient && agreement.canFund ? (
@@ -405,14 +441,57 @@ export default function AgreementDetailPage() {
         </div>
       ) : null}
 
-      <EscrowFundDialog
-        open={showFund}
-        proposedPrice={v.grossAmount}
-        isLoading={isActing}
-        onConfirm={() => void handleFundAndStart()}
-        onCancel={() => setShowFund(false)}
-      />
+      {showConfirmStart && agreement.currentVersion ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-lg">
+            <h3 className="text-lg font-bold">{t('confirmAgreementTitle')}</h3>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              {t('confirmAgreementSummary', {
+                freelancer:
+                  agreement.freelancer.displayName ??
+                  agreement.freelancer.username ??
+                  '—',
+                amount: formatCurrency(
+                  agreement.currentVersion.grossAmount,
+                  agreement.currentVersion.currency,
+                  locale,
+                ),
+                days: agreement.currentVersion.durationDays,
+              })}
+            </p>
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              {t('confirmAgreementPaymentNote')}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border px-4 py-2 text-sm"
+                onClick={() => setShowConfirmStart(false)}
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={isActing}
+                className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50"
+                onClick={() => void handleConfirmAgreementStart()}
+              >
+                {isActing ? t('accepting') : t('confirmAgreementCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
+      {agreement.canFund ? (
+        <EscrowFundDialog
+          open={showFund}
+          proposedPrice={v.grossAmount}
+          isLoading={isActing}
+          onConfirm={() => void handleFundAndStart()}
+          onCancel={() => setShowFund(false)}
+        />
+      ) : null}
       <p className="mt-8 text-center text-sm">
         <Link href={`/projects/${agreement.project.slug}`} className="text-primary underline">
           {agreement.project.title}

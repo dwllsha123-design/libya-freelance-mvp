@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
@@ -21,6 +22,7 @@ import {
 import { validateMessageContent } from './message-validation.util.js';
 import {
   encodeChatAttachment,
+  parseChatAttachment,
   previewMessageContent,
 } from './message-attachment.util.js';
 import {
@@ -559,6 +561,88 @@ export class MessagingService {
     );
   }
 
+  /**
+   * Stream a chat attachment only to authenticated conversation participants.
+   * Supports both `/api/media/chat/...` and legacy `/uploads/chat/...` URL forms.
+   */
+  async streamChatAttachment(
+    requesterId: string,
+    ownerUserId: string,
+    filename: string,
+    res: Response,
+  ) {
+    const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
+    if (!SAFE_SEGMENT.test(ownerUserId) || !SAFE_SEGMENT.test(filename)) {
+      throw new NotFoundException();
+    }
+
+    const needle = `${ownerUserId}/${filename}`;
+    const message = await this.prisma.message.findFirst({
+      where: {
+        content: { contains: needle },
+        conversation: {
+          members: { some: { userId: requesterId } },
+        },
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        content: true,
+      },
+    });
+
+    if (!message) {
+      const anyMessage = await this.prisma.message.findFirst({
+        where: { content: { contains: needle } },
+        select: { conversationId: true },
+      });
+      if (anyMessage) {
+        throw new ForbiddenException('غير مصرح');
+      }
+      throw new NotFoundException();
+    }
+
+    const allowed = await this.authorizeRoomJoin(
+      requesterId,
+      message.conversationId,
+    );
+    if (!allowed) {
+      throw new ForbiddenException('غير مصرح');
+    }
+
+    if (!this.storage.getObject) {
+      throw new NotFoundException();
+    }
+
+    const object = await this.storage.getObject(`chat/${ownerUserId}/${filename}`);
+    if (!object) {
+      throw new NotFoundException();
+    }
+
+    const attachment = parseChatAttachment(message.content);
+    res.setHeader(
+      'Content-Type',
+      attachment?.mime || object.contentType || 'application/octet-stream',
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${(attachment?.name ?? filename).replace(/"/g, '')}"`,
+    );
+    if (object.contentLength !== undefined) {
+      res.setHeader('Content-Length', String(object.contentLength));
+    }
+    if (object.etag) {
+      res.setHeader('ETag', object.etag);
+    }
+
+    object.body.on('error', () => {
+      res.destroy();
+    });
+    object.body.pipe(res);
+  }
+
   private async getProposalContext(proposalId: string) {
     const proposal = await this.prisma.proposal.findUnique({
       where: { id: proposalId },
@@ -712,10 +796,18 @@ export class MessagingService {
       id: message.id,
       conversationId: message.conversationId,
       senderId: message.senderId,
-      content: message.content,
+      content: rewriteLegacyChatAttachmentUrl(message.content),
       deliveredAt: message.deliveredAt ?? null,
       readAt: message.readAt,
       createdAt: message.createdAt,
     };
   }
+}
+
+function rewriteLegacyChatAttachmentUrl(content: string): string {
+  const attachment = parseChatAttachment(content);
+  if (!attachment) return content;
+  if (!attachment.url.includes('/uploads/chat/')) return content;
+  const url = attachment.url.replace('/uploads/chat/', '/api/media/chat/');
+  return encodeChatAttachment({ ...attachment, url });
 }

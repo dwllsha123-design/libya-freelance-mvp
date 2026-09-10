@@ -24,10 +24,10 @@
   "browseProjects": "Browse projects",
   "loginRequired": "You must be logged in",
   "proposalLabel": "Proposal: {price} · {status}",
-  "agreementTitle": "Work agreement & escrow",
+  "agreementTitle": "Work agreement",
   "agreementDays": "{count} work days",
-  "agreementEscrowHint": "Payment protection coming soon. We are preparing an integrated payment and transaction-protection system. Any current funding is simulated only.",
-  "agreementEscrowCta": "Escrow ledger (simulated)",
-  "agreementHowCta": "Payment protection — coming soon",
+  "agreementEscrowHint": "Payment is currently made directly between the client and freelancer. Libyan Freelance does not receive or hold project funds at this stage.",
+  "agreementEscrowCta": "View agreements",
+  "agreementHowCta": "How payment works",
   "unknownUser": "User"
 }

@@ -42,9 +42,10 @@ export class LocalStorageService implements StorageService {
     this.portfolioBaseUrl =
       configService.get<string>('storage.portfolioPublicBaseUrl') ??
       'http://localhost:4000/uploads/portfolio';
+    // Chat URLs must hit the authenticated API proxy, never a public static path.
     this.chatBaseUrl =
       configService.get<string>('storage.chatPublicBaseUrl') ??
-      'http://localhost:4000/uploads/chat';
+      'http://localhost:4000/api/media/chat';
   }
 
   async uploadProfileImage(
@@ -140,15 +141,32 @@ export class LocalStorageService implements StorageService {
   }
 
   async getObject(key: string): Promise<StorageObject | null> {
-    if (!key.startsWith('verification/')) return null;
-    const relative = key.replace(/^verification\//, '');
-    const filePath = join(this.verificationDir, ...relative.split('/'));
+    if (key.startsWith('chat/')) {
+      return this.readLocalObject(join(this.chatDir, ...key.replace(/^chat\//, '').split('/')));
+    }
+
+    if (key.startsWith('verification/')) {
+      return this.readLocalObject(
+        join(this.verificationDir, ...key.replace(/^verification\//, '').split('/')),
+      );
+    }
+
+    return null;
+  }
+
+  private async readLocalObject(filePath: string): Promise<StorageObject | null> {
     try {
       await access(filePath);
     } catch {
       return null;
     }
-    return { body: createReadStream(filePath) };
+    const { stat } = await import('node:fs/promises');
+    const info = await stat(filePath);
+    return {
+      body: createReadStream(filePath),
+      contentType: 'application/octet-stream',
+      contentLength: info.size,
+    };
   }
 
   private async safeUnlink(filePath: string) {

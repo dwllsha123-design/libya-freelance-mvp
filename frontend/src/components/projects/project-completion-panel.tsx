@@ -11,7 +11,6 @@ import { useReviewsApi } from '@/hooks/use-reviews';
 import { useProjectsApi } from '@/hooks/use-projects';
 import { useEscrowApi, type EscrowRecord } from '@/hooks/use-escrow';
 import type { ManageProject } from '@/lib/schemas/project';
-import { formatCurrency } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 
@@ -113,7 +112,7 @@ export function ProjectCompletionPanel({
   if (project.status === 'IN_PROGRESS') {
     return (
       <div className="mb-6 space-y-4">
-        {escrow ? <EscrowStatusCard escrow={escrow} /> : null}
+        {escrow?.status === 'FUNDED' ? <EscrowStatusCard escrow={escrow} /> : null}
 
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           {project.completionRequestedAt ? (
@@ -152,10 +151,8 @@ export function ProjectCompletionPanel({
           open={showConfirm}
           title={t('confirmCompleteTitle')}
           message={
-            escrow
-              ? t('confirmCompleteWithEscrow', {
-                  amount: formatCurrency(escrow.freelancerPayout, escrow.currency, locale),
-                })
+            escrow?.status === 'FUNDED'
+              ? t('confirmCompleteWithEscrow')
               : t('confirmCompleteNoEscrow', { brand: tBrand('name') })
           }
           confirmLabel={t('markComplete')}

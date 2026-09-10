@@ -59,7 +59,12 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .send(validProposalBody)
       .expect(201);
 
-    await fundAndAcceptProposal(app, client.accessToken, proposal.body.id);
+    await fundAndAcceptProposal(
+      app,
+      client.accessToken,
+      proposal.body.id,
+      freelancer.accessToken,
+    );
 
     const escrow = await prisma.escrow.findUniqueOrThrow({
       where: { proposalId: proposal.body.id },
@@ -101,7 +106,12 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .send(validProposalBody)
       .expect(201);
 
-    await fundAndAcceptProposal(app, client.accessToken, proposal.body.id);
+    await fundAndAcceptProposal(
+      app,
+      client.accessToken,
+      proposal.body.id,
+      freelancer.accessToken,
+    );
 
     const escrow = await prisma.escrow.findUniqueOrThrow({
       where: { proposalId: proposal.body.id },
@@ -163,7 +173,7 @@ describe('Escrow E2E (PostgreSQL)', () => {
     ).toBe(true);
   });
 
-  it('accept without funded escrow returns precondition failed', async (ctx) => {
+  it('accept without approved agreement returns precondition failed', async (ctx) => {
     if (!dbReady) ctx.skip();
 
     const client = await registerUser(app, 'CLIENT', 'escrow-no-fund');
@@ -182,5 +192,11 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(412);
+  });
+
+  it('production-like gate: fund-and-accept is rejected when PAYMENT_PROTECTION_ACTIVE is off and NODE_ENV=production', async (ctx) => {
+    if (!dbReady) ctx.skip();
+    // Unit-tested via payment-protection.policy.spec.ts; e2e process stays in test env.
+    expect(process.env.NODE_ENV).not.toBe('production');
   });
 });

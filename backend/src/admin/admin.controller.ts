@@ -6,10 +6,13 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { AdminPermission, Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
+import { RequireAdminPermission } from '../common/decorators/admin-permission.decorator.js';
+import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
@@ -72,21 +75,29 @@ export class AdminController {
     return this.users.getById(id);
   }
 
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
   @Post('users/:id/suspend')
   suspendUser(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.suspend(admin.id, id);
   }
 
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
   @Post('users/:id/ban')
   banUser(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.ban(admin.id, id);
   }
 
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
   @Post('users/:id/reactivate')
   reactivateUser(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.reactivate(admin.id, id);
   }
 
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
   @Post('users/:id/revoke-sessions')
   revokeUserSessions(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.revokeSessions(admin.id, id);

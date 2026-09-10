@@ -50,8 +50,11 @@ export default function DashboardEscrowPage() {
       <p className="mt-2 text-on-surface-variant">
         {t('escrowHistorySubtitle', { brand: tBrand('name') })}
       </p>
+      <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        {t('directPaymentBanner')}
+      </p>
       <p className="mt-2 text-sm">
-        <Link href="/escrow" className="text-primary hover:underline">
+        <Link href="/how-it-works" className="text-primary hover:underline">
           {t('howEscrowWorks')}
         </Link>
       </p>

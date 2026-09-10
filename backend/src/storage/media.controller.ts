@@ -20,9 +20,9 @@ import { STORAGE_SERVICE, type StorageService } from './storage.interface.js';
  * links) and needs no change to upload, delete, or any read path.
  *
  * Routes mirror the key builders in `storage-upload.util.ts` at fixed
- * depth, so only the `profile-images/`, `portfolio/`, and `chat/` prefixes
+ * depth, so only the `profile-images/` and `portfolio/` prefixes
  * are reachable — arbitrary keys in the bucket cannot be read through this
- * endpoint.
+ * endpoint. Chat attachments use an authenticated messaging route instead.
  */
 
 const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
@@ -55,15 +55,7 @@ export class MediaController {
     return this.streamObject(['portfolio', userId, itemId, filename], res);
   }
 
-  @Public()
-  @Get('chat/:userId/:filename')
-  chatFile(
-    @Param('userId') userId: string,
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ) {
-    return this.streamObject(['chat', userId, filename], res, true);
-  }
+  // Chat files are served by MessagingController with participant authorization.
 
   private async streamObject(
     segments: string[],

@@ -9,6 +9,7 @@ import {
 } from './helpers/e2e-setup.js';
 import {
   createOpenProject,
+  confirmDirectAgreementAndStart,
   getReferenceIds,
   registerUser,
   seedTestReferenceData,
@@ -121,11 +122,12 @@ describe('MVP happy path E2E (PostgreSQL)', () => {
       .send({ content: 'مرحباً، أود مناقشة تفاصيل المشروع قبل القبول' })
       .expect(201);
 
-    await authAgent(app)
-      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+    await confirmDirectAgreementAndStart(
+      app,
+      client.accessToken,
+      freelancer.accessToken,
+      proposal.body.id,
+    );
 
     const inProgress = await prisma.project.findUnique({ where: { id: open.id } });
     expect(inProgress?.status).toBe('IN_PROGRESS');
