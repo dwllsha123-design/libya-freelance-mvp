@@ -35,5 +35,13 @@
   "skills": "Skills",
   "noSkillsYet": "No skills added yet",
   "clientNotFound": "Client not found",
-  "projectsPosted": "{count} project(s)"
+  "projectsPosted": "{count} project(s)",
+  "publicProfileLink": "Your public profile link",
+  "publicProfileLinkHint": "Share this permanent link with clients. Changing your display name does not change the link automatically.",
+  "copyProfileLink": "Copy my profile link",
+  "shareProfile": "Share profile",
+  "linkCopied": "Copied",
+  "shareCopiedFallback": "Link copied — paste it in any app to share",
+  "copyFailed": "Could not copy the link",
+  "usernamePermalinkHint": "This username is part of your public profile URL (/u/…). Avoid changing it unless necessary."
 }

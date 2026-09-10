@@ -1,32 +1,35 @@
 import { Injectable } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { slugifyUsername } from '../common/utils/token.util.js';
+import {
+  usernameBaseFromName,
+  usernameCandidate,
+} from '../common/utils/username.util.js';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Permanent permalink username. Generated once at registration from the
+   * display name; later name edits must not call this again.
+   * Collisions: base → base-2 → base-3 …
+   */
   async generateUniqueUsername(firstName: string, lastName: string): Promise<string> {
-    const base = slugifyUsername(`${firstName}-${lastName}`) || 'user';
-    let username = base;
-    let attempt = 0;
+    const base = usernameBaseFromName(firstName, lastName);
 
-    while (attempt < 20) {
+    for (let collisionIndex = 0; collisionIndex < 500; collisionIndex += 1) {
+      const username = usernameCandidate(base, collisionIndex);
       const existing = await this.prisma.profile.findUnique({
         where: { username },
         select: { id: true },
       });
-
       if (!existing) {
         return username;
       }
-
-      attempt += 1;
-      username = `${base}-${Math.floor(Math.random() * 10000)}`;
     }
 
-    return `${base}-${Date.now()}`;
+    return usernameCandidate(`${base}-${Date.now().toString(36)}`, 0);
   }
 
   findByEmail(email: string) {

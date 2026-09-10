@@ -35,5 +35,13 @@
   "skills": "المهارات",
   "noSkillsYet": "لم تُضف مهارات بعد",
   "clientNotFound": "العميل غير موجود",
-  "projectsPosted": "{count} مشروع"
+  "projectsPosted": "{count} مشروع",
+  "publicProfileLink": "رابط ملفك العام",
+  "publicProfileLinkHint": "شارك هذا الرابط الدائم مع العملاء. تغيير الاسم الظاهر لا يغيّر الرابط تلقائياً.",
+  "copyProfileLink": "نسخ رابط ملفي",
+  "shareProfile": "مشاركة الملف الشخصي",
+  "linkCopied": "تم النسخ",
+  "shareCopiedFallback": "تم نسخ الرابط — الصقه في أي تطبيق للمشاركة",
+  "copyFailed": "تعذر نسخ الرابط",
+  "usernamePermalinkHint": "هذا المعرّف جزء من رابط ملفك العام (/u/…). تجنّب تغييره إلا عند الضرورة."
 }

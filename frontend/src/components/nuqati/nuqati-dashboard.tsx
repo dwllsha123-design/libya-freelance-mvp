@@ -9,6 +9,7 @@ import type { NuqatiDashboard, NuqatiTask } from '@/lib/nuqati';
 import { getNuqatiBrand } from '@/lib/nuqati';
 import { PLATFORM_NAME_AR_STYLED, PLATFORM_NAME_EN } from '@/lib/branding';
 import type { AppLocale } from '@/i18n/routing';
+import { ProfileShareActions } from '@/components/profile/profile-share-actions';
 
 const TAB_KEYS = [
   { key: 'all', labelKey: 'tabAll' },
@@ -259,6 +260,16 @@ export function NuqatiDashboardView() {
         <p className="mt-1 text-sm text-slate-600">
           {t('shareSubtitle')}
         </p>
+        {user.profile?.username ? (
+          <div className="mt-4">
+            <p className="text-sm font-medium text-on-surface">{t('shareProfileHint')}</p>
+            <ProfileShareActions
+              className="mt-2"
+              username={user.profile.username}
+              displayName={`${user.profile.firstName} ${user.profile.lastName}`.trim()}
+            />
+          </div>
+        ) : null}
         <form onSubmit={handleSocialShare} className="mt-4 flex flex-wrap gap-2">
           <input
             type="url"

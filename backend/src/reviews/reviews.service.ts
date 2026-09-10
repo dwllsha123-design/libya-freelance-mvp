@@ -93,7 +93,7 @@ export class ReviewsService {
         reviewedProfile?.user.role === Role.CLIENT
           ? `/clients/${reviewedProfile.username}`
           : reviewedProfile
-            ? `/freelancers/${reviewedProfile.username}`
+            ? `/u/${reviewedProfile.username}`
             : '/dashboard';
 
       await this.notifications.create(

@@ -27,6 +27,7 @@ export const STAFF_PUBLIC_MARKETPLACE_EXAMPLES = [
   '/escrow',
   '/projects',
   '/freelancers',
+  '/u',
   '/search',
   '/login',
   '/register',

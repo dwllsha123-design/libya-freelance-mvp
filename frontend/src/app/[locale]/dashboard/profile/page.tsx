@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useProfileData } from '@/hooks/use-profile';
 import { ProfilePhotoUpload } from '@/components/profile/profile-photo-upload';
+import { ProfileShareActions } from '@/components/profile/profile-share-actions';
 import { getLocalizedCityName } from '@/lib/locale-content';
 import { PROFILE_COUNTRIES } from '@/lib/profile-location';
 import type { AppLocale } from '@/i18n/routing';
@@ -128,6 +129,18 @@ export default function ProfileEditPage() {
         />
       ) : null}
 
+      {profile && user.role === 'FREELANCER' ? (
+        <section className="mt-8 rounded-2xl border border-outline-variant/40 bg-surface p-5">
+          <h2 className="text-lg font-bold text-on-surface">{t('publicProfileLink')}</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">{t('publicProfileLinkHint')}</p>
+          <ProfileShareActions
+            className="mt-4"
+            username={profile.username}
+            displayName={`${profile.firstName} ${profile.lastName}`.trim()}
+          />
+        </section>
+      ) : null}
+
       {profile ? (
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -144,6 +157,7 @@ export default function ProfileEditPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">{t('username')}</label>
             <input name="username" defaultValue={profile.username} className="w-full rounded-lg border px-3 py-2" />
+            <p className="mt-1 text-xs text-on-surface-variant">{t('usernamePermalinkHint')}</p>
           </div>
 
           <div>

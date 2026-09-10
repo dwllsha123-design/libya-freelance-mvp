@@ -14,6 +14,7 @@ import { useAgreementsApi } from '@/hooks/use-agreements';
 import { ApiError } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
+import { publicProfilePath } from '@/lib/profile-url';
 import { FreelancerBadgeChip } from '@/components/badges/freelancer-badge-chip';
 
 export default function ProjectProposalsPage() {
@@ -217,9 +218,9 @@ export default function ProjectProposalsPage() {
             ) : null}
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {proposal.freelancer ? (
+              {proposal.freelancer && publicProfilePath(proposal.freelancer.username) ? (
                 <Link
-                  href={`/freelancers/${proposal.freelancer.username}`}
+                  href={publicProfilePath(proposal.freelancer.username)!}
                   className="rounded-lg border px-4 py-2 text-sm"
                 >
                   {t('viewProfile')}

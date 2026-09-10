@@ -8,6 +8,7 @@ import { apiRequest, type PublicProfile } from '@/lib/api';
 import type { PaginatedProjects } from '@/lib/schemas/project';
 import { formatBudgetRange } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
+import { publicProfilePath } from '@/lib/profile-url';
 
 function SearchResults() {
   const t = useTranslations('search');
@@ -99,17 +100,21 @@ function SearchResultsLoaded({ query }: { query: string }) {
           <p className="mt-2 text-ink-soft">{t('noFreelancers')}</p>
         ) : (
           <ul className="mt-4 space-y-3">
-            {freelancers.map((f) => (
+            {freelancers.map((f) => {
+              const href = publicProfilePath(f.username);
+              if (!href) return null;
+              return (
               <li key={f.username}>
                 <Link
-                  href={`/freelancers/${f.username}`}
+                  href={href}
                   className="block rounded-2xl border border-line bg-cream p-4 transition hover:border-ember/40"
                 >
                   {f.firstName} {f.lastName} —{' '}
                   {f.freelancer?.professionalTitle ?? tFreelancers('defaultTitle')}
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>

@@ -19,6 +19,13 @@ export const RESERVED_USERNAMES = new Set([
   'support',
   'terms',
   'privacy',
+  'business',
+  'u',
+  'nuqati',
+  'search',
+  'escrow',
+  'media',
+  'uploads',
 ]);
 
 export const USERNAME_MIN_LENGTH = 3;

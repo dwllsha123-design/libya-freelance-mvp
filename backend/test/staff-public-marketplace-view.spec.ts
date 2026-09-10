@@ -24,10 +24,13 @@ describe('staff public marketplace view policy', () => {
 
   it('MODERATOR may visit public freelancer profile routes', () => {
     expect(isStaffAllowedPublicMarketplacePath('/freelancers/jane')).toBe(true);
+    expect(isStaffAllowedPublicMarketplacePath('/u/jane')).toBe(true);
     expect(isStaffAllowedPublicMarketplacePath('/ar/freelancers/jane')).toBe(
       true,
     );
+    expect(isStaffAllowedPublicMarketplacePath('/ar/u/jane')).toBe(true);
     expect(isStaffBlockedMarketplacePath('/freelancers/jane')).toBe(false);
+    expect(isStaffBlockedMarketplacePath('/u/jane')).toBe(false);
   });
 
   it('staff marketplace dashboard is blocked (redirect target)', () => {

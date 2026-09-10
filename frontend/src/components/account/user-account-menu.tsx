@@ -11,6 +11,7 @@ import { useLaunchApi } from '@/hooks/use-launch';
 import { useUnreadNotificationCount } from '@/hooks/use-notifications';
 import type { FreelancerBadgesResponse } from '@/lib/badges';
 import type { AppLocale } from '@/i18n/routing';
+import { publicProfilePath } from '@/lib/profile-url';
 import { FreelancerBadgeChip } from '@/components/badges/freelancer-badge-chip';
 import { UserAvatarButton, UserAvatarFace, UserAvatarSkeleton } from '@/components/account/user-avatar';
 import {
@@ -190,7 +191,7 @@ function AccountMenuPanel({
   const publicProfileHref = user.profile?.username
     ? isClient
       ? `/clients/${user.profile.username}`
-      : `/freelancers/${user.profile.username}`
+      : publicProfilePath(user.profile.username)
     : null;
   const numberLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
   const unreadBadge =

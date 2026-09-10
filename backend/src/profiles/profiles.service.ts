@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import type { FreelancerQueryDto } from './dto/freelancer-query.dto.js';
 import {
+  isValidPublicUsername,
   normalizeUsername,
   validateUsername,
 } from '../common/utils/username.util.js';
@@ -354,9 +355,14 @@ export class ProfilesService {
   }
 
   async getFreelancerByUsername(username: string) {
+    if (!isValidPublicUsername(username)) {
+      throw new NotFoundException('المستقل غير موجود');
+    }
+    const normalized = normalizeUsername(username);
+
     const profile = await this.prisma.profile.findFirst({
       where: {
-        username: normalizeUsername(username),
+        username: normalized,
         user: { status: 'ACTIVE' },
         freelancerProfile: { isNot: null },
       },
@@ -367,7 +373,7 @@ export class ProfilesService {
       throw new NotFoundException('المستقل غير موجود');
     }
 
-    const portfolio = await this.portfolio.listForFreelancerUsername(username);
+    const portfolio = await this.portfolio.listForFreelancerUsername(normalized);
     const reviews = await this.reviews.getRatingSummary(profile.userId);
 
     void this.subscriptions.recordProfileView(profile.userId).catch(() => undefined);
@@ -387,9 +393,14 @@ export class ProfilesService {
   }
 
   async getClientByUsername(username: string) {
+    if (!isValidPublicUsername(username)) {
+      throw new NotFoundException('العميل غير موجود');
+    }
+    const normalized = normalizeUsername(username);
+
     const profile = await this.prisma.profile.findFirst({
       where: {
-        username: normalizeUsername(username),
+        username: normalized,
         user: { status: 'ACTIVE' },
         clientProfile: { isNot: null },
       },
