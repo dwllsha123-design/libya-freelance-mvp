@@ -79,7 +79,13 @@ describe('Notifications E2E (PostgreSQL)', () => {
     expect(
       clientList.body.items.some((n: { type: string }) => n.type === 'NEW_PROPOSAL'),
     ).toBe(true);
-    expect(freelancerList.body.items.length).toBe(0);
+    // Freelancer may receive launch/welcome notifications on signup, but must
+    // not receive the client's NEW_PROPOSAL inbox items.
+    expect(
+      freelancerList.body.items.filter(
+        (n: { type: string }) => n.type === 'NEW_PROPOSAL',
+      ).length,
+    ).toBe(0);
   });
 
   it('3-5. Pagination, unread filter, unread count', async (ctx) => {
