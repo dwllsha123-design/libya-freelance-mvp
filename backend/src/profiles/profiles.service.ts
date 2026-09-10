@@ -25,6 +25,7 @@ import { PortfolioService } from '../portfolio/portfolio.service.js';
 import { ReviewsService } from '../reviews/reviews.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { isFreelancerVerified } from './freelancer-verification.util.js';
+import { skillSlugsForCategory, categoryHasSkillMapping } from './freelancer-category-skills.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { PresenceService } from '../presence/presence.service.js';
 import type { PresenceSnapshot } from '../presence/presence.types.js';
@@ -61,6 +62,49 @@ const profileInclude = {
         select: { status: true, expiresAt: true },
         orderBy: { expiresAt: 'desc' as const },
         take: 3,
+      },
+    },
+  },
+} satisfies Prisma.ProfileInclude;
+
+/** Listing include adds visible review counts for discovery cards. */
+const listProfileInclude = {
+  city: true,
+  freelancerProfile: {
+    include: {
+      skills: {
+        include: { skill: true },
+      },
+    },
+  },
+  clientProfile: true,
+  user: {
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      status: true,
+      emailVerified: true,
+      createdAt: true,
+      lastSeenAt: true,
+      presenceVisibility: true,
+      identityVerification: {
+        select: { status: true, expiresAt: true },
+      },
+      freelancerSubscriptions: {
+        where: {
+          status: FreelancerSubscriptionStatus.ACTIVE,
+        },
+        select: { status: true, expiresAt: true },
+        orderBy: { expiresAt: 'desc' as const },
+        take: 3,
+      },
+      _count: {
+        select: {
+          reviewsReceived: {
+            where: { isVisible: true },
+          },
+        },
       },
     },
   },
@@ -244,44 +288,117 @@ export class ProfilesService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ProfileWhereInput = {
-      user: { status: 'ACTIVE' },
-      freelancerProfile: { isNot: null },
-    };
+    const freelancerFilters: Prisma.FreelancerProfileWhereInput[] = [];
+    const andFilters: Prisma.ProfileWhereInput[] = [];
 
     if (query.skill) {
-      where.freelancerProfile = {
+      freelancerFilters.push({
         skills: {
           some: {
-            skill: {
-              slug: query.skill.toLowerCase(),
-            },
+            skill: { slug: query.skill.toLowerCase() },
           },
         },
-      };
+      });
+    }
+
+    if (query.category) {
+      // Soft map only — not an authoritative Freelancer↔Category relation.
+      if (!categoryHasSkillMapping(query.category)) {
+        return {
+          data: [],
+          meta: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            categoryMapping: 'unavailable' as const,
+          },
+        };
+      }
+      const slugs = skillSlugsForCategory(query.category);
+      freelancerFilters.push({
+        skills: {
+          some: {
+            skill: { slug: { in: slugs } },
+          },
+        },
+      });
+    }
+
+    if (query.availability) {
+      freelancerFilters.push({ availability: query.availability });
+    }
+
+    if (query.minRating !== undefined) {
+      freelancerFilters.push({ averageRating: { gte: query.minRating } });
     }
 
     if (query.city) {
-      where.city = { slug: query.city.toLowerCase(), country: 'Libya' };
+      andFilters.push({
+        city: { slug: query.city.toLowerCase(), country: 'Libya' },
+      });
     }
 
-    if (query.q) {
-      where.OR = [
-        { firstName: { contains: query.q, mode: 'insensitive' } },
-        { lastName: { contains: query.q, mode: 'insensitive' } },
-        { username: { contains: query.q, mode: 'insensitive' } },
-        {
-          freelancerProfile: {
-            professionalTitle: { contains: query.q, mode: 'insensitive' },
+    if (query.workMode) {
+      andFilters.push({ workMode: query.workMode });
+    }
+
+    if (query.q?.trim()) {
+      const term = query.q.trim();
+      andFilters.push({
+        OR: [
+          { firstName: { contains: term, mode: 'insensitive' } },
+          { lastName: { contains: term, mode: 'insensitive' } },
+          { username: { contains: term, mode: 'insensitive' } },
+          { bio: { contains: term, mode: 'insensitive' } },
+          {
+            freelancerProfile: {
+              professionalTitle: { contains: term, mode: 'insensitive' },
+            },
+          },
+          {
+            freelancerProfile: {
+              skills: {
+                some: {
+                  skill: { name: { contains: term, mode: 'insensitive' } },
+                },
+              },
+            },
+          },
+          {
+            freelancerProfile: {
+              portfolio: {
+                some: {
+                  isVisible: true,
+                  OR: [
+                    { title: { contains: term, mode: 'insensitive' } },
+                    { description: { contains: term, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    // Source of truth: FreelancerIdentityVerification (KYC), NOT profile-completeness trust.
+    if (query.verified === true) {
+      const now = new Date();
+      andFilters.push({
+        user: {
+          status: 'ACTIVE',
+          identityVerification: {
+            status: IdentityVerificationStatus.VERIFIED,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
           },
         },
-      ];
+      });
     }
 
     const activity = query.activity ?? 'all';
     if (activity === 'online') {
       let onlineIds = await this.presence.getOnlineUserIds(Role.FREELANCER);
-      // Public listing (no viewer): only EVERYONE visibility may appear as "online"
       onlineIds = await this.filterOnlineIdsForPublicVisibility(onlineIds);
       if (onlineIds.length === 0) {
         return {
@@ -289,7 +406,7 @@ export class ProfilesService {
           meta: { page, limit, total: 0, totalPages: 0 },
         };
       }
-      where.userId = { in: onlineIds };
+      andFilters.push({ userId: { in: onlineIds } });
     } else if (activity === 'active_today' || activity === 'active_week') {
       let onlineIds = await this.presence.getOnlineUserIds(Role.FREELANCER);
       onlineIds = await this.filterOnlineIdsForPublicVisibility(onlineIds);
@@ -299,34 +416,62 @@ export class ProfilesService {
       } else {
         since.setDate(since.getDate() - 7);
       }
-      where.AND = [
-        {
-          OR: [
-            ...(onlineIds.length ? [{ userId: { in: onlineIds } }] : []),
-            {
-              user: {
-                lastSeenAt: { gte: since },
-                // Public: hide last-seen for private visibility users
-                presenceVisibility: PresenceVisibility.EVERYONE,
-              },
+      andFilters.push({
+        OR: [
+          ...(onlineIds.length ? [{ userId: { in: onlineIds } }] : []),
+          {
+            user: {
+              lastSeenAt: { gte: since },
+              presenceVisibility: PresenceVisibility.EVERYONE,
             },
-          ],
-        },
-      ];
+          },
+        ],
+      });
     }
+
+    const where: Prisma.ProfileWhereInput = {
+      user: { status: 'ACTIVE' },
+      ...(andFilters.length ? { AND: andFilters } : {}),
+    };
+
+    if (freelancerFilters.length > 0) {
+      where.freelancerProfile = {
+        is: {
+          AND: freelancerFilters,
+        },
+      };
+    } else {
+      where.freelancerProfile = { isNot: null };
+    }
+
+    const sort = query.sort ?? 'relevant';
+    const orderBy: Prisma.ProfileOrderByWithRelationInput[] =
+      sort === 'rating'
+        ? [
+            { freelancerProfile: { averageRating: 'desc' } },
+            { freelancerProfile: { completedProjects: 'desc' } },
+          ]
+        : sort === 'completed'
+          ? [
+              { freelancerProfile: { completedProjects: 'desc' } },
+              { freelancerProfile: { averageRating: 'desc' } },
+            ]
+          : sort === 'newest'
+            ? [{ createdAt: 'desc' }]
+            : [
+                { freelancerProfile: { averageRating: 'desc' } },
+                { freelancerProfile: { completedProjects: 'desc' } },
+                { freelancerProfile: { proBoostScore: 'desc' } },
+                { createdAt: 'desc' },
+              ];
 
     const [items, total] = await Promise.all([
       this.prisma.profile.findMany({
         where,
-        include: profileInclude,
+        include: listProfileInclude,
         skip,
         take: limit,
-        orderBy: [
-          { freelancerProfile: { averageRating: 'desc' } },
-          { freelancerProfile: { completedProjects: 'desc' } },
-          { freelancerProfile: { proBoostScore: 'desc' } },
-          { createdAt: 'desc' },
-        ],
+        orderBy,
       }),
       this.prisma.profile.count({ where }),
     ]);
@@ -336,20 +481,36 @@ export class ProfilesService {
       null,
     );
 
+    // Profile.username is NOT NULL @unique at DB + created at registration.
+    // Keep a narrow empty-string guard only; do not treat missing usernames as normal.
     return {
-      data: items.map((p) => ({
-        ...this.formatProfile(p, false),
-        presence: presenceMap.get(p.userId) ?? {
-          userId: p.userId,
-          status: 'OFFLINE' as const,
-          lastSeenAt: null,
-        },
-      })),
+      data: items
+        .filter((p) => p.username.trim().length > 0)
+        .map((p) => {
+          const formatted = this.formatProfile(
+            p as unknown as Prisma.ProfileGetPayload<{ include: typeof profileInclude }>,
+            false,
+          );
+          const reviewCount = p.user._count.reviewsReceived;
+          return {
+            ...formatted,
+            presence: presenceMap.get(p.userId) ?? {
+              userId: p.userId,
+              status: 'OFFLINE' as const,
+              lastSeenAt: null,
+            },
+            reviews: {
+              ratingAverage: p.freelancerProfile?.averageRating ?? 0,
+              reviewCount,
+              latestReviews: [],
+            },
+          };
+        }),
       meta: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limit) || 0,
       },
     };
   }
