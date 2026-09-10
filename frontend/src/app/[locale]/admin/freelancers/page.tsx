@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
   AdminEmptyState,
@@ -10,14 +10,39 @@ import {
 } from '@/components/admin/admin-ui';
 import { AdminComingSoon, AdminPageHeader } from '@/components/admin/admin-layout-ui';
 import { StatusBadge, userStatusTone } from '@/components/admin/status-badge';
-import { useAdminApi } from '@/hooks/use-admin';
+import {
+  staffCanManageUsers,
+  useAdminApi,
+  type AdminMeSession,
+} from '@/hooks/use-admin';
+import { getApiErrorMessage } from '@/lib/api';
+import type { AppLocale } from '@/i18n/routing';
 
 export default function AdminFreelancersPage() {
   const t = useTranslations('admin');
+  const locale = useLocale() as AppLocale;
   const api = useAdminApi();
+  const [staffSession, setStaffSession] = useState<AdminMeSession | null>(null);
+  const canEditAccounts = staffCanManageUsers(staffSession);
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Awaited<ReturnType<typeof api.users>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .me()
+      .then((me) => {
+        if (!cancelled) setStaffSession(me);
+      })
+      .catch(() => {
+        if (!cancelled) setStaffSession(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,11 +50,16 @@ export default function AdminFreelancersPage() {
       .users({ page: String(page), limit: '20', q: q || undefined, role: 'FREELANCER' })
       .then((r) => {
         if (!cancelled) setData(r);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : getApiErrorMessage(locale, 'unexpected'));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [api, page, q]);
+  }, [api, page, q, locale]);
 
   return (
     <div className="space-y-4">
@@ -42,6 +72,11 @@ export default function AdminFreelancersPage() {
         }}
         placeholder={t('searchUsers')}
       />
+      {error ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
       <div className="overflow-x-auto rounded-2xl border bg-white">
         {!data?.items.length ? (
           <AdminEmptyState message={t('noUsers')} />
@@ -97,9 +132,24 @@ export default function AdminFreelancersPage() {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/admin/users/${u.id}`} className="text-primary">
-                        {t('viewProfile')}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-nowrap">
+                        {canEditAccounts ? (
+                          <>
+                            <Link
+                              href={`/admin/freelancers/${u.id}/edit`}
+                              className="text-slate-700 underline-offset-2 hover:text-primary hover:underline"
+                            >
+                              {t('editAccount')}
+                            </Link>
+                            <span className="text-slate-300" aria-hidden>
+                              |
+                            </span>
+                          </>
+                        ) : null}
+                        <Link href={`/admin/users/${u.id}`} className="text-primary">
+                          {t('viewProfile')}
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

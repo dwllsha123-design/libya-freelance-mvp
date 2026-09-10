@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module.js';
 import { AgreementsModule } from '../agreements/agreements.module.js';
 import { BadgesModule } from '../badges/badges.module.js';
 import { LaunchModule } from '../launch/launch.module.js';
+import { StorageModule } from '../storage/storage.module.js';
 import { AdminAuditModule } from './admin-audit.module.js';
 import { AdminAuditController } from './admin-audit.controller.js';
 import { AdminCategoriesService } from './admin-categories.service.js';
@@ -40,6 +41,7 @@ import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js
     AdminAuditModule,
     BadgesModule,
     LaunchModule,
+    StorageModule,
   ],
   controllers: [
     AdminController,

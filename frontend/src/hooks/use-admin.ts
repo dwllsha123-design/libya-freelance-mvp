@@ -243,6 +243,9 @@ export function useAdminApi() {
           requireToken(),
         ),
 
+      me: () =>
+        authenticatedRequest<AdminMeSession>('/admin/me', requireToken()),
+
       users: (params: Record<string, string | undefined> = {}) =>
         authenticatedRequest<Paginated<Record<string, unknown>>>(
           `/admin/users${qs(params)}`,
@@ -265,6 +268,33 @@ export function useAdminApi() {
         authenticatedRequest(`/admin/users/${id}/revoke-sessions`, requireToken(), {
           method: 'POST',
         }),
+
+      getFreelancerEdit: (id: string) =>
+        authenticatedRequest<AdminFreelancerEditPayload>(
+          `/admin/freelancers/${id}/edit`,
+          requireToken(),
+        ),
+
+      updateFreelancer: (id: string, body: AdminUpdateFreelancerBody) =>
+        authenticatedRequest<AdminFreelancerEditPayload>(
+          `/admin/freelancers/${id}`,
+          requireToken(),
+          {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          },
+        ),
+
+      uploadFreelancerPhoto: async (id: string, file: File) => {
+        const token = requireToken();
+        const formData = new FormData();
+        formData.append('file', file);
+        return authenticatedRequest<AdminFreelancerEditPayload>(
+          `/admin/freelancers/${id}/photo`,
+          token,
+          { method: 'POST', body: formData },
+        );
+      },
 
       grantVerifiedTalent: (id: string) =>
         authenticatedRequest(`/admin/users/${id}/verified-talent/grant`, requireToken(), {
@@ -911,6 +941,57 @@ export interface AdminSearchResult {
     isActive: boolean;
   }>;
 }
+
+export type AdminMeSession = {
+  id: string;
+  role: string;
+  permissions: string[];
+};
+
+/** UI gate for freelancer account editing — backend MANAGE_USERS remains authoritative. */
+export function staffCanManageUsers(session: AdminMeSession | null | undefined): boolean {
+  if (!session) return false;
+  if (session.role === 'SUPER_ADMIN') return true;
+  if (session.role !== 'ADMIN' && session.role !== 'MODERATOR') return false;
+  return session.permissions.includes('MANAGE_USERS');
+}
+
+export interface AdminFreelancerEditPayload {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  profilePhoto: string | null;
+  bio: string | null;
+  phone: string | null;
+  country: string;
+  cityId: string | null;
+  city: { id: string; nameAr: string; slug: string; country?: string } | null;
+  workMode: string;
+  professionalTitle: string | null;
+  availability: string;
+  hourlyRate: number | null;
+  skills: Array<{ id: string; name: string; slug: string }>;
+  skillIds: string[];
+}
+
+export type AdminUpdateFreelancerBody = {
+  firstName?: string;
+  lastName?: string;
+  professionalTitle?: string;
+  bio?: string;
+  cityId?: string | null;
+  country?: string;
+  phone?: string;
+  workMode?: string;
+  availability?: string;
+  hourlyRate?: number | null;
+  skillIds?: string[];
+};
 
 export const ADMIN_PERMISSION_OPTIONS = [
   'MANAGE_USERS',

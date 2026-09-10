@@ -6,8 +6,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { AdminPermission, Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -32,6 +36,7 @@ import {
   UpdateSkillDto,
   AdminPaginationQueryDto,
 } from './dto/admin.dto.js';
+import { AdminUpdateFreelancerDto } from './dto/admin-update-freelancer.dto.js';
 import { EscrowService } from '../escrow/escrow.service.js';
 import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
@@ -60,6 +65,12 @@ export class AdminController {
     return this.dashboard.getOverview(range);
   }
 
+  /** Staff self permissions for UI gating (API guards remain authoritative). */
+  @Get('me')
+  getMe(@CurrentUser() admin: AuthUser) {
+    return this.users.getMySession(admin.id);
+  }
+
   @Get('launch-program')
   getLaunchProgram() {
     return this.launchProgram.getAdminOverview();
@@ -73,6 +84,41 @@ export class AdminController {
   @Get('users/:id')
   getUser(@Param('id') id: string) {
     return this.users.getById(id);
+  }
+
+  @Get('freelancers/:id/edit')
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
+  getFreelancerEdit(@Param('id') id: string) {
+    return this.users.getFreelancerForEdit(id);
+  }
+
+  @Patch('freelancers/:id')
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
+  updateFreelancer(
+    @CurrentUser() admin: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateFreelancerDto,
+  ) {
+    return this.users.updateFreelancerProfile(admin.id, id, dto);
+  }
+
+  @Post('freelancers/:id/photo')
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  uploadFreelancerPhoto(
+    @CurrentUser() admin: AuthUser,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.users.uploadFreelancerPhoto(admin.id, id, file);
   }
 
   @UseGuards(AdminPermissionGuard)
@@ -102,6 +148,7 @@ export class AdminController {
   revokeUserSessions(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
     return this.users.revokeSessions(admin.id, id);
   }
+
 
   @Post('users/:id/verified-talent/grant')
   grantVerifiedTalent(@CurrentUser() admin: AuthUser, @Param('id') id: string) {

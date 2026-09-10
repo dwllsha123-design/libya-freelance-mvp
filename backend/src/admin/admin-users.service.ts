@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,19 +14,32 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeSessionService } from '../realtime/realtime-session.service.js';
 import { AdminAuditService } from './admin-audit.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
+import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import {
+  STORAGE_SERVICE,
+  type StorageService,
+} from '../storage/storage.interface.js';
+import { Inject } from '@nestjs/common';
 import {
   assertAdminCanModerateUser,
   assertValidStatusTransition,
 } from './admin-policy.util.js';
+import { MAX_FREELANCER_SKILLS } from '../common/constants/profile.constants.js';
 import type { AdminUsersQueryDto } from './dto/admin.dto.js';
+import type { AdminUpdateFreelancerDto } from './dto/admin-update-freelancer.dto.js';
 
 const userListInclude = {
   profile: {
     include: {
-      city: { select: { id: true, nameAr: true, slug: true } },
+      city: { select: { id: true, nameAr: true, slug: true, country: true } },
       freelancerProfile: {
         include: {
           _count: { select: { portfolio: true, skills: true } },
+          skills: {
+            include: {
+              skill: { select: { id: true, name: true, slug: true, isActive: true } },
+            },
+          },
         },
       },
       clientProfile: true,
@@ -45,6 +60,8 @@ export class AdminUsersService {
     private readonly audit: AdminAuditService,
     private readonly realtimeSessions: RealtimeSessionService,
     private readonly launchProgram: LaunchProgramService,
+    private readonly platformPolicy: PlatformPolicyService,
+    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
   ) {}
 
   async list(query: AdminUsersQueryDto) {
@@ -117,6 +134,345 @@ export class AdminUsersService {
     };
   }
 
+  /** Current staff session permissions (for UI gating; API remains authoritative). */
+  async getMySession(adminId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: {
+        id: true,
+        role: true,
+        adminPermissions: { select: { permission: true } },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+    return {
+      id: user.id,
+      role: user.role,
+      permissions: user.adminPermissions.map((p) => p.permission),
+    };
+  }
+
+  /** Safe edit payload for admin freelancer profile form (no secrets). */
+  async getFreelancerForEdit(userId: string) {
+    const user = await this.requireFreelancerUser(userId);
+    this.assertFreelancerEditStructure(user);
+    return this.formatFreelancerEdit(user);
+  }
+
+  /**
+   * Update freelancer profile fields in place — never recreates the User row.
+   * Preserves proposals, projects, messages, reviews, and agreements.
+   *
+   * skillIds: omitted → unchanged; present (incl. []) → full replace.
+   */
+  async updateFreelancerProfile(
+    adminId: string,
+    userId: string,
+    dto: AdminUpdateFreelancerDto,
+  ) {
+    const user = await this.requireFreelancerUser(userId);
+    assertAdminCanModerateUser(adminId, user);
+    this.assertFreelancerEditStructure(user);
+
+    const profile = user.profile!;
+    const freelancer = profile.freelancerProfile!;
+
+    const nextCountry =
+      dto.country !== undefined ? dto.country.trim() : profile.country;
+    let nextCityId =
+      dto.cityId !== undefined ? dto.cityId : profile.cityId;
+
+    if (nextCountry === 'Other') {
+      nextCityId = null;
+    }
+
+    if (nextCityId) {
+      const city = await this.prisma.city.findFirst({
+        where: { id: nextCityId, isActive: true },
+      });
+      if (!city) {
+        throw new NotFoundException('المدينة غير موجودة');
+      }
+      if (nextCountry && city.country !== nextCountry) {
+        if (dto.cityId !== undefined) {
+          throw new BadRequestException('المدينة لا تنتمي إلى البلد المحدد');
+        }
+        // Country changed without a matching city — clear stale city (self-serve convention).
+        nextCityId = null;
+      }
+    }
+
+    let nextWorkMode = undefined as Awaited<
+      ReturnType<PlatformPolicyService['resolveProjectWorkMode']>
+    > | undefined;
+    if (dto.workMode !== undefined) {
+      nextWorkMode = await this.platformPolicy.resolveProjectWorkMode(dto.workMode);
+    }
+
+    if (dto.skillIds !== undefined) {
+      if (dto.skillIds.length > MAX_FREELANCER_SKILLS) {
+        throw new BadRequestException(
+          `الحد الأقصى للمهارات هو ${MAX_FREELANCER_SKILLS}`,
+        );
+      }
+      const uniqueIds = [...new Set(dto.skillIds)];
+      if (uniqueIds.length > 0) {
+        const activeSkills = await this.prisma.skill.findMany({
+          where: { id: { in: uniqueIds }, isActive: true },
+          select: { id: true },
+        });
+        if (activeSkills.length !== uniqueIds.length) {
+          throw new BadRequestException('بعض المهارات غير صالحة أو غير مفعّلة');
+        }
+      }
+    }
+
+    const before = {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      bio: profile.bio,
+      cityId: profile.cityId,
+      country: profile.country,
+      phone: profile.phone,
+      workMode: profile.workMode,
+      professionalTitle: freelancer.professionalTitle,
+      availability: freelancer.availability,
+      hourlyRate: freelancer.hourlyRate ? Number(freelancer.hourlyRate) : null,
+      skillIds: freelancer.skills.map((s) => s.skillId),
+    };
+
+    const after = {
+      firstName: dto.firstName !== undefined ? dto.firstName.trim() : before.firstName,
+      lastName: dto.lastName !== undefined ? dto.lastName.trim() : before.lastName,
+      bio: dto.bio !== undefined ? dto.bio.trim() || null : before.bio,
+      cityId: nextCityId,
+      country: nextCountry,
+      phone: dto.phone !== undefined ? dto.phone.trim() || null : before.phone,
+      workMode: nextWorkMode ?? before.workMode,
+      professionalTitle:
+        dto.professionalTitle !== undefined
+          ? dto.professionalTitle.trim() || null
+          : before.professionalTitle,
+      availability: dto.availability ?? before.availability,
+      hourlyRate: dto.hourlyRate !== undefined ? dto.hourlyRate : before.hourlyRate,
+      skillIds:
+        dto.skillIds !== undefined
+          ? [...new Set(dto.skillIds)]
+          : before.skillIds,
+    };
+
+    const changedFields = (
+      Object.keys(before) as Array<keyof typeof before>
+    ).filter((key) => {
+      if (key === 'skillIds') {
+        const a = [...before.skillIds].sort().join(',');
+        const b = [...after.skillIds].sort().join(',');
+        return a !== b;
+      }
+      return before[key] !== after[key];
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.profile.update({
+        where: { id: profile.id },
+        data: {
+          ...(dto.firstName !== undefined && { firstName: dto.firstName.trim() }),
+          ...(dto.lastName !== undefined && { lastName: dto.lastName.trim() }),
+          ...(dto.bio !== undefined && { bio: dto.bio.trim() || null }),
+          ...((dto.cityId !== undefined || nextCityId !== before.cityId) && {
+            cityId: nextCityId,
+          }),
+          ...(dto.country !== undefined && { country: nextCountry }),
+          ...(dto.phone !== undefined && {
+            phone: dto.phone.trim() || null,
+          }),
+          ...(nextWorkMode !== undefined && { workMode: nextWorkMode }),
+        },
+      });
+
+      await tx.freelancerProfile.update({
+        where: { id: freelancer.id },
+        data: {
+          ...(dto.professionalTitle !== undefined && {
+            professionalTitle: dto.professionalTitle.trim() || null,
+          }),
+          ...(dto.availability !== undefined && {
+            availability: dto.availability,
+          }),
+          ...(dto.hourlyRate !== undefined && {
+            hourlyRate: dto.hourlyRate,
+          }),
+        },
+      });
+
+      if (dto.skillIds !== undefined) {
+        const uniqueIds = [...new Set(dto.skillIds)];
+        await tx.freelancerSkill.deleteMany({
+          where: { freelancerProfileId: freelancer.id },
+        });
+        if (uniqueIds.length > 0) {
+          await tx.freelancerSkill.createMany({
+            data: uniqueIds.map((skillId) => ({
+              freelancerProfileId: freelancer.id,
+              skillId,
+            })),
+          });
+        }
+      }
+
+      const beforeChanged: Record<string, unknown> = {};
+      const afterChanged: Record<string, unknown> = {};
+      for (const field of changedFields) {
+        beforeChanged[field] = before[field];
+        afterChanged[field] = after[field];
+      }
+
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.SETTING_CHANGED,
+        'User',
+        userId,
+        {
+          action: 'ADMIN_FREELANCER_PROFILE_UPDATE',
+          actorAdminId: adminId,
+          freelancerUserId: userId,
+          changedFields,
+          before: beforeChanged,
+          after: afterChanged,
+        },
+        tx,
+      );
+    });
+
+    return this.getFreelancerForEdit(userId);
+  }
+
+  async uploadFreelancerPhoto(
+    adminId: string,
+    userId: string,
+    file: Express.Multer.File | undefined,
+  ) {
+    const user = await this.requireFreelancerUser(userId);
+    assertAdminCanModerateUser(adminId, user);
+
+    const profile = user.profile;
+    if (!profile) {
+      throw new BadRequestException('الملف الشخصي غير موجود');
+    }
+
+    if (!file) {
+      throw new BadRequestException('ملف الصورة مطلوب');
+    }
+
+    const previousPhoto = profile.profilePhoto;
+
+    // Upload first — never delete the old asset until the new one is stored
+    // and the profile row points at it.
+    const imageUrl = await this.storage.uploadProfileImage(userId, file);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.profile.update({
+          where: { id: profile.id },
+          data: { profilePhoto: imageUrl },
+        });
+        await this.audit.log(
+          adminId,
+          AdminAuditAction.SETTING_CHANGED,
+          'User',
+          userId,
+          {
+            action: 'ADMIN_FREELANCER_PHOTO_UPDATE',
+            actorAdminId: adminId,
+            freelancerUserId: userId,
+            changedFields: ['profilePhoto'],
+            hadPreviousPhoto: Boolean(previousPhoto),
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      // Best-effort cleanup of orphaned new upload; keep previous photo URL.
+      await this.storage.deleteFile(imageUrl).catch(() => undefined);
+      throw error;
+    }
+
+    if (previousPhoto && previousPhoto !== imageUrl) {
+      await this.storage.deleteFile(previousPhoto).catch(() => undefined);
+    }
+
+    return this.getFreelancerForEdit(userId);
+  }
+
+  private async requireFreelancerUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: userListInclude,
+    });
+
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    if (user.role !== Role.FREELANCER) {
+      throw new ForbiddenException('هذا الإجراء مخصص لحسابات المستقلين فقط');
+    }
+
+    return user;
+  }
+
+  private assertFreelancerEditStructure(
+    user: Prisma.UserGetPayload<{ include: typeof userListInclude }>,
+  ) {
+    if (!user.profile?.freelancerProfile) {
+      throw new BadRequestException('ملف المستقل غير مكتمل هيكليًا');
+    }
+  }
+
+  private formatFreelancerEdit(
+    user: Prisma.UserGetPayload<{ include: typeof userListInclude }>,
+  ) {
+    this.assertFreelancerEditStructure(user);
+    const profile = user.profile;
+    const freelancer = profile?.freelancerProfile;
+    if (!profile || !freelancer) {
+      throw new BadRequestException('ملف المستقل غير مكتمل هيكليًا');
+    }
+
+    const skills = freelancer.skills
+      .filter((fs) => fs.skill.isActive)
+      .map((fs) => ({
+        id: fs.skill.id,
+        name: fs.skill.name,
+        slug: fs.skill.slug,
+      }));
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      username: profile.username,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      displayName: `${profile.firstName} ${profile.lastName}`.trim(),
+      profilePhoto: profile.profilePhoto,
+      bio: profile.bio,
+      phone: profile.phone,
+      country: profile.country,
+      cityId: profile.cityId,
+      city: profile.city,
+      workMode: profile.workMode,
+      professionalTitle: freelancer.professionalTitle,
+      availability: freelancer.availability,
+      hourlyRate: freelancer.hourlyRate ? Number(freelancer.hourlyRate) : null,
+      skills,
+      skillIds: skills.map((s) => s.id),
+    };
+  }
+
   async suspend(adminId: string, userId: string) {
     return this.changeStatus(adminId, userId, UserStatus.SUSPENDED, AdminAuditAction.USER_SUSPENDED);
   }
@@ -150,6 +506,7 @@ export class AdminUsersService {
     await this.realtimeSessions.disconnectUser(userId);
     return { ok: true };
   }
+
 
   private async changeStatus(
     adminId: string,
