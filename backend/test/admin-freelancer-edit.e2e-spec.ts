@@ -259,7 +259,8 @@ describe('Admin Freelancer Edit E2E', () => {
         filename: 'avatar.png',
         contentType: 'image/png',
       });
-    expect(photoRes.status).toBe(200);
+    // NestJS @Post defaults to 201 Created for successful uploads.
+    expect(photoRes.status).toBe(201);
     expect(photoRes.body.profilePhoto).toContain('http://test.storage/profiles/');
   });
 
