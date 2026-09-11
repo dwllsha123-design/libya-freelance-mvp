@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
+  AdminConfirmDialog,
   AdminEmptyState,
   AdminPagination,
   AdminSearch,
@@ -20,6 +21,7 @@ import type { AppLocale } from '@/i18n/routing';
 
 export default function AdminFreelancersPage() {
   const t = useTranslations('admin');
+  const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
   const api = useAdminApi();
   const [staffSession, setStaffSession] = useState<AdminMeSession | null>(null);
@@ -27,7 +29,10 @@ export default function AdminFreelancersPage() {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Awaited<ReturnType<typeof api.users>> | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +64,22 @@ export default function AdminFreelancersPage() {
     return () => {
       cancelled = true;
     };
-  }, [api, page, q, locale]);
+  }, [api, page, q, locale, reloadKey]);
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await api.deleteIncompleteUser(deleteId);
+      setDeleteId(null);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : getApiErrorMessage(locale, 'unexpected'));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -87,6 +107,7 @@ export default function AdminFreelancersPage() {
                 <th className="px-4 py-3 text-right">{t('tableUser')}</th>
                 <th className="px-4 py-3 text-right">{t('city')}</th>
                 <th className="px-4 py-3 text-right">{t('skills')}</th>
+                <th className="px-4 py-3 text-right">{t('profileCompletion')}</th>
                 <th className="px-4 py-3 text-right">{t('rating')}</th>
                 <th className="px-4 py-3 text-right">{t('completedProjects')}</th>
                 <th className="px-4 py-3 text-right">{t('portfolioCount')}</th>
@@ -98,6 +119,10 @@ export default function AdminFreelancersPage() {
               {data.items.map((u) => {
                 const fr = u.freelancer as Record<string, unknown> | null;
                 const city = u.city as { nameAr?: string } | null;
+                const completion =
+                  u.profileCompletionPercent != null
+                    ? `${String(u.profileCompletionPercent)}%`
+                    : '—';
                 return (
                   <tr key={String(u.id)} className="border-t">
                     <td className="px-4 py-3">
@@ -122,6 +147,7 @@ export default function AdminFreelancersPage() {
                     </td>
                     <td className="px-4 py-3">{city?.nameAr ?? '—'}</td>
                     <td className="px-4 py-3">{String(fr?.skillsCount ?? 0)}</td>
+                    <td className="px-4 py-3">{completion}</td>
                     <td className="px-4 py-3">{String(fr?.averageRating ?? 0)}</td>
                     <td className="px-4 py-3">{String(fr?.completedProjects ?? 0)}</td>
                     <td className="px-4 py-3">{String(fr?.portfolioCount ?? 0)}</td>
@@ -149,6 +175,15 @@ export default function AdminFreelancersPage() {
                         <Link href={`/admin/users/${u.id}`} className="text-primary">
                           {t('viewProfile')}
                         </Link>
+                        {u.canDeleteIncomplete ? (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteId(String(u.id))}
+                            className="text-red-600 hover:underline"
+                          >
+                            {t('deleteIncompleteAccount')}
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -164,6 +199,15 @@ export default function AdminFreelancersPage() {
       <AdminComingSoon
         title={t('featuredFreelancerAction')}
         description={t('featuredFreelancerPlaceholder')}
+      />
+      <AdminConfirmDialog
+        open={deleteId !== null}
+        title={t('deleteIncompleteTitle')}
+        message={t('deleteIncompleteMessage')}
+        confirmLabel={tCommon('confirm')}
+        isLoading={isDeleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   );

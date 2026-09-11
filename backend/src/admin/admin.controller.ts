@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -149,6 +150,12 @@ export class AdminController {
     return this.users.revokeSessions(admin.id, id);
   }
 
+  @UseGuards(AdminPermissionGuard)
+  @RequireAdminPermission(AdminPermission.MANAGE_USERS)
+  @Delete('users/:id')
+  deleteIncompleteUser(@CurrentUser() admin: AuthUser, @Param('id') id: string) {
+    return this.users.deleteIncomplete(admin.id, id);
+  }
 
   @Post('users/:id/verified-talent/grant')
   grantVerifiedTalent(@CurrentUser() admin: AuthUser, @Param('id') id: string) {

@@ -269,6 +269,15 @@ export function useAdminApi() {
           method: 'POST',
         }),
 
+      deleteIncompleteUser: (id: string) =>
+        authenticatedRequest<{
+          ok: boolean;
+          deletedUserId: string;
+          profileCompletionPercent: number;
+        }>(`/admin/users/${id}`, requireToken(), {
+          method: 'DELETE',
+        }),
+
       getFreelancerEdit: (id: string) =>
         authenticatedRequest<AdminFreelancerEditPayload>(
           `/admin/freelancers/${id}/edit`,

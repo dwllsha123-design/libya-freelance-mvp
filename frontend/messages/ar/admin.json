@@ -234,6 +234,11 @@
   "dashboardSubtitle": "نظرة شاملة على أداء ليبي فريلانس",
   "freelancers": "المستقلون",
   "freelancersSubtitle": "إدارة ملفات المستقلين على المنصة",
+  "freelancersDeleteHint": "إدارة المستقلين — يمكن حذف الحسابات ذات الملف غير المكتمل ودون أي نشاط في السوق",
+  "profileCompletion": "اكتمال الملف",
+  "deleteIncompleteAccount": "حذف الحساب",
+  "deleteIncompleteTitle": "حذف حساب غير مكتمل",
+  "deleteIncompleteMessage": "سيتم حذف هذا الحساب نهائيًا لأنه لم يكمل ملفه الشخصي وليس له نشاط في السوق. لا يمكن التراجع عن هذا الإجراء.",
   "clients": "العملاء",
   "clientsSubtitle": "إدارة حسابات العملاء",
   "portfolioModeration": "الأعمال السابقة",
@@ -460,7 +465,7 @@
   "maintenanceMessage": "رسالة الصيانة",
   "maintenanceMessagePlaceholder": "رسالة تُعرض للمستخدمين أثناء الصيانة",
   "confirmToggle": "تأكيد التبديل",
-  "searchNoResults": "لا نتائج",
+  "searchNoResults": "لا توجد نتائج",
   "chartRange": {
     "7d": "7 أيام",
     "30d": "30 يومًا",
@@ -496,6 +501,7 @@
   "range3m": "3 أشهر",
   "range6m": "6 أشهر",
   "range12m": "سنة",
+  "searchNoResults": "لا نتائج",
   "projectStatus": {
     "DRAFT": "مسودة",
     "OPEN": "مفتوح",

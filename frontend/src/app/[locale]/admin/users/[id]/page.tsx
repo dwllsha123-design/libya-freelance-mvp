@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { AdminConfirmDialog } from '@/components/admin/admin-ui';
 import { AdminPageHeader, AdminPanel } from '@/components/admin/admin-layout-ui';
 import { StatusBadge, userStatusTone } from '@/components/admin/status-badge';
@@ -15,6 +15,7 @@ export default function AdminUserDetailPage() {
   const tLaunch = useTranslations('launch');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const api = useAdminApi();
   const [user, setUser] = useState<Record<string, unknown> | null>(null);
@@ -25,9 +26,11 @@ export default function AdminUserDetailPage() {
     | 'revokeSessions'
     | 'grantVerifiedTalent'
     | 'revokeVerifiedTalent'
+    | 'deleteIncomplete'
     | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const dateLocale = locale === 'ar' ? 'ar-LY' : 'en-LY';
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function AdminUserDetailPage() {
   async function runAction() {
     if (!pending) return;
     setIsLoading(true);
+    setActionError(null);
     try {
       if (pending === 'suspend') await api.suspendUser(params.id);
       if (pending === 'ban') await api.banUser(params.id);
@@ -50,9 +54,17 @@ export default function AdminUserDetailPage() {
       if (pending === 'revokeSessions') await api.revokeUserSessions(params.id);
       if (pending === 'grantVerifiedTalent') await api.grantVerifiedTalent(params.id);
       if (pending === 'revokeVerifiedTalent') await api.revokeVerifiedTalent(params.id);
+      if (pending === 'deleteIncomplete') {
+        await api.deleteIncompleteUser(params.id);
+        setPending(null);
+        router.push('/admin/freelancers');
+        return;
+      }
       const updated = await api.user(params.id);
       setUser(updated);
       setPending(null);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : t('confirmAction'));
     } finally {
       setIsLoading(false);
     }
@@ -64,6 +76,7 @@ export default function AdminUserDetailPage() {
   const client = user.client as Record<string, unknown> | null;
   const launch = user.launch as Record<string, unknown> | null;
   const launchConfig = (launch?.config as Record<string, unknown> | undefined) ?? null;
+  const canDeleteIncomplete = Boolean(user.canDeleteIncomplete);
 
   const pendingTitle =
     pending === 'ban'
@@ -76,7 +89,12 @@ export default function AdminUserDetailPage() {
             ? t('grantVerifiedTalent')
             : pending === 'revokeVerifiedTalent'
               ? t('revokeVerifiedTalent')
-              : t('reactivateTitle');
+              : pending === 'deleteIncomplete'
+                ? t('deleteIncompleteTitle')
+                : t('reactivateTitle');
+
+  const pendingMessage =
+    pending === 'deleteIncomplete' ? t('deleteIncompleteMessage') : t('confirmAction');
 
   return (
     <div className="space-y-6">
@@ -199,6 +217,11 @@ export default function AdminUserDetailPage() {
       ) : null}
 
       <AdminPanel title={t('adminActions')}>
+        {actionError ? (
+          <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {actionError}
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {user.status !== 'SUSPENDED' ? (
             <button
@@ -253,13 +276,27 @@ export default function AdminUserDetailPage() {
               </button>
             )
           ) : null}
+          {canDeleteIncomplete ? (
+            <button
+              type="button"
+              onClick={() => setPending('deleteIncomplete')}
+              className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700"
+            >
+              {t('deleteIncompleteAccount')}
+            </button>
+          ) : null}
         </div>
+        {user.role === 'FREELANCER' && user.profileCompletionPercent != null ? (
+          <p className="mt-3 text-xs text-slate-500">
+            {t('profileCompletion')}: {String(user.profileCompletionPercent)}%
+          </p>
+        ) : null}
       </AdminPanel>
 
       <AdminConfirmDialog
         open={pending !== null}
         title={pendingTitle}
-        message={t('confirmAction')}
+        message={pendingMessage}
         confirmLabel={tCommon('confirm')}
         isLoading={isLoading}
         onConfirm={() => void runAction()}

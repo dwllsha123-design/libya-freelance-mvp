@@ -24,9 +24,24 @@ import {
   assertAdminCanModerateUser,
   assertValidStatusTransition,
 } from './admin-policy.util.js';
+import { evaluateIncompleteFreelancerDeletion } from './admin-incomplete-user-deletion.util.js';
+import { calculateProfileCompletion } from '../profiles/profile-completion.util.js';
+import { LAUNCH_PROGRAM_DEFAULTS } from '../launch/launch.config.js';
 import { MAX_FREELANCER_SKILLS } from '../common/constants/profile.constants.js';
 import type { AdminUsersQueryDto } from './dto/admin.dto.js';
 import type { AdminUpdateFreelancerDto } from './dto/admin-update-freelancer.dto.js';
+
+const activityCountSelect = {
+  proposals: true,
+  projectsAsClient: true,
+  escrowsAsFreelancer: true,
+  escrowsAsClient: true,
+  reviewsGiven: true,
+  reviewsReceived: true,
+  conversationMembers: true,
+  projectAgreementsAsFreelancer: true,
+  projectAgreementsAsClient: true,
+} as const;
 
 const userListInclude = {
   profile: {
@@ -46,10 +61,7 @@ const userListInclude = {
     },
   },
   _count: {
-    select: {
-      proposals: true,
-      projectsAsClient: true,
-    },
+    select: activityCountSelect,
   },
 } satisfies Prisma.UserInclude;
 
@@ -507,6 +519,77 @@ export class AdminUsersService {
     return { ok: true };
   }
 
+  /**
+   * Permanently delete an incomplete freelancer with zero marketplace activity.
+   * Does not require a schema migration; audit uses USER_BANNED + hardDelete metadata.
+   */
+  async deleteIncomplete(adminId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: userListInclude,
+    });
+
+    if (!user) {
+      throw new NotFoundException('المستخدم غير موجود');
+    }
+
+    assertAdminCanModerateUser(adminId, user);
+
+    const profile = user.profile;
+    const freelancer = profile?.freelancerProfile;
+    const decision = evaluateIncompleteFreelancerDeletion({
+      role: user.role,
+      profile: {
+        profilePhoto: profile?.profilePhoto,
+        professionalTitle: freelancer?.professionalTitle,
+        bio: profile?.bio,
+        cityId: profile?.cityId,
+        skillCount: freelancer?._count.skills,
+        portfolioCount: freelancer?._count.portfolio,
+      },
+      activity: {
+        proposals: user._count.proposals,
+        projectsAsClient: user._count.projectsAsClient,
+        escrowsAsFreelancer: user._count.escrowsAsFreelancer,
+        escrowsAsClient: user._count.escrowsAsClient,
+        reviewsGiven: user._count.reviewsGiven,
+        reviewsReceived: user._count.reviewsReceived,
+        conversationMembers: user._count.conversationMembers,
+        projectAgreementsAsFreelancer: user._count.projectAgreementsAsFreelancer,
+        projectAgreementsAsClient: user._count.projectAgreementsAsClient,
+      },
+    });
+
+    if (!decision.allowed) {
+      throw new BadRequestException(decision.reason);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.USER_BANNED,
+        'User',
+        userId,
+        {
+          action: 'HARD_DELETE_INCOMPLETE_PROFILE',
+          email: user.email,
+          username: profile?.username ?? null,
+          profileCompletionPercent: decision.profileCompletionPercent,
+        },
+        tx,
+      );
+
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    await this.realtimeSessions.disconnectUser(userId);
+
+    return {
+      ok: true,
+      deletedUserId: userId,
+      profileCompletionPercent: decision.profileCompletionPercent,
+    };
+  }
 
   private async changeStatus(
     adminId: string,
@@ -562,6 +645,45 @@ export class AdminUsersService {
     const freelancer = profile?.freelancerProfile;
     const clientProfile = profile?.clientProfile;
 
+    const profileCompletion =
+      user.role === Role.FREELANCER
+        ? calculateProfileCompletion({
+            profilePhoto: profile?.profilePhoto,
+            professionalTitle: freelancer?.professionalTitle,
+            bio: profile?.bio,
+            cityId: profile?.cityId,
+            skillCount: freelancer?._count.skills,
+            portfolioCount: freelancer?._count.portfolio,
+          })
+        : null;
+
+    const deleteDecision =
+      user.role === Role.FREELANCER
+        ? evaluateIncompleteFreelancerDeletion({
+            role: user.role,
+            profile: {
+              profilePhoto: profile?.profilePhoto,
+              professionalTitle: freelancer?.professionalTitle,
+              bio: profile?.bio,
+              cityId: profile?.cityId,
+              skillCount: freelancer?._count.skills,
+              portfolioCount: freelancer?._count.portfolio,
+            },
+            activity: {
+              proposals: user._count.proposals,
+              projectsAsClient: user._count.projectsAsClient,
+              escrowsAsFreelancer: user._count.escrowsAsFreelancer,
+              escrowsAsClient: user._count.escrowsAsClient,
+              reviewsGiven: user._count.reviewsGiven,
+              reviewsReceived: user._count.reviewsReceived,
+              conversationMembers: user._count.conversationMembers,
+              projectAgreementsAsFreelancer:
+                user._count.projectAgreementsAsFreelancer,
+              projectAgreementsAsClient: user._count.projectAgreementsAsClient,
+            },
+          })
+        : { allowed: false as const, reason: 'not_freelancer' };
+
     return {
       id: user.id,
       email: user.email,
@@ -578,6 +700,10 @@ export class AdminUsersService {
       city: profile?.city ?? null,
       proposalCount: user._count.proposals,
       projectsPosted: user._count.projectsAsClient,
+      profileCompletionPercent: profileCompletion?.percent ?? null,
+      profileCompletionThreshold:
+        LAUNCH_PROGRAM_DEFAULTS.profileCompletionThreshold,
+      canDeleteIncomplete: deleteDecision.allowed,
       freelancer:
         user.role === Role.FREELANCER && freelancer
           ? {
