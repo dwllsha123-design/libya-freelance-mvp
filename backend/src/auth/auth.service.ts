@@ -3,11 +3,18 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Role, UserStatus, ProductAnalyticsEventType } from '@prisma/client';
+import {
+  DevicePlatform,
+  Prisma,
+  Role,
+  UserStatus,
+  ProductAnalyticsEventType,
+} from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { isPlatformRole, isStaffRole, PUBLIC_ROLES } from './constants.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -33,13 +40,21 @@ import type {
   VerifyEmailDto,
 } from './dto/password.dto.js';
 import type {
+  AuthClientChannel,
+  AuthSessionOptions,
   AuthTokens,
+  IssuedAuthSession,
   JwtPayload,
+  NativeDevicePlatform,
+  RefreshJwtPayload,
+  RegisterResult,
   SafeUser,
 } from './types/auth-user.type.js';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -52,7 +67,7 @@ export class AuthService {
     private readonly platformPolicy: PlatformPolicyService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  async register(dto: RegisterDto): Promise<RegisterResult> {
     if (dto.password !== dto.confirmPassword) {
       throw new BadRequestException('كلمتا المرور غير متطابقتين');
     }
@@ -60,6 +75,8 @@ export class AuthService {
     if (!PUBLIC_ROLES.includes(dto.role)) {
       throw new BadRequestException('نوع الحساب غير صالح');
     }
+
+    const session = this.resolveSessionOptions(dto);
 
     await this.platformPolicy.assertRegistrationAllowed(dto.role);
 
@@ -70,25 +87,98 @@ export class AuthService {
       throw new ConflictException('البريد الإلكتروني مستخدم بالفعل');
     }
 
+    const bcryptStarted = Date.now();
     const passwordHash = await hashPassword(dto.password);
+    this.logger.debug(`register.timing bcryptMs=${Date.now() - bcryptStarted}`);
+
     const username = await this.usersService.generateUniqueUsername(
       dto.firstName,
       dto.lastName,
     );
 
-    const user = await this.prisma.$transaction(async (tx) => {
+    let user: Awaited<ReturnType<typeof this.createRegisteredUser>>;
+    const txStarted = Date.now();
+    try {
+      user = await this.createRegisteredUser({
+        email,
+        passwordHash,
+        role: dto.role,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
+        username,
+      });
+    } catch (error) {
+      this.rethrowRegistrationUniqueConflict(error);
+      throw error;
+    }
+    this.logger.debug(
+      `register.timing dbTransactionMs=${Date.now() - txStarted} userId=${user.id}`,
+    );
+
+    // Account exists from here — never report creation failure for side effects.
+    const verifyStarted = Date.now();
+    await this.createEmailVerificationTokenBestEffort(user.id, user.email);
+    this.logger.debug(
+      `register.timing verificationTokenMs=${Date.now() - verifyStarted} userId=${user.id}`,
+    );
+
+    const sessionStarted = Date.now();
+    try {
+      const tokens = await this.issueTokens(user, session);
+      this.logger.debug(
+        `register.timing sessionMs=${Date.now() - sessionStarted} userId=${user.id}`,
+      );
+
+      void this.launchProgram
+        .trackAnalytics(user.id, ProductAnalyticsEventType.SIGNUP_COMPLETED, {
+          role: dto.role,
+        })
+        .catch(() => undefined);
+
+      return {
+        accountCreated: true,
+        authenticated: true,
+        user: this.toSafeUser(user),
+        tokens,
+        channel: session.channel,
+      };
+    } catch {
+      this.logger.error(
+        `register.sessionFailed after account commit userId=${user.id}`,
+      );
+      this.logger.debug(
+        `register.timing sessionMs=${Date.now() - sessionStarted} failed=true userId=${user.id}`,
+      );
+      return {
+        accountCreated: true,
+        authenticated: false,
+        requiresLogin: true,
+        channel: session.channel,
+      };
+    }
+  }
+
+  private async createRegisteredUser(input: {
+    email: string;
+    passwordHash: string;
+    role: Role;
+    firstName: string;
+    lastName: string;
+    username: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-          email,
-          passwordHash,
-          role: dto.role,
+          email: input.email,
+          passwordHash: input.passwordHash,
+          role: input.role,
           status: UserStatus.ACTIVE,
           emailVerified: false,
           profile: {
             create: {
-              firstName: dto.firstName.trim(),
-              lastName: dto.lastName.trim(),
-              username,
+              firstName: input.firstName,
+              lastName: input.lastName,
+              username: input.username,
             },
           },
         },
@@ -107,9 +197,9 @@ export class AuthService {
 
       const profileId = createdUser.profile!.id;
 
-      if (dto.role === Role.FREELANCER) {
+      if (input.role === Role.FREELANCER) {
         await tx.freelancerProfile.create({ data: { profileId } });
-      } else if (dto.role === Role.CLIENT) {
+      } else if (input.role === Role.CLIENT) {
         await tx.clientProfile.create({ data: { profileId } });
       }
 
@@ -117,25 +207,35 @@ export class AuthService {
 
       return createdUser;
     });
-
-    await this.createEmailVerificationToken(user.id, user.email);
-    const tokens = await this.issueTokens(user);
-
-    await this.launchProgram
-      .trackAnalytics(user.id, ProductAnalyticsEventType.SIGNUP_COMPLETED, {
-        role: dto.role,
-      })
-      .catch(() => undefined);
-
-    return {
-      user: this.toSafeUser(user),
-      tokens,
-    };
   }
 
-  async login(dto: LoginDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  private rethrowRegistrationUniqueConflict(error: unknown): void {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      return;
+    }
+
+    const target = error.meta?.target;
+    const fields = Array.isArray(target)
+      ? target.map(String)
+      : [String(target ?? '')];
+
+    if (fields.some((field) => field.toLowerCase().includes('email'))) {
+      throw new ConflictException('البريد الإلكتروني مستخدم بالفعل');
+    }
+
+    // Username collision race — ask client to retry (account was not committed).
+    throw new ConflictException(
+      'تعذر إكمال التسجيل بسبب تعارض البيانات. حاول مرة أخرى.',
+    );
+  }
+
+  async login(dto: LoginDto): Promise<IssuedAuthSession> {
     const email = dto.email.toLowerCase().trim();
     const user = await this.usersService.findByEmail(email);
+    const session = this.resolveSessionOptions(dto);
 
     if (!user) {
       throw new UnauthorizedException('بيانات الدخول غير صحيحة');
@@ -156,7 +256,7 @@ export class AuthService {
           'حسابات المنصة لا يمكنها دخول لوحة الإدارة',
         );
       }
-} else if (isStaffRole(user.role)) {
+    } else if (isStaffRole(user.role)) {
       throw new ForbiddenException(
         'هذا حساب إداري. استخدم لوحة الإدارة.',
       );
@@ -164,7 +264,7 @@ export class AuthService {
       throw new ForbiddenException('نوع الحساب غير صالح لتسجيل الدخول');
     }
 
-    const tokens = await this.issueTokens(user);
+    const tokens = await this.issueTokens(user, session);
 
     if (user.role === Role.FREELANCER) {
       void this.nuqatiService.onFreelancerLogin(user.id).catch(() => undefined);
@@ -173,25 +273,37 @@ export class AuthService {
     return {
       user: this.toSafeUser(user),
       tokens,
+      channel: session.channel,
     };
   }
 
-  async refresh(refreshToken: string | undefined): Promise<AuthTokens> {
+  /**
+   * Rotate a refresh token.
+   * Web clients send the token via HttpOnly cookie; native via JSON body.
+   * Reuse of an already-rotated token revokes the affected session family.
+   */
+  async refresh(
+    refreshToken: string | undefined,
+    delivery: AuthClientChannel = 'web',
+  ): Promise<AuthTokens & { channel: AuthClientChannel }> {
     if (!refreshToken) {
       throw new UnauthorizedException('رمز التحديث مفقود');
     }
 
-    let payload: { sub: string; type?: string };
+    let payload: RefreshJwtPayload;
 
     try {
-      payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
-      });
+      payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(
+        refreshToken,
+        {
+          secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+        },
+      );
     } catch {
       throw new UnauthorizedException('رمز التحديث غير صالح أو منتهي');
     }
 
-    if (payload.type !== 'refresh') {
+    if (payload.type !== 'refresh' || !payload.sub) {
       throw new UnauthorizedException('رمز التحديث غير صالح');
     }
 
@@ -214,15 +326,36 @@ export class AuthService {
       },
     });
 
-    if (!storedToken || storedToken.expiresAt < new Date()) {
+    if (!storedToken) {
+      // Likely reuse of a rotated/revoked token — revoke the session family.
+      await this.revokeSessionFamily(payload);
+      throw new UnauthorizedException('رمز التحديث غير صالح أو منتهي');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
       throw new UnauthorizedException('رمز التحديث غير صالح أو منتهي');
     }
 
     assertUserCanAuthenticate(storedToken.user.status);
 
+    const deviceId = storedToken.deviceId ?? payload.did ?? undefined;
+    const channel: AuthClientChannel =
+      delivery === 'native' || deviceId ? 'native' : 'web';
+
+    if (delivery === 'native' && !deviceId) {
+      // Body refresh presented a web (cookie-era) token — still rotate, but
+      // do not invent a device link. Caller may receive refresh in body once.
+    }
+
     await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
 
-    return this.issueTokens(storedToken.user);
+    const tokens = await this.issueTokens(storedToken.user, {
+      channel,
+      existingDeviceId: deviceId,
+    });
+
+    return { ...tokens, channel };
   }
 
   async logout(refreshToken: string | undefined): Promise<void> {
@@ -231,10 +364,25 @@ export class AuthService {
     }
 
     const tokenHash = hashToken(refreshToken);
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      select: { id: true, deviceId: true, userId: true },
+    });
+
+    if (!stored) {
+      return;
+    }
 
     await this.prisma.refreshToken.deleteMany({
-      where: { tokenHash },
+      where: { id: stored.id },
     });
+
+    if (stored.deviceId) {
+      await this.prisma.userDevice.updateMany({
+        where: { id: stored.deviceId, userId: stored.userId },
+        data: { isActive: false },
+      });
+    }
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {
@@ -419,7 +567,7 @@ export class AuthService {
   async switchRole(
     userId: string,
     dto: SwitchRoleDto,
-  ): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+  ): Promise<IssuedAuthSession> {
     if (!PUBLIC_ROLES.includes(dto.role)) {
       throw new BadRequestException('يمكن التبديل بين وضع العميل والمستقل فقط');
     }
@@ -485,7 +633,8 @@ export class AuthService {
       throw new UnauthorizedException('المستخدم غير موجود');
     }
 
-    const tokens = await this.issueTokens(refreshed);
+    // switch-role remains a web marketplace flow (HttpOnly cookie delivery).
+    const tokens = await this.issueTokens(refreshed, { channel: 'web' });
 
     if (dto.role === Role.FREELANCER) {
       void this.nuqatiService.onFreelancerLogin(userId).catch(() => undefined);
@@ -494,16 +643,96 @@ export class AuthService {
     return {
       user: this.toSafeUser(refreshed),
       tokens,
+      channel: 'web',
     };
   }
 
-  private async issueTokens(user: {
-    id: string;
-    email: string;
-    role: Role;
-    status: UserStatus;
-    emailVerified: boolean;
-  }): Promise<AuthTokens> {
+  /**
+   * Resolve client channel metadata. Defaults to web for backward compatibility.
+   * clientChannel is never used as authorization.
+   */
+  resolveSessionOptions(input: {
+    clientChannel?: 'web' | 'native';
+    platform?: NativeDevicePlatform;
+    appVersion?: string;
+  }): AuthSessionOptions {
+    const channel = input.clientChannel === 'native' ? 'native' : 'web';
+
+    if (channel === 'native') {
+      if (input.platform !== 'IOS' && input.platform !== 'ANDROID') {
+        throw new BadRequestException(
+          'يجب تحديد منصة IOS أو ANDROID لتطبيق الهاتف',
+        );
+      }
+
+      return {
+        channel,
+        platform: input.platform,
+        appVersion: input.appVersion?.trim() || undefined,
+      };
+    }
+
+    return { channel: 'web' };
+  }
+
+  /**
+   * On reuse of a rotated refresh JWT: revoke sibling sessions.
+   * Native: all refresh rows for that UserDevice + deactivate device.
+   * Web: all refresh rows for the user with null deviceId (cookie sessions).
+   */
+  private async revokeSessionFamily(payload: RefreshJwtPayload): Promise<void> {
+    if (payload.did) {
+      await this.prisma.$transaction([
+        this.prisma.refreshToken.deleteMany({
+          where: { deviceId: payload.did, userId: payload.sub },
+        }),
+        this.prisma.userDevice.updateMany({
+          where: { id: payload.did, userId: payload.sub },
+          data: { isActive: false },
+        }),
+      ]);
+      return;
+    }
+
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: payload.sub, deviceId: null },
+    });
+  }
+
+  private async issueTokens(
+    user: {
+      id: string;
+      email: string;
+      role: Role;
+      status: UserStatus;
+      emailVerified: boolean;
+    },
+    session: AuthSessionOptions = { channel: 'web' },
+  ): Promise<AuthTokens> {
+    let deviceId = session.existingDeviceId;
+
+    if (!deviceId && session.channel === 'native' && session.platform) {
+      const device = await this.prisma.userDevice.create({
+        data: {
+          userId: user.id,
+          platform:
+            session.platform === 'IOS'
+              ? DevicePlatform.IOS
+              : DevicePlatform.ANDROID,
+          appVersion: session.appVersion,
+          isActive: true,
+          lastActiveAt: new Date(),
+        },
+        select: { id: true },
+      });
+      deviceId = device.id;
+    } else if (deviceId) {
+      await this.prisma.userDevice.updateMany({
+        where: { id: deviceId, userId: user.id },
+        data: { lastActiveAt: new Date(), isActive: true },
+      });
+    }
+
     const accessPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -513,10 +742,11 @@ export class AuthService {
       type: 'access',
     };
 
-    const refreshPayload = {
+    const refreshPayload: RefreshJwtPayload = {
       sub: user.id,
-      type: 'refresh' as const,
+      type: 'refresh',
       jti: randomUUID(),
+      ...(deviceId ? { did: deviceId } : {}),
     };
 
     const accessExpiresIn = (this.configService.get<string>('jwt.accessExpiresIn') ??
@@ -540,13 +770,18 @@ export class AuthService {
         userId: user.id,
         tokenHash: hashToken(refreshToken),
         expiresAt: new Date(Date.now() + parseDurationToMs(refreshExpiresIn)),
+        deviceId: deviceId ?? null,
       },
     });
 
     return { accessToken, refreshToken };
   }
 
-  private async createEmailVerificationToken(
+  /**
+   * Persist verification token, then dispatch SMTP without blocking registration.
+   * SMTP failures are logged and never fail account creation.
+   */
+  private async createEmailVerificationTokenBestEffort(
     userId: string,
     email: string,
   ): Promise<void> {
@@ -556,15 +791,42 @@ export class AuthService {
       this.configService.get<string>('tokens.emailVerificationExpiresIn') ??
       '24h';
 
-    await this.prisma.emailVerificationToken.create({
-      data: {
-        userId,
-        tokenHash,
-        expiresAt: new Date(Date.now() + parseDurationToMs(expiresIn)),
-      },
-    });
+    try {
+      await this.prisma.emailVerificationToken.create({
+        data: {
+          userId,
+          tokenHash,
+          expiresAt: new Date(Date.now() + parseDurationToMs(expiresIn)),
+        },
+      });
+    } catch {
+      this.logger.error(
+        `register.verificationTokenPersistFailed userId=${userId}`,
+      );
+      // Still try to continue registration/session; user can verify later via ops/resend.
+      return;
+    }
 
-    await this.emailService.sendVerificationEmail(email, rawToken);
+    const smtpStarted = Date.now();
+    this.logger.debug(
+      `register.timing smtpScheduleMs=0 userId=${userId}`,
+    );
+    void this.emailService
+      .sendVerificationEmail(email, rawToken)
+      .then(() => {
+        this.logger.debug(
+          `register.timing smtpDispatchMs=${Date.now() - smtpStarted} userId=${userId} ok=true`,
+        );
+      })
+      .catch(() => {
+        // EmailService already logs SMTP failure without secrets/tokens.
+        this.logger.error(
+          `register.verificationEmailDispatchFailed userId=${userId}`,
+        );
+        this.logger.debug(
+          `register.timing smtpDispatchMs=${Date.now() - smtpStarted} userId=${userId} ok=false`,
+        );
+      });
   }
 
   private toSafeUser(user: {

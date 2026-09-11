@@ -73,7 +73,20 @@ export interface AuthUser {
 export interface AuthResponse {
   user: AuthUser;
   accessToken: string;
+  refreshToken?: string;
 }
+
+/** Successful POST /auth/register body (201). */
+export type RegisterResponse =
+  | (AuthResponse & {
+      accountCreated: true;
+      authenticated: true;
+    })
+  | {
+      accountCreated: true;
+      authenticated: false;
+      requiresLogin: true;
+    };
 
 export interface City {
   id: string;
@@ -183,6 +196,14 @@ export class ApiError extends Error {
   }
 }
 
+/** Thrown when the HTTP request itself could not complete (offline, DNS, CORS, abort). */
+export class NetworkError extends Error {
+  constructor(message = 'Network request failed') {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
 async function parseResponse<T>(response: Response, locale: AppLocale = 'ar'): Promise<T> {
   const data = await response.json().catch(() => ({}));
 
@@ -212,13 +233,22 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
-  return parseResponse<T>(response, locale);
+    return await parseResponse<T>(response, locale);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new NetworkError(
+      error instanceof Error ? error.message : 'Network request failed',
+    );
+  }
 }
 
 export async function authenticatedRequest<T>(

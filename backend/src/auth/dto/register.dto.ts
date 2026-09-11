@@ -11,8 +11,9 @@ import {
   PASSWORD_COMPLEXITY_MESSAGE,
   PASSWORD_COMPLEXITY_REGEX,
 } from '../password.util.js';
+import { AuthClientMetaDto } from './auth-session.dto.js';
 
-export class RegisterDto {
+export class RegisterDto extends AuthClientMetaDto {
   @IsString()
   @IsNotEmpty()
   firstName!: string;

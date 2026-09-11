@@ -21,9 +21,17 @@ import {
   VerifyEmailDto,
   ChangePasswordDto,
 } from './dto/password.dto.js';
+import {
+  LogoutSessionDto,
+  RefreshSessionDto,
+} from './dto/auth-session.dto.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import type { AuthUser } from './types/auth-user.type.js';
-import { REFRESH_COOKIE, clearRefreshCookie, setRefreshCookie } from './auth-cookie.util.js';
+import {
+  REFRESH_COOKIE,
+  clearRefreshCookie,
+  setRefreshCookie,
+} from './auth-cookie.util.js';
 
 @Controller('auth')
 export class AuthController {
@@ -32,16 +40,27 @@ export class AuthController {
   @Public()
   @UseGuards(ClientRequestGuard)
   @Post('register')
+  @HttpCode(201)
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.register(dto);
-    setRefreshCookie(res, result.tokens.refreshToken);
 
+    if (!result.authenticated) {
+      // Account exists; automatic session could not be established.
+      return {
+        accountCreated: true as const,
+        authenticated: false as const,
+        requiresLogin: true as const,
+      };
+    }
+
+    const sessionBody = this.respondWithSession(res, result);
     return {
-      user: result.user,
-      accessToken: result.tokens.accessToken,
+      accountCreated: true as const,
+      authenticated: true as const,
+      ...sessionBody,
     };
   }
 
@@ -54,12 +73,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto);
-    setRefreshCookie(res, result.tokens.refreshToken);
-
-    return {
-      user: result.user,
-      accessToken: result.tokens.accessToken,
-    };
+    return this.respondWithSession(res, result);
   }
 
   @Public()
@@ -68,9 +82,14 @@ export class AuthController {
   @HttpCode(200)
   async logout(
     @Req() req: Request,
+    @Body() dto: LogoutSessionDto = {},
     @Res({ passthrough: true }) res: Response,
   ) {
-    await this.authService.logout(req.cookies?.[REFRESH_COOKIE]);
+    const raw =
+      dto?.refreshToken?.trim() ||
+      (req.cookies?.[REFRESH_COOKIE] as string | undefined);
+
+    await this.authService.logout(raw);
     clearRefreshCookie(res);
     return { message: 'تم تسجيل الخروج بنجاح' };
   }
@@ -81,12 +100,28 @@ export class AuthController {
   @HttpCode(200)
   async refresh(
     @Req() req: Request,
+    @Body() dto: RefreshSessionDto = {},
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tokens = await this.authService.refresh(req.cookies?.[REFRESH_COOKIE]);
-    setRefreshCookie(res, tokens.refreshToken);
+    const bodyToken = dto?.refreshToken?.trim();
+    const cookieToken = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+    // Native: body token. Web: HttpOnly cookie. Body wins when both sent.
+    const delivery = bodyToken ? 'native' : 'web';
+    const raw = bodyToken || cookieToken;
 
-    return { accessToken: tokens.accessToken };
+    const tokens = await this.authService.refresh(raw, delivery);
+
+    if (delivery === 'web') {
+      setRefreshCookie(res, tokens.refreshToken);
+      return { accessToken: tokens.accessToken };
+    }
+
+    // Native path: never require cookies; return rotating refresh for SecureStore.
+    clearRefreshCookie(res);
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
   }
 
   @Public()
@@ -138,8 +173,31 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.switchRole(user.id, dto);
-    setRefreshCookie(res, result.tokens.refreshToken);
+    return this.respondWithSession(res, result);
+  }
 
+  /**
+   * Web: set HttpOnly cookie; never expose refresh in JSON.
+   * Native: return refresh in JSON for Keychain/Keystore/SecureStore; no cookie dependency.
+   */
+  private respondWithSession(
+    res: Response,
+    result: {
+      user: unknown;
+      tokens: { accessToken: string; refreshToken: string };
+      channel: 'web' | 'native';
+    },
+  ) {
+    if (result.channel === 'native') {
+      clearRefreshCookie(res);
+      return {
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
+      };
+    }
+
+    setRefreshCookie(res, result.tokens.refreshToken);
     return {
       user: result.user,
       accessToken: result.tokens.accessToken,

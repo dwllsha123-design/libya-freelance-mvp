@@ -8,9 +8,18 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { AuthResponse, AuthUser, UserRole } from '@/lib/api';
+import type { AuthResponse, AuthUser, RegisterResponse, UserRole } from '@/lib/api';
 import { apiRequest, authenticatedRequest } from '@/lib/api';
 import { unlinkWebPushOnLogout } from '@/lib/web-push';
+import {
+  interpretRegisterSuccess,
+  type RegisterClientOutcome,
+} from '@/lib/register-outcome';
+
+export type RegisterResult = Extract<
+  RegisterClientOutcome,
+  { kind: 'authenticated' | 'requiresLogin' }
+>;
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -24,7 +33,7 @@ interface AuthContextValue {
     password: string;
     confirmPassword: string;
     role: 'FREELANCER' | 'CLIENT';
-  }) => Promise<void>;
+  }) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   switchRole: (role: 'FREELANCER' | 'CLIENT') => Promise<AuthUser>;
@@ -108,13 +117,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string;
       confirmPassword: string;
       role: 'FREELANCER' | 'CLIENT';
-    }) => {
-      const response = await apiRequest<AuthResponse>('/auth/register', {
+    }): Promise<RegisterResult> => {
+      const response = await apiRequest<RegisterResponse>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
 
-      applySession(response);
+      const outcome = interpretRegisterSuccess(response);
+      if (outcome.kind === 'authenticated') {
+        applySession(response as AuthResponse);
+      }
+      return outcome;
     },
     [applySession],
   );

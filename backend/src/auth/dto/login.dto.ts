@@ -1,6 +1,7 @@
 import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { AuthClientMetaDto } from './auth-session.dto.js';
 
-export class LoginDto {
+export class LoginDto extends AuthClientMetaDto {
   @IsEmail()
   email!: string;
 

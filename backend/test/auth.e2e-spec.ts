@@ -140,6 +140,73 @@ describe('Auth E2E (PostgreSQL)', () => {
       .expect(409);
   });
 
+  it('returns accountCreated+authenticated contract and awards welcome points once', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const agent = authAgent(app);
+    const email = `welcome-${Date.now()}@test.ly`;
+
+    const registerRes = await agent
+      .post('/api/auth/register')
+      .set(CLIENT_HEADER)
+      .send({
+        firstName: 'Welcome',
+        lastName: 'User',
+        email,
+        password: 'Password1',
+        confirmPassword: 'Password1',
+        role: 'FREELANCER',
+      })
+      .expect(201);
+
+    expect(registerRes.body.accountCreated).toBe(true);
+    expect(registerRes.body.authenticated).toBe(true);
+    expect(registerRes.body.user.email).toBe(email);
+    expect(registerRes.body.accessToken).toBeTruthy();
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        profile: { include: { freelancerProfile: true } },
+        pointsTaskCompletions: {
+          where: { taskKey: 'WELCOME_BONUS' },
+        },
+      },
+    });
+
+    expect(user).toBeTruthy();
+    expect(user?.profile?.freelancerProfile).toBeTruthy();
+    expect(user?.pointsTaskCompletions).toHaveLength(1);
+
+    const users = await prisma.user.findMany({ where: { email } });
+    expect(users).toHaveLength(1);
+  });
+
+  it('maps concurrent duplicate registration to a single user and 409 loser', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const email = `race-${Date.now()}@test.ly`;
+    const payload = {
+      firstName: 'Race',
+      lastName: 'User',
+      email,
+      password: 'Password1',
+      confirmPassword: 'Password1',
+      role: 'CLIENT' as const,
+    };
+
+    const [a, b] = await Promise.all([
+      authAgent(app).post('/api/auth/register').set(CLIENT_HEADER).send(payload),
+      authAgent(app).post('/api/auth/register').set(CLIENT_HEADER).send(payload),
+    ]);
+
+    const statuses = [a.status, b.status].sort();
+    expect(statuses).toEqual([201, 409]);
+
+    const users = await prisma.user.findMany({ where: { email } });
+    expect(users).toHaveLength(1);
+  });
+
   it('rejects invalid password on login', async (ctx) => {
     if (!dbReady) ctx.skip();
 
@@ -237,6 +304,7 @@ describe('Auth E2E (PostgreSQL)', () => {
 
     const setCookie = registerRes.headers['set-cookie'];
     expect(setCookie).toBeTruthy();
+    expect(registerRes.body.refreshToken).toBeUndefined();
 
     const oldRefreshCookie = (
       Array.isArray(setCookie) ? setCookie[0] : setCookie
@@ -251,6 +319,46 @@ describe('Auth E2E (PostgreSQL)', () => {
       .set('Cookie', oldRefreshCookie)
       .expect(401);
 
-    await agent.post('/api/auth/refresh').set(CLIENT_HEADER).expect(200);
+    // Reuse detection revokes the web cookie session family (deviceId null).
+    await agent.post('/api/auth/refresh').set(CLIENT_HEADER).expect(401);
+  });
+
+  it('keeps web login cookie-based and omits refresh from JSON', async (ctx) => {
+    if (!dbReady) ctx.skip();
+
+    const agent = authAgent(app);
+    const email = `web-cookie-${Date.now()}@test.ly`;
+    const password = 'Password1';
+
+    await agent
+      .post('/api/auth/register')
+      .set(CLIENT_HEADER)
+      .send({
+        firstName: 'Web',
+        lastName: 'User',
+        email,
+        password,
+        confirmPassword: password,
+        role: 'CLIENT',
+      })
+      .expect(201);
+
+    const loginRes = await agent
+      .post('/api/auth/login')
+      .set(CLIENT_HEADER)
+      .send({ email, password })
+      .expect(200);
+
+    expect(loginRes.body.accessToken).toBeTruthy();
+    expect(loginRes.body.refreshToken).toBeUndefined();
+    expect(loginRes.headers['set-cookie']).toBeTruthy();
+
+    const refreshRes = await agent
+      .post('/api/auth/refresh')
+      .set(CLIENT_HEADER)
+      .expect(200);
+
+    expect(refreshRes.body.accessToken).toBeTruthy();
+    expect(refreshRes.body.refreshToken).toBeUndefined();
   });
 });

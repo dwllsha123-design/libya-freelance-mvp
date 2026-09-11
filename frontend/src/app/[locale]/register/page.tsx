@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -14,7 +14,7 @@ import {
 } from '@/components/auth/auth-card';
 import { useAuth } from '@/contexts/auth-context';
 import { createRegisterSchema } from '@/lib/schemas/create-schemas';
-import { ApiError } from '@/lib/api';
+import { interpretRegisterFailure } from '@/lib/register-outcome';
 import { buildAuthHref, getSafeNextPath, resolvePostAuthPath } from '@/lib/auth-redirect';
 
 function RegisterForm() {
@@ -28,14 +28,21 @@ function RegisterForm() {
   const tValidation = useTranslations('validation');
   const registerSchema = useMemo(() => createRegisterSchema(tValidation), [tValidation]);
   const [error, setError] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inFlightRef = useRef(false);
   const [role, setRole] = useState<'FREELANCER' | 'CLIENT'>(() =>
     roleParam === 'CLIENT' || roleParam === 'FREELANCER' ? roleParam : 'FREELANCER',
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlightRef.current || isSubmitting) {
+      return;
+    }
+
     setError(null);
+    setSuccessNotice(null);
 
     const formData = new FormData(event.currentTarget);
     const payload = {
@@ -54,10 +61,17 @@ function RegisterForm() {
       return;
     }
 
+    inFlightRef.current = true;
     setIsSubmitting(true);
 
     try {
-      await register(parsed.data);
+      const outcome = await register(parsed.data);
+
+      if (outcome.kind === 'requiresLogin') {
+        setSuccessNotice(t('registerCreatedLoginRequired'));
+        return;
+      }
+
       const safeNext = getSafeNextPath(nextPath);
       const destination =
         role === 'CLIENT'
@@ -65,11 +79,25 @@ function RegisterForm() {
           : resolvePostAuthPath(nextPath);
       router.push(destination);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('registerFailed'));
+      const failure = interpretRegisterFailure(err);
+      if (failure.kind === 'emailExists') {
+        setError(t('registerEmailExists'));
+      } else if (failure.kind === 'ambiguousNetwork') {
+        setError(t('registerOutcomeUnknown'));
+      } else if (failure.kind === 'failed') {
+        setError(
+          failure.message === 'registerFailed' ? t('registerFailed') : failure.message,
+        );
+      } else {
+        setError(t('registerFailed'));
+      }
     } finally {
+      inFlightRef.current = false;
       setIsSubmitting(false);
     }
   }
+
+  const loginHref = buildAuthHref('/login', { next: nextPath ?? undefined });
 
   return (
     <AuthCard
@@ -78,17 +106,36 @@ function RegisterForm() {
       footer={
         <>
           {t('hasAccount')}{' '}
-          <Link
-            href={buildAuthHref('/login', { next: nextPath ?? undefined })}
-            className={authLinkClassName}
-          >
+          <Link href={loginHref} className={authLinkClassName}>
             {t('loginButton')}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? <div className={authErrorClassName}>{error}</div> : null}
+        {error ? (
+          <div className={authErrorClassName}>
+            <p>{error}</p>
+            {error === t('registerEmailExists') || error === t('registerOutcomeUnknown') ? (
+              <p className="mt-2">
+                <Link href={loginHref} className={authLinkClassName}>
+                  {t('loginButton')}
+                </Link>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {successNotice ? (
+          <div className="rounded-xl border border-ember/30 bg-ember/5 px-3 py-2 text-sm text-ink">
+            <p>{successNotice}</p>
+            <p className="mt-2">
+              <Link href={loginHref} className={authLinkClassName}>
+                {t('loginButton')}
+              </Link>
+            </p>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
