@@ -21,10 +21,8 @@ import type {
   ProviderWebhookEvent,
 } from './payment.types.js';
 import { SIMULATED_PAYMENT_PROVIDER } from './providers/simulated-payment.provider.js';
-import {
-  assertMarketplaceFundingAllowed,
-  isMarketplacePaymentProtectionActive,
-} from './payment-protection.policy.js';
+import { assertMarketplaceFundingAllowed } from './payment-protection.policy.js';
+import { PaymentFulfillmentService } from './payment-fulfillment.service.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -34,22 +32,29 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
+    private readonly fulfillment: PaymentFulfillmentService,
   ) {}
 
   getPublicConfig(): PublicPaymentConfig {
     const mode = this.provider.capabilities.supportsSyncCapture
       ? 'sync'
       : 'redirect';
-    const protectionActive = isMarketplacePaymentProtectionActive();
+    const snapshot = this.provider.getConfig?.();
 
     return {
       provider: this.provider.name,
-      mode,
+      mode: snapshot?.mode ?? mode,
       currency: this.configService.get<string>('payment.currency') ?? 'LYD',
-      requiresRedirect: !this.provider.capabilities.supportsSyncCapture,
-      supportsRefunds: this.provider.capabilities.supportsRefunds,
-      /** Marketplace funding UI must use paymentProtectionActive, not this flag. */
-      available: protectionActive,
+      requiresRedirect:
+        snapshot?.requiresRedirect ??
+        !this.provider.capabilities.supportsSyncCapture,
+      supportsRefunds:
+        snapshot?.supportsRefunds ?? this.provider.capabilities.supportsRefunds,
+      /**
+       * Provider availability (PSP configured). Marketplace escrow UI must use
+       * paymentProtectionActive — escrow remains frozen under the advertising model.
+       */
+      available: snapshot?.available ?? this.provider.capabilities.available,
     };
   }
 
@@ -117,7 +122,8 @@ export class PaymentService {
       };
     }
 
-    const providerResult = await this.provider.createPayment({
+    const checkout = this.provider.createCheckout.bind(this.provider);
+    const providerResult = await checkout({
       paymentId: payment.id,
       amount: Number(escrow.amount),
       currency: escrow.currency,
@@ -225,7 +231,8 @@ export class PaymentService {
       };
     }
 
-    const providerResult = await this.provider.createPayment({
+    const checkout = this.provider.createCheckout.bind(this.provider);
+    const providerResult = await checkout({
       paymentId: payment.id,
       amount: Number(params.amount),
       currency: params.currency,
@@ -283,20 +290,41 @@ export class PaymentService {
     if (!payment) return { handled: false };
 
     if (event.type === 'payment.succeeded') {
-      if (payment.status === PaymentStatus.SUCCEEDED) {
-        return { handled: true, paymentId: payment.id, alreadyProcessed: true };
+      const alreadySucceeded = payment.status === PaymentStatus.SUCCEEDED;
+      if (!alreadySucceeded) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.SUCCEEDED,
+            providerReference: event.providerReference,
+            paidAt: new Date(),
+          },
+        });
       }
 
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.SUCCEEDED,
-          providerReference: event.providerReference,
-          paidAt: new Date(),
-        },
-      });
+      if (
+        payment.purpose === PaymentPurpose.SUBSCRIPTION ||
+        payment.purpose === PaymentPurpose.POINTS_PURCHASE
+      ) {
+        const fulfillment = await this.fulfillment.fulfillSucceededPayment(
+          payment.id,
+        );
+        return {
+          handled: true,
+          paymentId: payment.id,
+          purpose: payment.purpose,
+          alreadyProcessed: alreadySucceeded,
+          fulfillment,
+        };
+      }
 
-      return { handled: true, paymentId: payment.id, escrowId: payment.escrowId };
+      return {
+        handled: true,
+        paymentId: payment.id,
+        escrowId: payment.escrowId,
+        purpose: payment.purpose,
+        alreadyProcessed: alreadySucceeded,
+      };
     }
 
     if (event.type === 'payment.failed') {
@@ -304,6 +332,7 @@ export class PaymentService {
         where: { id: payment.id },
         data: {
           status: PaymentStatus.FAILED,
+          failedAt: new Date(),
           failureCode: event.failureCode ?? null,
           failureMessage: event.failureMessage ?? 'فشل الدفع',
         },
@@ -323,6 +352,25 @@ export class PaymentService {
     }
 
     return { handled: false };
+  }
+
+  /**
+   * Mark payment SUCCEEDED (if needed) and run product fulfillment.
+   * Used by subscription / points sync-capture checkouts.
+   */
+  async markSucceededAndFulfill(
+    paymentId: string,
+    providerReference?: string | null,
+  ) {
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.SUCCEEDED,
+        providerReference: providerReference ?? undefined,
+        paidAt: new Date(),
+      },
+    });
+    return this.fulfillment.fulfillSucceededPayment(paymentId);
   }
 
   async handleProviderWebhook(
@@ -400,6 +448,126 @@ export class PaymentService {
       return 'إيداع في الضمان (محاكاة — استبدل PAYMENT_DRIVER ببوابة حقيقية)';
     }
     return `إيداع في الضمان عبر ${provider}`;
+  }
+
+  /**
+   * Admin inspect for commercial (non-escrow) checkouts:
+   * SUBSCRIPTION and POINTS_PURCHASE only.
+   */
+  async adminListCommercialPayments(query: {
+    purpose?: PaymentPurpose;
+    status?: PaymentStatus;
+    page?: number;
+    limit?: number;
+    q?: string;
+  }) {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(50, Math.max(1, query.limit ?? 20));
+    const commercialPurposes: PaymentPurpose[] = [
+      PaymentPurpose.SUBSCRIPTION,
+      PaymentPurpose.POINTS_PURCHASE,
+    ];
+
+    if (query.purpose && !commercialPurposes.includes(query.purpose)) {
+      throw new BadRequestException(
+        'الغرض يجب أن يكون SUBSCRIPTION أو POINTS_PURCHASE',
+      );
+    }
+
+    const where: Prisma.PaymentWhereInput = {
+      purpose: query.purpose ? query.purpose : { in: commercialPurposes },
+    };
+
+    if (query.status) where.status = query.status;
+
+    if (query.q?.trim()) {
+      const q = query.q.trim();
+      where.OR = [
+        { id: { contains: q, mode: 'insensitive' } },
+        { providerReference: { contains: q, mode: 'insensitive' } },
+        { idempotencyKey: { contains: q, mode: 'insensitive' } },
+        {
+          client: {
+            OR: [
+              { email: { contains: q, mode: 'insensitive' } },
+              {
+                profile: {
+                  OR: [
+                    { username: { contains: q, mode: 'insensitive' } },
+                    { firstName: { contains: q, mode: 'insensitive' } },
+                    { lastName: { contains: q, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ];
+    }
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.payment.count({ where }),
+      this.prisma.payment.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              id: true,
+              email: true,
+              profile: {
+                select: { firstName: true, lastName: true, username: true },
+              },
+            },
+          },
+          freelancerSubscription: {
+            select: { id: true, status: true, planId: true },
+          },
+          pointsPurchase: {
+            select: {
+              id: true,
+              status: true,
+              pointsAmount: true,
+              packageId: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      page,
+      limit,
+      total,
+      items: items.map((payment) => ({
+        id: payment.id,
+        purpose: payment.purpose,
+        amount: Number(payment.amount),
+        currency: payment.currency,
+        status: payment.status,
+        provider: payment.provider,
+        providerReference: payment.providerReference,
+        checkoutUrl: payment.checkoutUrl,
+        failureMessage: payment.failureMessage,
+        paidAt: payment.paidAt,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+        metadata: payment.metadata,
+        fulfillmentStatus: payment.fulfillmentStatus,
+        client: {
+          id: payment.client.id,
+          email: payment.client.email,
+          displayName: payment.client.profile
+            ? `${payment.client.profile.firstName} ${payment.client.profile.lastName}`
+            : null,
+          username: payment.client.profile?.username ?? null,
+        },
+        subscription: payment.freelancerSubscription,
+        pointsPurchase: payment.pointsPurchase,
+      })),
+    };
   }
 
   private formatPayment(payment: {

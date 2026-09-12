@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import { PaymentPurpose } from '@prisma/client';
 import { Public } from '../common/decorators/public.decorator.js';
 import { PAYMENT_COMPLETION_HANDLER } from './payment-completion.handler.js';
 import type { PaymentCompletionHandler } from './payment-completion.handler.js';
@@ -36,12 +37,15 @@ export class PaymentWebhookController {
 
     const result = await this.payments.handleProviderWebhook(provider, headers, rawBody);
 
+    // Escrow completion only — product purposes are fulfilled inside PaymentService.
     if (
       result.handled &&
       'paymentId' in result &&
       'escrowId' in result &&
       result.paymentId &&
       result.escrowId &&
+      (!('purpose' in result) ||
+        result.purpose === PaymentPurpose.ESCROW_FUNDING) &&
       this.completionHandler
     ) {
       await this.completionHandler.onEscrowFundingSucceeded(result.paymentId);

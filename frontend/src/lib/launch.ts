@@ -9,7 +9,7 @@ export type LaunchPublicProgram = {
   foundingPermanentCount: number;
   slotsRemaining: number;
   paymentProtectionActive: boolean;
-  paymentProtectionStatus: 'COMING_SOON' | string;
+  paymentProtectionStatus: 'DISABLED' | 'ACTIVE' | 'COMING_SOON' | string;
 };
 
 export type LaunchProgramConfigSnapshot = {

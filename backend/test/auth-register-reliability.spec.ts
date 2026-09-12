@@ -89,6 +89,10 @@ function buildService(overrides?: {
     trackAnalytics: vi.fn().mockResolvedValue(undefined),
   };
 
+  const entitlements = {
+    grantRegistrationTrial: vi.fn().mockResolvedValue(null),
+  };
+
   const service = new AuthService(
     prisma as never,
     {
@@ -101,6 +105,7 @@ function buildService(overrides?: {
     nuqatiService as never,
     launchProgram as never,
     { assertRegistrationAllowed: vi.fn().mockResolvedValue(undefined) } as never,
+    entitlements as never,
   );
 
   return {

@@ -12,6 +12,7 @@ export const NUQATI_REASON_LABELS: Record<string, string> = {
   STREAK_15: 'سلسلة تقديمات 15 يوماً',
   STREAK_30: 'سلسلة تقديمات 30 يوماً',
   PURCHASE: 'شراء نقاط',
+  PLAN_MONTHLY_POINTS: 'نقاط شهرية من الباقة',
   FIRST_JOB: 'أول مشروع مكتمل',
   SOCIAL_SHARE: 'مشاركة على وسائل التواصل',
 };
@@ -25,7 +26,8 @@ export const NUQATI_CONFIG = {
   welcomeBonus: 55,
   dailyLoginReward: 1,
   dailyLoginMonthlyCap: 15,
-  proposalSubmitCost: 10,
+  /** Proposal submit is quota-gated by subscription; points are optional boost only. */
+  proposalSubmitCost: 0,
   monthlyApplyReward: 5,
   /** @deprecated Prefer LaunchProgramService profileCompletionReward (default 5). */
   profileCompleteReward: 5,

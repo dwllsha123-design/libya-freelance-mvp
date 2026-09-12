@@ -115,6 +115,10 @@ export async function resetDatabase(prisma: PrismaClient) {
       "EscrowDispute",
       "EscrowTransaction",
       "Escrow",
+      "SubscriptionAdminAction",
+      "FreelancerSubscription",
+      "PointsPurchase",
+      "ProposalUsagePeriod",
       "Payment",
       "Proposal",
       "ProjectSkill",
@@ -131,6 +135,9 @@ export async function resetDatabase(prisma: PrismaClient) {
       "PointsTaskCompletion",
       "PointsTransaction",
       "PointsWallet",
+      "PointsStreakState",
+      "ProductAnalyticsEvent",
+      "ProfileViewDaily",
       "User",
       "City"
     RESTART IDENTITY CASCADE;

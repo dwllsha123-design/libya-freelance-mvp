@@ -19,6 +19,8 @@
   "portfolio": "Portfolio",
   "badges": "Badges & level",
   "points": "Points",
+  "subscription": "My subscription",
+  "payments": "My payments",
   "pointsBalance": "{count} points",
   "reviews": "Reviews",
   "help": "Help center",

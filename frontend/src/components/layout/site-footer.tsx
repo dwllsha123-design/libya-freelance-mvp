@@ -124,7 +124,7 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/escrow" className="text-sm text-ink-soft transition-colors hover:text-ember">
+                <Link href="/pricing" className="text-sm text-ink-soft transition-colors hover:text-ember">
                   {t('escrow')}
                 </Link>
               </li>

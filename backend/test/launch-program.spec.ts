@@ -15,7 +15,7 @@ describe('Launch Program configuration', () => {
     expect(LAUNCH_PROGRAM_DEFAULTS.foundingFreelancerLimit).toBe(1000);
     expect(LAUNCH_PROGRAM_DEFAULTS.freelancerCommissionPercent).toBe(0);
     expect(FALLBACK_COMMISSION_PERCENT).toBe(0);
-    expect(NUQATI_CONFIG.proposalSubmitCost).toBe(10);
+    expect(NUQATI_CONFIG.proposalSubmitCost).toBe(0);
     expect(NUQATI_CONFIG.welcomeBonus).toBe(55);
     expect(NUQATI_CONFIG.profileCompleteReward).toBe(5);
   });

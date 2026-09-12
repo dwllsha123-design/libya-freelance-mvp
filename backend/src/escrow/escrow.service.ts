@@ -76,11 +76,12 @@ export class EscrowService {
   }
 
   async prepare(clientId: string, proposalId: string) {
+    // Authorization before freeze so outsiders get 403, not product-freeze 412.
+    const proposal = await this.loadProposalForClient(clientId, proposalId);
     assertMarketplaceFundingAllowed();
     await this.agreements.assertApprovedForFunding(proposalId);
     await this.agreements.markPaymentPending(proposalId, clientId);
 
-    const proposal = await this.loadProposalForClient(clientId, proposalId);
     const amount = Number(proposal.proposedPrice);
     const resolved = await this.commission.resolveForProject(
       proposal.projectId,
@@ -121,10 +122,10 @@ export class EscrowService {
   }
 
   async fund(clientId: string, escrowId: string) {
-    assertMarketplaceFundingAllowed();
     const escrow = await this.prisma.escrow.findUnique({ where: { id: escrowId } });
     if (!escrow) throw new NotFoundException('الضمان غير موجود');
     if (escrow.clientId !== clientId) throw new ForbiddenException('غير مصرح');
+    assertMarketplaceFundingAllowed();
 
     await this.agreements.assertApprovedForFunding(escrow.proposalId);
     await this.agreements.markPaymentPending(escrow.proposalId, clientId);
@@ -237,11 +238,11 @@ export class EscrowService {
   }
 
   async fundAndAccept(clientId: string, proposalId: string) {
+    // Ownership first — freeze gate must not mask unauthorized access as 412.
+    const proposal = await this.loadProposalForClient(clientId, proposalId);
     assertMarketplaceFundingAllowed();
     await this.agreements.assertApprovedForFunding(proposalId);
     await this.agreements.markPaymentPending(proposalId, clientId);
-
-    const proposal = await this.loadProposalForClient(clientId, proposalId);
 
     const pendingFreelancerIds = (
       await this.prisma.proposal.findMany({

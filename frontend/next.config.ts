@@ -49,6 +49,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: imageRemotePatterns(),
   },
+  async redirects() {
+    return [
+      { source: '/escrow', destination: '/pricing', permanent: true },
+      { source: '/en/escrow', destination: '/en/pricing', permanent: true },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

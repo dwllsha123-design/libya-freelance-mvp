@@ -9,14 +9,14 @@ const PATHS = [
   '/freelancers',
   '/how-it-works',
   '/help',
-  '/escrow',
+  '/pricing',
   '/about',
   '/contact',
   '/privacy',
   '/terms',
   '/sitemap',
-  '/auth/login',
-  '/auth/register',
+  '/login',
+  '/register',
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -22,7 +22,7 @@ const copy: Record<
   ar: {
     tag: 'عرض توضيحي للمنصة',
     title: 'شاهد جولة قصيرة',
-    sub: 'تعرّف على كيفية نشر مشروعك واستقبال العروض خلال دقيقتين. حماية المدفوعات قريبًا.',
+    sub: 'تعرّف على كيفية نشر مشروعك واستقبال العروض خلال دقيقتين. الاتفاق والدفع يتمان مباشرة بين العميل والمستقل — ليبي فريلانس وسيط إعلاني ولا تستلم قيمة المشاريع.',
     play: 'تشغيل الجولة',
     steps: ['أنشئ حسابك مجانًا', 'انشر أو تصفّح العروض', 'سلّم العمل وابنِ سمعتك'],
     close: 'إغلاق',
@@ -30,7 +30,7 @@ const copy: Record<
   en: {
     tag: 'Platform demo',
     title: 'Watch a quick tour',
-    sub: 'See how to post a project and receive proposals in under two minutes. Payment protection coming soon.',
+    sub: 'See how to post a project and receive proposals in under two minutes. Payment is arranged directly between client and freelancer — Libyan Freelance is an advertising intermediary and does not receive project funds.',
     play: 'Play the tour',
     steps: ['Create your free account', 'Post or browse gigs', 'Deliver work and build reputation'],
     close: 'Close',

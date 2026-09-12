@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -16,15 +17,28 @@ import { SuperAdminGuard } from '../common/guards/super-admin.guard.js';
 import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
 import { SubscriptionsService } from './subscriptions.service.js';
+import { PRO_PLAN_CODE } from './subscriptions.constants.js';
 import {
+  CheckoutSubscriptionDto,
+  CreateSubscriptionPlanDto,
   ExtendSubscriptionDto,
+  GrantSubscriptionDto,
+  LegacyProCheckoutDto,
   SubscriptionAdminReasonDto,
+  UpdateSubscriptionPlanDto,
 } from './dto/subscriptions.dto.js';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(private readonly subscriptions: SubscriptionsService) {}
 
+  @Public()
+  @Get('plans')
+  listActivePlans() {
+    return this.subscriptions.listActivePlans();
+  }
+
+  /** @deprecated Prefer GET /subscriptions/plans — kept for Pro-only clients */
   @Public()
   @Get('plans/pro')
   getProPlan() {
@@ -37,13 +51,28 @@ export class SubscriptionsController {
     return this.subscriptions.getMine(user.id);
   }
 
-  @Post('pro/checkout')
+  @Post('checkout')
   @Roles(Role.FREELANCER)
   checkout(
     @CurrentUser() user: AuthUser,
-    @Body() body: { returnUrl?: string; cancelUrl?: string },
+    @Body() body: CheckoutSubscriptionDto,
   ) {
     return this.subscriptions.checkout(user.id, {
+      planCode: body.planCode,
+      returnUrl: body.returnUrl,
+      cancelUrl: body.cancelUrl,
+    });
+  }
+
+  /** @deprecated Prefer POST /subscriptions/checkout with planCode PRO */
+  @Post('pro/checkout')
+  @Roles(Role.FREELANCER)
+  checkoutPro(
+    @CurrentUser() user: AuthUser,
+    @Body() body: LegacyProCheckoutDto,
+  ) {
+    return this.subscriptions.checkout(user.id, {
+      planCode: PRO_PLAN_CODE,
       returnUrl: body?.returnUrl,
       cancelUrl: body?.cancelUrl,
     });
@@ -59,6 +88,40 @@ export class SubscriptionsController {
   @Roles(Role.FREELANCER)
   analytics(@CurrentUser() user: AuthUser) {
     return this.subscriptions.getProAnalytics(user.id);
+  }
+}
+
+@Controller('admin/subscription-plans')
+@Roles(Role.ADMIN)
+@UseGuards(SuperAdminGuard, AdminPermissionGuard)
+export class AdminSubscriptionPlansController {
+  constructor(private readonly subscriptions: SubscriptionsService) {}
+
+  @Get()
+  @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
+  list(@Query('includeInactive') includeInactive?: string) {
+    return this.subscriptions.listPlansAdmin(
+      includeInactive === undefined ? true : includeInactive !== 'false',
+    );
+  }
+
+  @Post()
+  @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
+  create(
+    @CurrentUser() admin: AuthUser,
+    @Body() dto: CreateSubscriptionPlanDto,
+  ) {
+    return this.subscriptions.createPlan(admin.id, dto);
+  }
+
+  @Patch(':id')
+  @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
+  update(
+    @CurrentUser() admin: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateSubscriptionPlanDto,
+  ) {
+    return this.subscriptions.updatePlan(admin.id, id, dto);
   }
 }
 
@@ -82,6 +145,25 @@ export class AdminSubscriptionsController {
       limit: limit ? Number(limit) : undefined,
       q,
     });
+  }
+
+  @Post('grant')
+  @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
+  grant(
+    @CurrentUser() admin: AuthUser,
+    @Body() dto: GrantSubscriptionDto,
+  ) {
+    return this.subscriptions.grantSubscription(admin.id, dto);
+  }
+
+  /**
+   * Manually run expiry sweep. Enable scheduling only after go-live backfill
+   * validation — do not cron this until trial dates are confirmed.
+   */
+  @Post('expire-due')
+  @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
+  expireDue() {
+    return this.subscriptions.expireDueSubscriptions();
   }
 
   @Get(':id')

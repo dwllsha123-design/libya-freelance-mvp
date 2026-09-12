@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PaymentsModule } from '../payments/payment.module.js';
 import { CommercialModule } from '../commercial/commercial.module.js';
 import { LaunchModule } from '../launch/launch.module.js';
@@ -10,7 +10,7 @@ import { PlatformCmsService } from './platform-cms.service.js';
 import { PlatformAppConfigService } from './platform-app-config.service.js';
 
 @Module({
-  imports: [PaymentsModule, CommercialModule, LaunchModule],
+  imports: [forwardRef(() => PaymentsModule), CommercialModule, LaunchModule],
   controllers: [PlatformController, ApiV1Controller],
   providers: [
     PlatformService,

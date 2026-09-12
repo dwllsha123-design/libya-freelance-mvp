@@ -30,7 +30,16 @@ export interface NuqatiDashboard {
   earnedThisMonth: number;
   monthlyCap: number;
   proposalCost: number;
-  packages: { id: string; points: number; priceLyd: number }[];
+  packages: {
+    id: string;
+    code?: string;
+    nameAr?: string;
+    nameEn?: string;
+    points: number;
+    bonusPoints?: number;
+    priceLyd: number;
+    currency?: string;
+  }[];
   tasks: NuqatiTask[];
   streak: {
     currentDays: number;

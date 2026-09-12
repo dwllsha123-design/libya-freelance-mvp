@@ -27,6 +27,8 @@ import arAgreements from '../../../messages/ar/agreements.json';
 import arBadges from '../../../messages/ar/badges.json';
 import arAccountMenu from '../../../messages/ar/account-menu.json';
 import arLaunch from '../../../messages/ar/launch.json';
+import arPricing from '../../../messages/ar/pricing.json';
+import arSubscription from '../../../messages/ar/subscription.json';
 
 import enCommon from '../../../messages/en/common.json';
 import enBrand from '../../../messages/en/brand.json';
@@ -55,6 +57,8 @@ import enAgreements from '../../../messages/en/agreements.json';
 import enBadges from '../../../messages/en/badges.json';
 import enAccountMenu from '../../../messages/en/account-menu.json';
 import enLaunch from '../../../messages/en/launch.json';
+import enPricing from '../../../messages/en/pricing.json';
+import enSubscription from '../../../messages/en/subscription.json';
 
 const MESSAGES = {
   ar: {
@@ -85,6 +89,8 @@ const MESSAGES = {
     badges: arBadges,
     accountMenu: arAccountMenu,
     launch: arLaunch,
+    pricing: arPricing,
+    subscription: arSubscription,
   },
   en: {
     common: enCommon,
@@ -114,6 +120,8 @@ const MESSAGES = {
     badges: enBadges,
     accountMenu: enAccountMenu,
     launch: enLaunch,
+    pricing: enPricing,
+    subscription: enSubscription,
   },
 } as const;
 

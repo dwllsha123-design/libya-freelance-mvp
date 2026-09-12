@@ -76,7 +76,7 @@ export default async function HowItWorksPage({ params }: Props) {
       <h2>{content.currencyHeading}</h2>
       <p>
         {content.currencyBeforeLink}
-        <Link href="/escrow">{content.currencyLinkLabel}</Link>
+        <Link href="/pricing">{content.currencyLinkLabel}</Link>
         {content.currencyAfterLink}
       </p>
 

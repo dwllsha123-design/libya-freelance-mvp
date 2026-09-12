@@ -32,6 +32,9 @@ describe('Escrow E2E (PostgreSQL)', () => {
       return;
     }
 
+    // Legacy escrow flows require explicit flag (advertising model freezes funding otherwise).
+    process.env.PAYMENT_PROTECTION_ACTIVE = 'true';
+
     app = await createTestApp({ testStorage: true });
     await resetDatabase(prisma);
     await seedTestReferenceData(prisma);
@@ -41,6 +44,7 @@ describe('Escrow E2E (PostgreSQL)', () => {
   });
 
   afterAll(async () => {
+    delete process.env.PAYMENT_PROTECTION_ACTIVE;
     if (app) await app.close();
     await prisma.$disconnect();
   });
@@ -194,9 +198,41 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .expect(412);
   });
 
-  it('production-like gate: fund-and-accept is rejected when PAYMENT_PROTECTION_ACTIVE is off and NODE_ENV=production', async (ctx) => {
+  it('fund-and-accept is rejected when PAYMENT_PROTECTION_ACTIVE is off', async (ctx) => {
     if (!dbReady) ctx.skip();
-    // Unit-tested via payment-protection.policy.spec.ts; e2e process stays in test env.
+
+    const previous = process.env.PAYMENT_PROTECTION_ACTIVE;
+    process.env.PAYMENT_PROTECTION_ACTIVE = '';
+
+    try {
+      const client = await registerUser(app, 'CLIENT', 'escrow-frozen-client');
+      const freelancer = await registerUser(app, 'FREELANCER', 'escrow-frozen-fl');
+      const project = await createOpenProject(
+        app,
+        client.accessToken,
+        categoryId,
+        skillId,
+      );
+
+      const proposal = await authAgent(app)
+        .post(`/api/projects/${project.id}/proposals`)
+        .set(CLIENT_HEADER)
+        .set('Authorization', `Bearer ${freelancer.accessToken}`)
+        .send(validProposalBody)
+        .expect(201);
+
+      await authAgent(app)
+        .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
+        .set(CLIENT_HEADER)
+        .set('Authorization', `Bearer ${client.accessToken}`)
+        .expect(412);
+    } finally {
+      process.env.PAYMENT_PROTECTION_ACTIVE = previous ?? 'true';
+    }
+  });
+
+  it('production-like gate unit coverage remains in payment-protection.policy.spec.ts', async (ctx) => {
+    if (!dbReady) ctx.skip();
     expect(process.env.NODE_ENV).not.toBe('production');
   });
 });

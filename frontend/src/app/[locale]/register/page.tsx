@@ -34,6 +34,7 @@ function RegisterForm() {
   const [role, setRole] = useState<'FREELANCER' | 'CLIENT'>(() =>
     roleParam === 'CLIENT' || roleParam === 'FREELANCER' ? roleParam : 'FREELANCER',
   );
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,6 +44,11 @@ function RegisterForm() {
 
     setError(null);
     setSuccessNotice(null);
+
+    if (!acceptedTerms) {
+      setError(t('acceptTermsRequired'));
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
     const payload = {
@@ -233,6 +239,22 @@ function RegisterForm() {
             className={authFieldClassName}
           />
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+          />
+          <span>
+            {t('acceptTermsPrefix')}{' '}
+            <Link href="/terms" className={authLinkClassName} target="_blank">
+              {t('acceptTermsLink')}
+            </Link>{' '}
+            {t('acceptTermsSuffix')}
+          </span>
+        </label>
 
         <button type="submit" disabled={isSubmitting} className={authSubmitClassName}>
           {isSubmitting ? t('registerSubmitting') : t('registerButton')}

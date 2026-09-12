@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module.js';
 import { NuqatiModule } from '../nuqati/nuqati.module.js';
 import { LaunchModule } from '../launch/launch.module.js';
 import { PlatformModule } from '../platform/platform.module.js';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { EmailService } from '../common/services/email.service.js';
 
 @Module({
@@ -18,6 +19,7 @@ import { EmailService } from '../common/services/email.service.js';
     NuqatiModule,
     LaunchModule,
     PlatformModule,
+    SubscriptionsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, EmailService],

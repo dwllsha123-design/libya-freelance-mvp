@@ -30,6 +30,7 @@ import { isMarketplacePaymentProtectionActive } from '../payments/payment-protec
 import { NuqatiService } from '../nuqati/nuqati.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { SubscriptionEntitlementService } from '../subscriptions/subscription-entitlement.service.js';
 import { ProductAnalyticsEventType } from '@prisma/client';
 import {
   PROPOSAL_BOOST_BOARD_LIMIT,
@@ -96,6 +97,7 @@ export class ProposalsService {
     private readonly nuqatiService: NuqatiService,
     private readonly platformPolicy: PlatformPolicyService,
     private readonly launchProgram: LaunchProgramService,
+    private readonly entitlements: SubscriptionEntitlementService,
   ) {}
 
   async submit(freelancerId: string, projectId: string, dto: CreateProposalDto) {
@@ -133,6 +135,8 @@ export class ProposalsService {
     }
 
     const proposal = await this.prisma.$transaction(async (tx) => {
+      await this.entitlements.consumeProposalQuota(freelancerId, tx);
+
       const created = await tx.proposal.create({
         data: {
           projectId,
@@ -160,12 +164,15 @@ export class ProposalsService {
         },
       });
 
-      await this.nuqatiService.chargeProposalSubmitWithBoost(
-        freelancerId,
-        created.id,
-        boostPoints,
-        tx,
-      );
+      // Optional promotional boost only — no submit points charge.
+      if (boostPoints > 0) {
+        await this.nuqatiService.chargeProposalSubmitWithBoost(
+          freelancerId,
+          created.id,
+          boostPoints,
+          tx,
+        );
+      }
       await this.nuqatiService.onProposalSubmitted(freelancerId, created.id, tx);
 
       return created;

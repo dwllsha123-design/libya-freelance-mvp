@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ConflictException,
   ForbiddenException,
-  PreconditionFailedException,
 } from '@nestjs/common';
 import {
   FreelancerSubscriptionStatus,
@@ -193,13 +192,18 @@ describe('SubscriptionsService activation rules', () => {
   let notifications: { create: ReturnType<typeof vi.fn> };
   let audit: { log: ReturnType<typeof vi.fn> };
   let platformPolicy: { isFeatureEnabled: ReturnType<typeof vi.fn> };
-  let verification: { isIdentityVerified: ReturnType<typeof vi.fn> };
+  let entitlements: {
+    getCurrentAccess: ReturnType<typeof vi.fn>;
+    formatPlan: ReturnType<typeof vi.fn>;
+  };
   let configService: { get: ReturnType<typeof vi.fn> };
   let paymentProvider: {
     name: string;
     capabilities: { supportsSyncCapture: boolean };
     createPayment: ReturnType<typeof vi.fn>;
+    createCheckout: ReturnType<typeof vi.fn>;
   };
+  let paymentFulfillment: { fulfillSucceededPayment: ReturnType<typeof vi.fn> };
   let service: SubscriptionsService;
 
   const plan = {
@@ -211,8 +215,14 @@ describe('SubscriptionsService activation rules', () => {
     currency: 'LYD',
     durationDays: 30,
     portfolioItemLimit: 40,
+    visibilityWeight: 1,
     rankingBoostWeight: 1,
+    proposalQuotaMonthly: 60,
+    monthlyPointsGrant: 0,
+    badgeKey: 'pro',
+    featuresJson: { statistics: true },
     isActive: true,
+    sortOrder: 2,
   };
 
   beforeEach(() => {
@@ -275,6 +285,7 @@ describe('SubscriptionsService activation rules', () => {
               ...data,
             })),
             findFirst: vi.fn().mockResolvedValue(null),
+            updateMany: vi.fn(),
           },
           freelancerProfile: { updateMany: vi.fn() },
           productAnalyticsEvent: { create: vi.fn() },
@@ -287,7 +298,36 @@ describe('SubscriptionsService activation rules', () => {
     notifications = { create: vi.fn() };
     audit = { log: vi.fn() };
     platformPolicy = { isFeatureEnabled: vi.fn().mockResolvedValue(true) };
-    verification = { isIdentityVerified: vi.fn().mockResolvedValue(true) };
+    entitlements = {
+      getCurrentAccess: vi.fn().mockResolvedValue({
+        kind: 'NONE',
+        canSubmitProposal: false,
+        isExpired: true,
+        plan: null,
+        trialDaysRemaining: null,
+        proposalLimit: 0,
+        proposalUsed: 0,
+        proposalRemaining: 0,
+        periodKey: '2026-09',
+      }),
+      formatPlan: vi.fn((p: typeof plan) => ({
+        id: p.id,
+        code: p.code,
+        nameAr: p.nameAr,
+        nameEn: p.nameEn,
+        price: Number(p.price),
+        currency: p.currency,
+        durationDays: p.durationDays,
+        proposalQuotaMonthly: p.proposalQuotaMonthly ?? 20,
+        monthlyPointsGrant: p.monthlyPointsGrant ?? 0,
+        visibilityWeight: p.visibilityWeight ?? 0,
+        portfolioItemLimit: p.portfolioItemLimit,
+        badgeKey: p.badgeKey ?? null,
+        features: {},
+        isActive: p.isActive,
+        sortOrder: p.sortOrder ?? 0,
+      })),
+    };
     configService = { get: vi.fn().mockReturnValue('test') };
     paymentProvider = {
       name: 'simulated',
@@ -296,15 +336,24 @@ describe('SubscriptionsService activation rules', () => {
         status: 'succeeded',
         providerReference: 'sim_1',
       }),
+      createCheckout: vi.fn().mockResolvedValue({
+        status: 'pending',
+        providerReference: 'sim_1',
+        checkoutUrl: 'https://pay.example/checkout',
+      }),
+    };
+    paymentFulfillment = {
+      fulfillSucceededPayment: vi.fn().mockResolvedValue({ fulfilled: true }),
     };
     service = new SubscriptionsService(
       prisma as never,
       notifications as never,
       audit as never,
       platformPolicy as never,
-      verification as never,
+      entitlements as never,
       configService as never,
       paymentProvider as never,
+      paymentFulfillment as never,
     );
   });
 
@@ -316,11 +365,17 @@ describe('SubscriptionsService activation rules', () => {
     expect(result.durationDays).toBe(30);
   });
 
-  it('requires identity verification before checkout', async () => {
-    verification.isIdentityVerified.mockResolvedValue(false);
-    await expect(service.checkout('u1')).rejects.toBeInstanceOf(
-      PreconditionFailedException,
-    );
+  it('allows checkout without identity verification', async () => {
+    entitlements.getCurrentAccess.mockResolvedValue({
+      kind: 'NONE',
+      canSubmitProposal: false,
+      isExpired: true,
+      plan: null,
+      subscriptionId: null,
+    });
+    const result = await service.checkout('u1', { planCode: PRO_PLAN_CODE });
+    expect(result.paymentId).toBeTruthy();
+    expect(result.plan.code).toBe(PRO_PLAN_CODE);
   });
 
   it('activates only after confirmed SUCCEEDED payment', async () => {
@@ -394,7 +449,11 @@ describe('SubscriptionsService activation rules', () => {
   });
 
   it('hasActivePro false when expired even if status still ACTIVE in stale row', async () => {
-    prisma.freelancerSubscription.findFirst.mockResolvedValue(null);
+    entitlements.getCurrentAccess.mockResolvedValue({
+      kind: 'NONE',
+      canSubmitProposal: false,
+      isExpired: true,
+    });
     expect(await service.hasActivePro('u1')).toBe(false);
   });
 
@@ -457,7 +516,6 @@ describe('SubscriptionsService activation rules', () => {
           id: 'u1',
           email: 'a@b.c',
           profile: null,
-          identityVerification: { status: IdentityVerificationStatus.VERIFIED, expiresAt: null },
         },
       });
 

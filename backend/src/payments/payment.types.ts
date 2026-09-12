@@ -9,6 +9,11 @@ export interface PaymentProviderCapabilities {
   supportsRedirectCheckout: boolean;
   /** Provider can send money back to the payer. */
   supportsRefunds: boolean;
+  /**
+   * False when no real PSP is configured (e.g. production refuse-simulated).
+   * Product checkouts must not pretend money moved when available=false.
+   */
+  available: boolean;
 }
 
 export interface CreateProviderPaymentInput {
@@ -59,11 +64,46 @@ export interface RefundProviderPaymentResult {
   status: 'pending' | 'succeeded' | 'failed';
 }
 
+export interface PaymentProviderHealth {
+  ok: boolean;
+  available: boolean;
+  provider: string;
+  message?: string;
+}
+
+export interface PaymentProviderConfigSnapshot {
+  provider: string;
+  available: boolean;
+  mode: PaymentCaptureMode;
+  requiresRedirect: boolean;
+  supportsRefunds: boolean;
+}
+
+/**
+ * Payment gateway adapter.
+ *
+ * `createPayment` is the historical entrypoint; `createCheckout` is the preferred
+ * alias and must behave identically. Implementations may omit optional methods.
+ */
 export interface PaymentProvider {
   readonly name: string;
   readonly capabilities: PaymentProviderCapabilities;
+  /** @deprecated Prefer createCheckout — kept for backward compatibility. */
   createPayment(input: CreateProviderPaymentInput): Promise<CreateProviderPaymentResult>;
+  /** Preferred checkout entrypoint (= createPayment). */
+  createCheckout(input: CreateProviderPaymentInput): Promise<CreateProviderPaymentResult>;
+  /** Optional out-of-band status poll against the PSP. */
+  verifyPayment?(
+    input: { paymentId: string; providerReference?: string | null },
+  ): Promise<ProviderPaymentStatus>;
   verifyWebhook?(input: VerifyProviderWebhookInput): Promise<ProviderWebhookEvent | null>;
+  /** Parse webhook payload without signature verification (tests / diagnostics). */
+  parseWebhook?(
+    rawBody: string | Buffer,
+    headers?: Record<string, string | string[] | undefined>,
+  ): ProviderWebhookEvent | null;
+  health?(): Promise<PaymentProviderHealth>;
+  getConfig?(): PaymentProviderConfigSnapshot;
   refund?(input: RefundProviderPaymentInput): Promise<RefundProviderPaymentResult>;
 }
 

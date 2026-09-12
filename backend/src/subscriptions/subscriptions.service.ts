@@ -5,13 +5,12 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  PreconditionFailedException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AdminAuditAction,
   FreelancerSubscriptionStatus,
-  IdentityVerificationStatus,
   NotificationType,
   PaymentPurpose,
   PaymentStatus,
@@ -19,6 +18,7 @@ import {
   ProductAnalyticsEventType,
   Role,
   SubscriptionAdminActionType,
+  SubscriptionSource,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -26,17 +26,22 @@ import { AdminAuditService } from '../admin/admin-audit.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
+import { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
 import { SIMULATED_PAYMENT_PROVIDER } from '../payments/providers/simulated-payment.provider.js';
-import { VerificationService } from '../verification/verification.service.js';
 import {
   FREE_PORTFOLIO_ITEM_LIMIT,
   PRO_PLAN_CODE,
-  allowSimulatedProActivation,
+  addDays,
+  allowSimulatedProductActivation,
 } from './subscriptions.constants.js';
 import { clampProBoostScore } from './ranking.util.js';
+import { SubscriptionEntitlementService } from './subscription-entitlement.service.js';
 import type {
+  CreateSubscriptionPlanDto,
   ExtendSubscriptionDto,
+  GrantSubscriptionDto,
   SubscriptionAdminReasonDto,
+  UpdateSubscriptionPlanDto,
 } from './dto/subscriptions.dto.js';
 
 @Injectable()
@@ -46,11 +51,22 @@ export class SubscriptionsService {
     private readonly notifications: NotificationsService,
     private readonly audit: AdminAuditService,
     private readonly platformPolicy: PlatformPolicyService,
-    private readonly verification: VerificationService,
+    private readonly entitlements: SubscriptionEntitlementService,
     private readonly configService: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: PaymentProvider,
+    @Inject(forwardRef(() => PaymentFulfillmentService))
+    private readonly paymentFulfillment: PaymentFulfillmentService,
   ) {}
 
+  async listActivePlans() {
+    const plans = await this.prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+    });
+    return plans.map((plan) => this.formatPlan(plan));
+  }
+
+  /** Backward-compatible alias — returns the active PRO plan. */
   async getProPlan() {
     const plan = await this.prisma.subscriptionPlan.findFirst({
       where: { code: PRO_PLAN_CODE, isActive: true },
@@ -61,9 +77,7 @@ export class SubscriptionsService {
 
   async getMine(userId: string) {
     await this.assertFreelancer(userId);
-    const plan = await this.getProPlan();
-    const identityVerified = await this.verification.isIdentityVerified(userId);
-    const active = await this.findActiveSubscription(userId);
+    const access = await this.entitlements.getCurrentAccess(userId);
     const latest = await this.prisma.freelancerSubscription.findFirst({
       where: { userId },
       include: { plan: true, payment: true },
@@ -71,21 +85,33 @@ export class SubscriptionsService {
     });
 
     const now = new Date();
-    const isPro = !!active && active.expiresAt !== null && active.expiresAt > now;
-    const daysRemaining =
-      isPro && active?.expiresAt
+    const hasAccess = access.canSubmitProposal && !access.isExpired;
+    const paidDaysRemaining =
+      access.expiresAt && access.expiresAt > now
         ? Math.max(
             0,
-            Math.ceil((active.expiresAt.getTime() - now.getTime()) / 86_400_000),
+            Math.ceil((access.expiresAt.getTime() - now.getTime()) / 86_400_000),
           )
         : 0;
 
     return {
-      plan,
-      identityVerified,
-      requiresIdentityVerification: true,
-      isPro,
-      daysRemaining,
+      access,
+      currentPlan: access.plan,
+      trialDaysRemaining: access.trialDaysRemaining,
+      quotas: {
+        proposalLimit: access.proposalLimit,
+        proposalUsed: access.proposalUsed,
+        proposalRemaining: access.proposalRemaining,
+        periodKey: access.periodKey,
+        portfolioItemLimit:
+          access.plan?.portfolioItemLimit ?? FREE_PORTFOLIO_ITEM_LIMIT,
+        monthlyPointsGrant: access.plan?.monthlyPointsGrant ?? 0,
+      },
+      requiresIdentityVerification: false,
+      hasAccess,
+      /** @deprecated Prefer hasAccess — true when user has any active entitlement */
+      isPro: hasAccess,
+      daysRemaining: paidDaysRemaining,
       subscription: latest ? this.formatSubscription(latest) : null,
       payment: {
         provider: this.paymentProvider.name,
@@ -98,40 +124,44 @@ export class SubscriptionsService {
     };
   }
 
-  /** Runtime Pro check — never trust client. */
+  /** Runtime access check — never trust client. */
+  async hasAccess(userId: string, asOf: Date = new Date()): Promise<boolean> {
+    const access = await this.entitlements.getCurrentAccess(userId, asOf);
+    return access.canSubmitProposal && !access.isExpired;
+  }
+
+  /** @deprecated Prefer hasAccess — kept for portfolio/profile callers */
   async hasActivePro(userId: string, asOf: Date = new Date()): Promise<boolean> {
-    const sub = await this.findActiveSubscription(userId, asOf);
-    return !!sub;
+    return this.hasAccess(userId, asOf);
   }
 
   async getPortfolioItemLimit(userId: string): Promise<number> {
-    if (await this.hasActivePro(userId)) {
-      const plan = await this.prisma.subscriptionPlan.findFirst({
-        where: { code: PRO_PLAN_CODE, isActive: true },
-        select: { portfolioItemLimit: true },
-      });
-      return plan?.portfolioItemLimit ?? 40;
-    }
-    return FREE_PORTFOLIO_ITEM_LIMIT;
+    const access = await this.entitlements.getCurrentAccess(userId);
+    return access.plan?.portfolioItemLimit ?? FREE_PORTFOLIO_ITEM_LIMIT;
   }
 
-  async checkout(userId: string, options: { returnUrl?: string; cancelUrl?: string } = {}) {
+  async checkout(
+    userId: string,
+    options: { planCode: string; returnUrl?: string; cancelUrl?: string },
+  ) {
     await this.assertFreelancer(userId);
     await this.assertSubscriptionsFeatureEnabled();
 
-    if (!(await this.verification.isIdentityVerified(userId))) {
-      throw new PreconditionFailedException(
-        'يجب توثيق الهوية قبل الاشتراك في ليبي فريلانس برو',
-      );
+    const planCode = options.planCode?.trim().toUpperCase();
+    if (!planCode) {
+      throw new BadRequestException('يجب تحديد رمز الباقة');
     }
 
     const plan = await this.prisma.subscriptionPlan.findFirst({
-      where: { code: PRO_PLAN_CODE, isActive: true },
+      where: { code: planCode, isActive: true },
     });
-    if (!plan) throw new NotFoundException('خطة Pro غير متاحة');
+    if (!plan) throw new NotFoundException('الباقة غير متاحة');
 
-    const active = await this.findActiveSubscription(userId);
-    const isRenewal = !!active;
+    const access = await this.entitlements.getCurrentAccess(userId);
+    const isRenewal =
+      access.kind === 'PAID' ||
+      access.kind === 'ADMIN_GRANT' ||
+      (access.kind === 'TRIAL' && !!access.subscriptionId);
 
     await this.trackEvent(userId, ProductAnalyticsEventType.PRO_CHECKOUT_STARTED, {
       planCode: plan.code,
@@ -140,7 +170,7 @@ export class SubscriptionsService {
 
     const amount = plan.price;
     const currency = plan.currency;
-    const idempotencyKey = `pro-checkout:${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+    const idempotencyKey = `sub-checkout:${plan.code}:${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
 
     const { subscription, payment } = await this.prisma.$transaction(async (tx) => {
       const paymentRow = await tx.payment.create({
@@ -156,6 +186,8 @@ export class SubscriptionsService {
             planCode: plan.code,
             userId,
             isRenewal,
+            expectedAmount: Number(amount),
+            expectedCurrency: currency,
           } as Prisma.InputJsonValue,
         },
       });
@@ -165,6 +197,7 @@ export class SubscriptionsService {
           userId,
           planId: plan.id,
           status: FreelancerSubscriptionStatus.PENDING_PAYMENT,
+          source: SubscriptionSource.PURCHASE,
           paymentId: paymentRow.id,
         },
         include: { plan: true, payment: true },
@@ -176,12 +209,12 @@ export class SubscriptionsService {
     await this.notifications.create(
       userId,
       NotificationType.PRO_PAYMENT_PENDING,
-      'بانتظار دفع اشتراك Pro',
+      'بانتظار دفع الاشتراك',
       `أكمل الدفع لتفعيل ${plan.nameAr}.`,
-      `/dashboard/pro`,
+      `/dashboard/subscriptions`,
     );
 
-    const providerResult = await this.paymentProvider.createPayment({
+    const providerResult = await this.paymentProvider.createCheckout({
       paymentId: payment.id,
       amount: Number(amount),
       currency,
@@ -193,6 +226,8 @@ export class SubscriptionsService {
         purpose: PaymentPurpose.SUBSCRIPTION,
         subscriptionId: subscription.id,
         planCode: plan.code,
+        expectedAmount: Number(amount),
+        expectedCurrency: currency,
       },
     });
 
@@ -221,7 +256,7 @@ export class SubscriptionsService {
                 : {}),
               simulatedHeld: true,
               reason:
-                'Simulated payment succeeded but PRO activation blocked in production without feature gate',
+                'Simulated payment succeeded but subscription activation blocked in production without feature gate',
             } as Prisma.InputJsonValue,
           },
         });
@@ -233,7 +268,7 @@ export class SubscriptionsService {
           requiresRedirect: false,
           activationBlocked: true,
           message:
-            'الدفع التجريبي نجح لكن تفعيل Pro محظور في الإنتاج دون بوابة دفع حقيقية / علم تفعيل صريح.',
+            'الدفع التجريبي نجح لكن تفعيل الاشتراك محظور في الإنتاج دون بوابة دفع حقيقية / علم تفعيل صريح.',
           plan: this.formatPlan(plan),
         };
       }
@@ -278,6 +313,7 @@ export class SubscriptionsService {
 
   /**
    * Idempotent activation after a backend-verified SUCCEEDED payment.
+   * Works for any plan code linked to the payment's subscription row.
    * Never call from frontend success redirects alone.
    */
   async activateFromConfirmedPayment(paymentId: string) {
@@ -290,8 +326,10 @@ export class SubscriptionsService {
       throw new BadRequestException('هذه العملية ليست لاشتراك');
     }
     if (payment.status !== PaymentStatus.SUCCEEDED) {
-      // Mark succeeded if provider already confirmed but row not updated
-      if (payment.status === PaymentStatus.PENDING || payment.status === PaymentStatus.PROCESSING) {
+      if (
+        payment.status === PaymentStatus.PENDING ||
+        payment.status === PaymentStatus.PROCESSING
+      ) {
         throw new ConflictException('الدفع غير مؤكد بعد');
       }
       throw new ConflictException('حالة الدفع لا تسمح بالتفعيل');
@@ -314,36 +352,37 @@ export class SubscriptionsService {
       !(await this.canActivateSimulatedPayment())
     ) {
       throw new ForbiddenException(
-        'لا يمكن تفعيل Pro عبر دفع تجريبي في الإنتاج دون علم تفعيل صريح',
+        'لا يمكن تفعيل الاشتراك عبر دفع تجريبي في الإنتاج دون علم تفعيل صريح',
       );
     }
 
     const now = new Date();
     const durationDays = subscription.plan.durationDays;
-    const existingActive = await this.findActiveSubscription(subscription.userId, now);
+    const existingActive = await this.findStackableSubscription(
+      subscription.userId,
+      now,
+    );
     const base =
       existingActive?.expiresAt && existingActive.expiresAt > now
         ? existingActive.expiresAt
         : now;
     const expiresAt = addDays(base, durationDays);
     const isRenewal = !!existingActive;
-    const boost = clampProBoostScore(subscription.plan.rankingBoostWeight);
+    const boost = this.planBoostScore(subscription.plan);
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      if (existingActive && existingActive.id !== subscription.id) {
-        await tx.freelancerSubscription.update({
-          where: { id: existingActive.id },
-          data: {
-            status: FreelancerSubscriptionStatus.EXPIRED,
-            cancelledAt: now,
-          },
-        });
-      }
+      await this.expireOverlappingSubscriptions(
+        tx,
+        subscription.userId,
+        subscription.id,
+        now,
+      );
 
       const row = await tx.freelancerSubscription.update({
         where: { id: subscription.id },
         data: {
           status: FreelancerSubscriptionStatus.ACTIVE,
+          source: SubscriptionSource.PURCHASE,
           startedAt: now,
           expiresAt,
         },
@@ -372,6 +411,7 @@ export class SubscriptionsService {
           metadata: {
             subscriptionId: subscription.id,
             paymentId: payment.id,
+            planCode: subscription.plan.code,
             expiresAt: expiresAt.toISOString(),
           },
         },
@@ -383,21 +423,25 @@ export class SubscriptionsService {
     await this.notifications.create(
       subscription.userId,
       isRenewal ? NotificationType.PRO_RENEWED : NotificationType.PRO_ACTIVATED,
-      isRenewal ? 'تم تجديد اشتراك Pro' : 'تم تفعيل ليبي فريلانس برو',
+      isRenewal ? 'تم تجديد الاشتراك' : `تم تفعيل ${subscription.plan.nameAr}`,
       `اشتراكك فعّال حتى ${expiresAt.toISOString().slice(0, 10)}.`,
-      `/dashboard/pro`,
+      `/dashboard/subscriptions`,
     );
 
     await this.trackEvent(
       subscription.userId,
       ProductAnalyticsEventType.PRO_PAYMENT_SUCCESS,
-      { paymentId: payment.id, subscriptionId: subscription.id },
+      {
+        paymentId: payment.id,
+        subscriptionId: subscription.id,
+        planCode: subscription.plan.code,
+      },
     );
 
     return this.formatSubscription(updated);
   }
 
-  /** Mark SUCCEEDED payment then activate — used when provider sync-succeeds. */
+  /** Mark SUCCEEDED payment then fulfill/activate — used when provider sync-succeeds. */
   async markPaymentSucceededAndActivate(
     paymentId: string,
     providerReference?: string,
@@ -410,56 +454,45 @@ export class SubscriptionsService {
         paidAt: new Date(),
       },
     });
-    return this.activateFromConfirmedPayment(paymentId);
+    await this.paymentFulfillment.fulfillSucceededPayment(paymentId);
+    const row = await this.prisma.freelancerSubscription.findFirstOrThrow({
+      where: { paymentId },
+      include: { plan: true, payment: true },
+    });
+    return this.formatSubscription(row);
   }
 
   async expireDueSubscriptions(asOf: Date = new Date()) {
     const due = await this.prisma.freelancerSubscription.findMany({
       where: {
-        status: FreelancerSubscriptionStatus.ACTIVE,
+        status: {
+          in: [
+            FreelancerSubscriptionStatus.ACTIVE,
+            FreelancerSubscriptionStatus.TRIAL,
+            FreelancerSubscriptionStatus.PAST_DUE,
+          ],
+        },
         expiresAt: { lte: asOf },
       },
       select: { id: true, userId: true },
     });
 
-    for (const row of due) {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.freelancerSubscription.update({
-          where: { id: row.id },
-          data: { status: FreelancerSubscriptionStatus.EXPIRED },
-        });
-        const stillActive = await tx.freelancerSubscription.findFirst({
-          where: {
-            userId: row.userId,
-            status: FreelancerSubscriptionStatus.ACTIVE,
-            expiresAt: { gt: asOf },
-          },
-        });
-        if (!stillActive) {
-          await tx.freelancerProfile.updateMany({
-            where: { profile: { userId: row.userId } },
-            data: { proBoostScore: 0 },
-          });
-        }
-        await tx.productAnalyticsEvent.create({
-          data: {
-            userId: row.userId,
-            eventType: ProductAnalyticsEventType.PRO_EXPIRED,
-            metadata: { subscriptionId: row.id },
-          },
-        });
-      });
+    const result = await this.entitlements.expireDueSubscriptions(asOf);
 
+    for (const row of due) {
       await this.notifications.create(
         row.userId,
         NotificationType.PRO_EXPIRED,
-        'انتهى اشتراك Pro',
-        'انتهى اشتراك ليبي فريلانس برو. يمكنك التجديد في أي وقت. بياناتك محفوظة.',
-        `/dashboard/pro`,
+        'انتهى الاشتراك',
+        'انتهى اشتراكك الحالي. يمكنك اختيار باقة جديدة في أي وقت. بياناتك محفوظة.',
+        `/dashboard/subscriptions`,
       );
+      await this.trackEvent(row.userId, ProductAnalyticsEventType.PRO_EXPIRED, {
+        subscriptionId: row.id,
+      });
     }
 
-    return { expired: due.length };
+    return { expired: result.expired };
   }
 
   async notifyExpiring() {
@@ -479,14 +512,15 @@ export class SubscriptionsService {
           status: FreelancerSubscriptionStatus.ACTIVE,
           expiresAt: { gte: start, lt: end },
         },
+        include: { plan: true },
       });
       for (const row of rows) {
         await this.notifications.create(
           row.userId,
           window.type,
-          `اشتراك Pro ينتهي خلال ${window.days} يوم`,
-          'جدّد اشتراكك للحفاظ على مزايا Pro.',
-          `/dashboard/pro`,
+          `اشتراك ${row.plan.nameAr} ينتهي خلال ${window.days} يوم`,
+          'جدّد اشتراكك للحفاظ على مزايا باقتك.',
+          `/dashboard/subscriptions`,
         );
         sent += 1;
       }
@@ -513,8 +547,16 @@ export class SubscriptionsService {
   }
 
   async getProAnalytics(userId: string) {
-    if (!(await this.hasActivePro(userId))) {
-      throw new ForbiddenException('تحليلات الملف متاحة لمشتركي Pro');
+    const access = await this.entitlements.getCurrentAccess(userId);
+    const statsAllowed =
+      access.canSubmitProposal &&
+      (access.plan?.features?.statistics === true ||
+        access.plan?.features?.advancedStatistics === true ||
+        access.kind === 'PAID' ||
+        access.kind === 'ADMIN_GRANT' ||
+        access.kind === 'TRIAL');
+    if (!statsAllowed) {
+      throw new ForbiddenException('تحليلات الملف متاحة للمشتركين');
     }
     const since = addDays(new Date(), -30);
     const views = await this.prisma.profileViewDaily.findMany({
@@ -539,7 +581,209 @@ export class SubscriptionsService {
     };
   }
 
-  async adminList(query: { status?: string; page?: number; limit?: number; q?: string }) {
+  async listPlansAdmin(includeInactive = true) {
+    const plans = await this.prisma.subscriptionPlan.findMany({
+      where: includeInactive ? undefined : { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
+    });
+    return plans.map((plan) => this.formatPlan(plan));
+  }
+
+  async createPlan(adminId: string, dto: CreateSubscriptionPlanDto) {
+    const code = dto.code.trim().toUpperCase();
+    try {
+      const plan = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.subscriptionPlan.create({
+          data: {
+            code,
+            nameAr: dto.nameAr.trim(),
+            nameEn: dto.nameEn.trim(),
+            price: dto.price,
+            currency: (dto.currency ?? 'LYD').trim().toUpperCase(),
+            durationDays: dto.durationDays,
+            portfolioItemLimit: dto.portfolioItemLimit ?? 40,
+            visibilityWeight: dto.visibilityWeight ?? 0,
+            rankingBoostWeight: dto.rankingBoostWeight ?? 0,
+            proposalQuotaMonthly: dto.proposalQuotaMonthly ?? 20,
+            monthlyPointsGrant: dto.monthlyPointsGrant ?? 0,
+            badgeKey: dto.badgeKey?.trim() || null,
+            featuresJson: (dto.featuresJson ??
+              {}) as Prisma.InputJsonValue,
+            sortOrder: dto.sortOrder ?? 0,
+            isActive: dto.isActive ?? true,
+          },
+        });
+        await this.audit.log(
+          adminId,
+          AdminAuditAction.SUBSCRIPTION_PLAN_CREATED,
+          'SubscriptionPlan',
+          created.id,
+          { code: created.code },
+          tx,
+        );
+        return created;
+      });
+      return this.formatPlan(plan);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('رمز الباقة مستخدم مسبقاً');
+      }
+      throw error;
+    }
+  }
+
+  async updatePlan(adminId: string, id: string, dto: UpdateSubscriptionPlanDto) {
+    const existing = await this.prisma.subscriptionPlan.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('الباقة غير موجودة');
+
+    const data: Prisma.SubscriptionPlanUpdateInput = {};
+    if (dto.nameAr !== undefined) data.nameAr = dto.nameAr.trim();
+    if (dto.nameEn !== undefined) data.nameEn = dto.nameEn.trim();
+    if (dto.price !== undefined) data.price = dto.price;
+    if (dto.currency !== undefined) {
+      data.currency = dto.currency.trim().toUpperCase();
+    }
+    if (dto.durationDays !== undefined) data.durationDays = dto.durationDays;
+    if (dto.portfolioItemLimit !== undefined) {
+      data.portfolioItemLimit = dto.portfolioItemLimit;
+    }
+    if (dto.visibilityWeight !== undefined) {
+      data.visibilityWeight = dto.visibilityWeight;
+    }
+    if (dto.rankingBoostWeight !== undefined) {
+      data.rankingBoostWeight = dto.rankingBoostWeight;
+    }
+    if (dto.proposalQuotaMonthly !== undefined) {
+      data.proposalQuotaMonthly = dto.proposalQuotaMonthly;
+    }
+    if (dto.monthlyPointsGrant !== undefined) {
+      data.monthlyPointsGrant = dto.monthlyPointsGrant;
+    }
+    if (dto.badgeKey !== undefined) {
+      data.badgeKey = dto.badgeKey?.trim() || null;
+    }
+    if (dto.featuresJson !== undefined) {
+      data.featuresJson =
+        dto.featuresJson === null
+          ? Prisma.JsonNull
+          : (dto.featuresJson as Prisma.InputJsonValue);
+    }
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.subscriptionPlan.update({ where: { id }, data });
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.SUBSCRIPTION_PLAN_UPDATED,
+        'SubscriptionPlan',
+        id,
+        { code: row.code, changes: Object.keys(dto) },
+        tx,
+      );
+      return row;
+    });
+
+    return this.formatPlan(updated);
+  }
+
+  async grantSubscription(adminId: string, dto: GrantSubscriptionDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+      select: {
+        id: true,
+        role: true,
+        profile: { select: { freelancerProfile: { select: { id: true } } } },
+      },
+    });
+    if (!user || user.role !== Role.FREELANCER || !user.profile?.freelancerProfile) {
+      throw new BadRequestException('المستخدم ليس مستقلاً');
+    }
+
+    const plan = await this.prisma.subscriptionPlan.findFirst({
+      where: { code: dto.planCode.trim().toUpperCase() },
+    });
+    if (!plan) throw new NotFoundException('الباقة غير موجودة');
+
+    const now = new Date();
+    const expiresAt = addDays(now, dto.days);
+    const boost = this.planBoostScore(plan);
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      await this.expireOverlappingSubscriptions(tx, dto.userId, null, now);
+
+      const row = await tx.freelancerSubscription.create({
+        data: {
+          userId: dto.userId,
+          planId: plan.id,
+          status: FreelancerSubscriptionStatus.ACTIVE,
+          source: SubscriptionSource.ADMIN_GRANT,
+          startedAt: now,
+          expiresAt,
+          metadata: {
+            grantedBy: adminId,
+            reason: dto.reason.trim(),
+          } as Prisma.InputJsonValue,
+        },
+        include: { plan: true, payment: true },
+      });
+
+      await tx.subscriptionAdminAction.create({
+        data: {
+          subscriptionId: row.id,
+          actorId: adminId,
+          action: SubscriptionAdminActionType.GRANT,
+          reason: dto.reason.trim(),
+          oldExpiresAt: null,
+          newExpiresAt: expiresAt,
+        },
+      });
+
+      await tx.freelancerProfile.updateMany({
+        where: { profile: { userId: dto.userId } },
+        data: { proBoostScore: boost },
+      });
+
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.SUBSCRIPTION_GRANTED,
+        'FreelancerSubscription',
+        row.id,
+        {
+          userId: dto.userId,
+          planCode: plan.code,
+          days: dto.days,
+          expiresAt: expiresAt.toISOString(),
+          reason: dto.reason.trim(),
+        },
+        tx,
+      );
+
+      return row;
+    });
+
+    await this.notifications.create(
+      dto.userId,
+      NotificationType.PRO_ACTIVATED,
+      `تم منحك اشتراك ${plan.nameAr}`,
+      `اشتراكك فعّال حتى ${expiresAt.toISOString().slice(0, 10)}.`,
+      `/dashboard/subscriptions`,
+    );
+
+    return this.formatSubscription(created);
+  }
+
+  async adminList(query: {
+    status?: string;
+    page?: number;
+    limit?: number;
+    q?: string;
+  }) {
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.min(50, Math.max(1, query.limit ?? 20));
     const where: Prisma.FreelancerSubscriptionWhereInput = {};
@@ -575,8 +819,9 @@ export class SubscriptionsService {
             select: {
               id: true,
               email: true,
-              profile: { select: { firstName: true, lastName: true, username: true } },
-              identityVerification: { select: { status: true, expiresAt: true } },
+              profile: {
+                select: { firstName: true, lastName: true, username: true },
+              },
             },
           },
         },
@@ -600,8 +845,6 @@ export class SubscriptionsService {
             : null,
           username: item.user.profile?.username ?? null,
         },
-        verificationStatus: item.user.identityVerification?.status ?? 'NOT_SUBMITTED',
-        identityVerified: isIdentityVerifiedNow(item.user.identityVerification),
       })),
     };
   }
@@ -617,8 +860,9 @@ export class SubscriptionsService {
           select: {
             id: true,
             email: true,
-            profile: { select: { firstName: true, lastName: true, username: true } },
-            identityVerification: { select: { status: true, expiresAt: true } },
+            profile: {
+              select: { firstName: true, lastName: true, username: true },
+            },
           },
         },
       },
@@ -635,8 +879,6 @@ export class SubscriptionsService {
           : null,
         username: item.user.profile?.username ?? null,
       },
-      verificationStatus: item.user.identityVerification?.status ?? 'NOT_SUBMITTED',
-      identityVerified: isIdentityVerifiedNow(item.user.identityVerification),
     };
   }
 
@@ -682,7 +924,7 @@ export class SubscriptionsService {
       });
       await tx.freelancerProfile.updateMany({
         where: { profile: { userId: item.userId } },
-        data: { proBoostScore: clampProBoostScore(item.plan.rankingBoostWeight) },
+        data: { proBoostScore: this.planBoostScore(item.plan) },
       });
       await this.audit.log(
         adminId,
@@ -703,7 +945,9 @@ export class SubscriptionsService {
   }
 
   async adminSuspend(adminId: string, id: string, dto: SubscriptionAdminReasonDto) {
-    const item = await this.prisma.freelancerSubscription.findUnique({ where: { id } });
+    const item = await this.prisma.freelancerSubscription.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('الاشتراك غير موجود');
 
     await this.prisma.$transaction(async (tx) => {
@@ -739,7 +983,9 @@ export class SubscriptionsService {
   }
 
   async adminCancel(adminId: string, id: string, dto: SubscriptionAdminReasonDto) {
-    const item = await this.prisma.freelancerSubscription.findUnique({ where: { id } });
+    const item = await this.prisma.freelancerSubscription.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('الاشتراك غير موجود');
     const now = new Date();
 
@@ -778,15 +1024,62 @@ export class SubscriptionsService {
     return this.adminGet(id);
   }
 
-  private async findActiveSubscription(userId: string, asOf: Date = new Date()) {
+  private planBoostScore(plan: {
+    visibilityWeight?: number | null;
+    rankingBoostWeight?: number | null;
+  }): number {
+    const visibility = Number(plan.visibilityWeight ?? 0);
+    const ranking = Number(plan.rankingBoostWeight ?? 0);
+    return clampProBoostScore(visibility > 0 ? visibility : ranking);
+  }
+
+  private async findStackableSubscription(userId: string, asOf: Date = new Date()) {
     return this.prisma.freelancerSubscription.findFirst({
       where: {
         userId,
-        status: FreelancerSubscriptionStatus.ACTIVE,
+        status: {
+          in: [
+            FreelancerSubscriptionStatus.ACTIVE,
+            FreelancerSubscriptionStatus.TRIAL,
+            FreelancerSubscriptionStatus.PAST_DUE,
+          ],
+        },
         expiresAt: { gt: asOf },
+        source: {
+          in: [
+            SubscriptionSource.PURCHASE,
+            SubscriptionSource.ADMIN_GRANT,
+            SubscriptionSource.MIGRATION,
+          ],
+        },
       },
       include: { plan: true, payment: true },
       orderBy: { expiresAt: 'desc' },
+    });
+  }
+
+  private async expireOverlappingSubscriptions(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    keepId: string | null,
+    now: Date,
+  ) {
+    await tx.freelancerSubscription.updateMany({
+      where: {
+        userId,
+        id: keepId ? { not: keepId } : undefined,
+        status: {
+          in: [
+            FreelancerSubscriptionStatus.ACTIVE,
+            FreelancerSubscriptionStatus.TRIAL,
+            FreelancerSubscriptionStatus.PAST_DUE,
+          ],
+        },
+      },
+      data: {
+        status: FreelancerSubscriptionStatus.EXPIRED,
+        cancelledAt: now,
+      },
     });
   }
 
@@ -795,12 +1088,14 @@ export class SubscriptionsService {
     const flag =
       (await this.platformPolicy.isFeatureEnabled('SUBSCRIPTIONS', false)) &&
       process.env.ALLOW_SIMULATED_PRO_ACTIVATION === 'true';
-    return allowSimulatedProActivation(nodeEnv, flag);
+    return allowSimulatedProductActivation(nodeEnv, flag);
   }
 
   private async assertSubscriptionsFeatureEnabled() {
-    const enabled = await this.platformPolicy.isFeatureEnabled('SUBSCRIPTIONS', false);
-    // Allow checkout in non-production even if flag off (dev/test)
+    const enabled = await this.platformPolicy.isFeatureEnabled(
+      'SUBSCRIPTIONS',
+      false,
+    );
     const nodeEnv = this.configService.get<string>('nodeEnv');
     if (!enabled && nodeEnv === 'production') {
       throw new ForbiddenException('ميزة الاشتراكات غير مفعّلة حالياً');
@@ -826,64 +1121,85 @@ export class SubscriptionsService {
     code: string;
     nameAr: string;
     nameEn: string;
-    price: Prisma.Decimal;
+    price: Prisma.Decimal | number;
     currency: string;
     durationDays: number;
     portfolioItemLimit: number;
+    visibilityWeight?: number;
     rankingBoostWeight: number;
+    proposalQuotaMonthly?: number;
+    monthlyPointsGrant?: number;
+    badgeKey?: string | null;
+    featuresJson?: Prisma.JsonValue | null;
     isActive: boolean;
+    sortOrder?: number;
   }) {
     return {
-      id: plan.id,
-      code: plan.code,
-      nameAr: plan.nameAr,
-      nameEn: plan.nameEn,
-      price: Number(plan.price),
-      currency: plan.currency,
-      durationDays: plan.durationDays,
-      portfolioItemLimit: plan.portfolioItemLimit,
+      ...this.entitlements.formatPlan({
+        id: plan.id,
+        code: plan.code,
+        nameAr: plan.nameAr,
+        nameEn: plan.nameEn,
+        price: plan.price,
+        currency: plan.currency,
+        durationDays: plan.durationDays,
+        proposalQuotaMonthly: plan.proposalQuotaMonthly ?? 20,
+        monthlyPointsGrant: plan.monthlyPointsGrant ?? 0,
+        visibilityWeight: plan.visibilityWeight ?? 0,
+        portfolioItemLimit: plan.portfolioItemLimit,
+        badgeKey: plan.badgeKey ?? null,
+        featuresJson: plan.featuresJson ?? null,
+        isActive: plan.isActive,
+        sortOrder: plan.sortOrder ?? 0,
+      }),
       rankingBoostWeight: plan.rankingBoostWeight,
-      isActive: plan.isActive,
     };
   }
 
-  private formatSubscription(
-    row: {
+  private formatSubscription(row: {
+    id: string;
+    userId: string;
+    planId: string;
+    status: FreelancerSubscriptionStatus;
+    source?: SubscriptionSource;
+    startedAt: Date | null;
+    expiresAt: Date | null;
+    cancelledAt: Date | null;
+    paymentId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    plan?: {
       id: string;
-      userId: string;
-      planId: string;
-      status: FreelancerSubscriptionStatus;
-      startedAt: Date | null;
-      expiresAt: Date | null;
-      cancelledAt: Date | null;
-      paymentId: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-      plan?: {
-        id: string;
-        code: string;
-        nameAr: string;
-        nameEn: string;
-        price: Prisma.Decimal;
-        currency: string;
-        durationDays: number;
-        portfolioItemLimit: number;
-        rankingBoostWeight: number;
-        isActive: boolean;
-      };
-      payment?: {
-        id: string;
-        status: PaymentStatus;
-        amount: Prisma.Decimal;
-        currency: string;
-        provider: string;
-        paidAt: Date | null;
-      } | null;
-    },
-  ) {
+      code: string;
+      nameAr: string;
+      nameEn: string;
+      price: Prisma.Decimal;
+      currency: string;
+      durationDays: number;
+      portfolioItemLimit: number;
+      visibilityWeight?: number;
+      rankingBoostWeight: number;
+      proposalQuotaMonthly?: number;
+      monthlyPointsGrant?: number;
+      badgeKey?: string | null;
+      featuresJson?: Prisma.JsonValue | null;
+      isActive: boolean;
+      sortOrder?: number;
+    };
+    payment?: {
+      id: string;
+      status: PaymentStatus;
+      amount: Prisma.Decimal;
+      currency: string;
+      provider: string;
+      paidAt: Date | null;
+    } | null;
+  }) {
     const now = new Date();
-    const isPro =
-      row.status === FreelancerSubscriptionStatus.ACTIVE &&
+    const isActive =
+      (row.status === FreelancerSubscriptionStatus.ACTIVE ||
+        row.status === FreelancerSubscriptionStatus.TRIAL ||
+        row.status === FreelancerSubscriptionStatus.PAST_DUE) &&
       !!row.expiresAt &&
       row.expiresAt > now;
     return {
@@ -891,14 +1207,22 @@ export class SubscriptionsService {
       userId: row.userId,
       planId: row.planId,
       status: row.status,
+      source: row.source ?? SubscriptionSource.PURCHASE,
       startedAt: row.startedAt,
       expiresAt: row.expiresAt,
       cancelledAt: row.cancelledAt,
       paymentId: row.paymentId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      isPro,
-      plan: row.plan ? this.formatPlan(row.plan) : undefined,
+      isActive,
+      /** @deprecated Prefer isActive */
+      isPro: isActive,
+      plan: row.plan
+        ? {
+            ...this.formatPlan(row.plan),
+            rankingBoostWeight: row.plan.rankingBoostWeight,
+          }
+        : undefined,
       payment: row.payment
         ? {
             id: row.payment.id,
@@ -926,20 +1250,6 @@ export class SubscriptionsService {
   }
 }
 
-function addDays(from: Date, days: number): Date {
-  const d = new Date(from.getTime());
-  d.setUTCDate(d.getUTCDate() + days);
-  return d;
-}
-
 function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
-
-function isIdentityVerifiedNow(
-  row: { status: IdentityVerificationStatus; expiresAt: Date | null } | null | undefined,
-): boolean {
-  if (!row || row.status !== IdentityVerificationStatus.VERIFIED) return false;
-  if (row.expiresAt && row.expiresAt <= new Date()) return false;
-  return true;
 }

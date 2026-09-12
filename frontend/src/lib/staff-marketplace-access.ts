@@ -10,6 +10,7 @@ import { isAdminLoginPath, isAdminPath } from '@/lib/site-urls';
 /** Authenticated marketplace surfaces blocked for staff (redirect → admin home). */
 export const STAFF_BLOCKED_MARKETPLACE_PREFIXES = [
   '/dashboard',
+  '/account',
   '/messages',
   '/notifications',
 ] as const;
@@ -24,7 +25,7 @@ export const STAFF_PUBLIC_MARKETPLACE_EXAMPLES = [
   '/terms',
   '/privacy',
   '/sitemap',
-  '/escrow',
+  '/pricing',
   '/projects',
   '/freelancers',
   '/u',

@@ -11,6 +11,103 @@ import {
 
 export async function seedTestReferenceData(prisma: PrismaClient) {
   await seedReferenceData(prisma);
+  await ensureSubscriptionCatalog(prisma);
+}
+
+async function ensureSubscriptionCatalog(prisma: PrismaClient) {
+  const plans = [
+    {
+      id: '00000000-0000-4000-8000-000000000022',
+      code: 'STARTER',
+      nameAr: 'البداية',
+      nameEn: 'Starter',
+      price: 22,
+      proposalQuotaMonthly: 20,
+      monthlyPointsGrant: 0,
+      visibilityWeight: 1,
+      portfolioItemLimit: 20,
+      sortOrder: 10,
+      featuresJson: { messaging: true, publicProfile: true, standardVisibility: true },
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000042',
+      code: 'PRO',
+      nameAr: 'احترافي',
+      nameEn: 'Pro',
+      price: 42,
+      proposalQuotaMonthly: 60,
+      monthlyPointsGrant: 30,
+      visibilityWeight: 5,
+      portfolioItemLimit: 40,
+      badgeKey: 'pro',
+      sortOrder: 20,
+      featuresJson: {
+        messaging: true,
+        publicProfile: true,
+        proBadge: true,
+        statistics: true,
+        higherVisibility: true,
+      },
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000072',
+      code: 'PREMIUM',
+      nameAr: 'مميز',
+      nameEn: 'Premium',
+      price: 72,
+      proposalQuotaMonthly: 120,
+      monthlyPointsGrant: 80,
+      visibilityWeight: 10,
+      portfolioItemLimit: 80,
+      badgeKey: 'premium',
+      sortOrder: 30,
+      featuresJson: {
+        messaging: true,
+        publicProfile: true,
+        premiumBadge: true,
+        advancedStatistics: true,
+        highestVisibility: true,
+        promotionalBenefits: true,
+      },
+    },
+  ] as const;
+
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { code: plan.code },
+      create: {
+        id: plan.id,
+        code: plan.code,
+        nameAr: plan.nameAr,
+        nameEn: plan.nameEn,
+        price: plan.price,
+        currency: 'LYD',
+        durationDays: 30,
+        isActive: true,
+        portfolioItemLimit: plan.portfolioItemLimit,
+        visibilityWeight: plan.visibilityWeight,
+        rankingBoostWeight: plan.code === 'STARTER' ? 0 : 1,
+        proposalQuotaMonthly: plan.proposalQuotaMonthly,
+        monthlyPointsGrant: plan.monthlyPointsGrant,
+        badgeKey: 'badgeKey' in plan ? plan.badgeKey : null,
+        featuresJson: plan.featuresJson,
+        sortOrder: plan.sortOrder,
+      },
+      update: {
+        isActive: true,
+        price: plan.price,
+        proposalQuotaMonthly: plan.proposalQuotaMonthly,
+        monthlyPointsGrant: plan.monthlyPointsGrant,
+        visibilityWeight: plan.visibilityWeight,
+        portfolioItemLimit: plan.portfolioItemLimit,
+      },
+    });
+  }
+
+  await prisma.subscriptionPlan.updateMany({
+    where: { code: 'FREELANCER_PRO' },
+    data: { isActive: false },
+  });
 }
 
 export async function registerUser(

@@ -258,9 +258,19 @@ function AccountMenuPanel({
         icon: <IconAward />,
       },
       {
-        href: '/dashboard/nuqati',
+        href: '/account/points',
         label: t('points'),
         icon: <IconCoins />,
+      },
+      {
+        href: '/account/subscription',
+        label: t('subscription'),
+        icon: <IconAward />,
+      },
+      {
+        href: '/account/payments',
+        label: t('payments'),
+        icon: <IconHelp />,
       },
     );
   }

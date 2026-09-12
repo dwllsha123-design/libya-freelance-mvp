@@ -156,6 +156,12 @@ enum AdminAuditAction {
   SUBSCRIPTION_EXTENDED
   SUBSCRIPTION_SUSPENDED
   SUBSCRIPTION_CANCELLED
+  SUBSCRIPTION_GRANTED
+  SUBSCRIPTION_PLAN_CREATED
+  SUBSCRIPTION_PLAN_UPDATED
+  POINTS_PACKAGE_CREATED
+  POINTS_PACKAGE_UPDATED
+  POINTS_MANUAL_ADJUSTED
   VERIFIED_TALENT_GRANTED
   VERIFIED_TALENT_REMOVED
 }
@@ -339,6 +345,11 @@ model User {
   pointsTaskCompletions   PointsTaskCompletion[]
   pointsStreak            PointsStreakState?
   pointsPurchases         PointsPurchase[]
+  /// Freelancer free-trial window (clients leave null).
+  trialStartedAt          DateTime?
+  trialEndsAt             DateTime?
+  hasUsedTrial            Boolean   @default(false)
+  proposalUsagePeriods    ProposalUsagePeriod[]
   adminPermissions        UserAdminPermission[]
   commercialAuditLogs     CommercialAuditLog[]     @relation("CommercialAuditActor")
   platformCommissionPolicies PlatformCommissionPolicy[] @relation("PlatformCommissionCreator")
@@ -858,6 +869,13 @@ model Escrow {
   @@index([status])
 }
 
+enum PaymentFulfillmentStatus {
+  NONE
+  PENDING
+  FULFILLED
+  FAILED
+}
+
 model Payment {
   id                String         @id @default(uuid())
   escrowId          String?
@@ -874,17 +892,23 @@ model Payment {
   failureCode       String?
   failureMessage    String?
   paidAt            DateTime?
+  failedAt          DateTime?
   refundedAt        DateTime?
+  fulfillmentStatus PaymentFulfillmentStatus @default(NONE)
+  fulfilledAt       DateTime?
+  fulfillmentKey    String?        @unique
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
   escrow Escrow? @relation(fields: [escrowId], references: [id], onDelete: Cascade)
   client User   @relation("PaymentClient", fields: [clientId], references: [id], onDelete: Cascade)
   freelancerSubscription FreelancerSubscription?
+  pointsPurchase         PointsPurchase?
 
   @@index([escrowId])
   @@index([clientId])
   @@index([status])
+  @@index([purpose, status])
   @@index([providerReference])
   @@index([createdAt])
 }
@@ -945,6 +969,11 @@ model PointsTransaction {
   reasonKey     String
   descriptionAr String
   referenceId   String?
+  /// Optional immutable source tag (e.g. PAYMENT, BOOST, ADMIN, PLAN_GRANT).
+  source        String?
+  metadata      Json?
+  /// Idempotency key for payment/admin fulfillment (unique when set).
+  fulfillmentKey String?              @unique
   balanceAfter  Int
   createdAt     DateTime              @default(now())
 
@@ -953,6 +982,7 @@ model PointsTransaction {
   @@index([userId, createdAt])
   @@index([userId, type])
   @@index([reasonKey])
+  @@index([referenceId])
 }
 
 model PointsTaskCompletion {
@@ -980,21 +1010,46 @@ model PointsStreakState {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model PointsPackage {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  nameAr      String
+  nameEn      String
+  points      Int
+  bonusPoints Int      @default(0)
+  priceLyd    Decimal  @db.Decimal(12, 2)
+  currency    String   @default("LYD")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases PointsPurchase[]
+
+  @@index([isActive, sortOrder])
+}
+
 model PointsPurchase {
   id                String        @id @default(uuid())
   userId            String
+  packageId         String?
   pointsAmount      Int
+  bonusPoints       Int           @default(0)
   priceLyd          Decimal       @db.Decimal(12, 2)
   status            PaymentStatus @default(PENDING)
   provider          String        @default("simulated")
   providerReference String?
+  paymentId         String?       @unique
   createdAt         DateTime      @default(now())
   paidAt            DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package PointsPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  payment Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status])
+  @@index([packageId])
 }
 
 /// Versioned platform default commission — never edit historical rows in place
@@ -1616,42 +1671,63 @@ model IdentityVerificationDocument {
 
 enum FreelancerSubscriptionStatus {
   PENDING_PAYMENT
+  TRIAL
   ACTIVE
+  PAST_DUE
   EXPIRED
   CANCELLED
   REFUNDED
   SUSPENDED
 }
 
+enum SubscriptionSource {
+  TRIAL
+  PURCHASE
+  ADMIN_GRANT
+  MIGRATION
+}
+
 model SubscriptionPlan {
-  id                 String   @id @default(uuid())
-  code               String   @unique
-  nameAr             String
-  nameEn             String
-  price              Decimal  @db.Decimal(12, 2)
-  currency           String   @default("LYD")
-  durationDays       Int
-  isActive           Boolean  @default(true)
-  portfolioItemLimit Int      @default(40)
-  /// Tie-breaker weight only (0 or 1 applied on FreelancerProfile.proBoostScore)
-  rankingBoostWeight Float    @default(1)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  code                 String   @unique
+  nameAr               String
+  nameEn               String
+  price                Decimal  @db.Decimal(12, 2)
+  currency             String   @default("LYD")
+  durationDays         Int
+  isActive             Boolean  @default(true)
+  portfolioItemLimit   Int      @default(40)
+  /// Organic search / listing visibility weight (higher = more priority).
+  visibilityWeight     Float    @default(0)
+  /// Legacy tie-breaker field retained for historical compatibility.
+  rankingBoostWeight   Float    @default(0)
+  proposalQuotaMonthly Int      @default(20)
+  monthlyPointsGrant   Int      @default(0)
+  badgeKey             String?
+  featuresJson         Json?
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   subscriptions FreelancerSubscription[]
+
+  @@index([isActive, sortOrder])
 }
 
 model FreelancerSubscription {
-  id         String                       @id @default(uuid())
-  userId     String
-  planId     String
-  status     FreelancerSubscriptionStatus @default(PENDING_PAYMENT)
-  startedAt  DateTime?
-  expiresAt  DateTime?
-  cancelledAt DateTime?
-  paymentId  String?                      @unique
-  createdAt  DateTime                     @default(now())
-  updatedAt  DateTime                     @updatedAt
+  id              String                       @id @default(uuid())
+  userId          String
+  planId          String
+  status          FreelancerSubscriptionStatus @default(PENDING_PAYMENT)
+  source          SubscriptionSource           @default(PURCHASE)
+  startedAt       DateTime?
+  expiresAt       DateTime?
+  cancelledAt     DateTime?
+  paymentId       String?                      @unique
+  migrationBatch  String?
+  metadata        Json?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan    SubscriptionPlan @relation(fields: [planId], references: [id])
@@ -1661,6 +1737,7 @@ model FreelancerSubscription {
   @@index([userId, status])
   @@index([status, expiresAt])
   @@index([planId])
+  @@index([migrationBatch])
 }
 
 enum SubscriptionAdminActionType {
@@ -1668,6 +1745,7 @@ enum SubscriptionAdminActionType {
   SUSPEND
   CANCEL
   REACTIVATE
+  GRANT
 }
 
 model SubscriptionAdminAction {
@@ -1685,6 +1763,21 @@ model SubscriptionAdminAction {
 
   @@index([subscriptionId, createdAt])
   @@index([actorId])
+}
+
+/// Monthly proposal quota usage (calendar month UTC: YYYY-MM).
+model ProposalUsagePeriod {
+  id        String   @id @default(uuid())
+  userId    String
+  periodKey String
+  usedCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodKey])
+  @@index([userId])
 }
 
 model ProfileViewDaily {

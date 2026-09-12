@@ -168,11 +168,11 @@ export const HOME_CATEGORIES_SECTION = {
 
 export const HOME_RESOURCES = {
   title: 'موارد لتوظيف المستقلين الليبيين',
-  subtitle: 'أدلة وأسئلة شائعة وشرح الضمان بلغة واضحة.',
+  subtitle: 'أدلة وأسئلة شائعة وباقات الاشتراك بلغة واضحة.',
   links: [
     { label: 'الأدلة', href: '/how-it-works' },
     { label: 'الأسئلة الشائعة', href: '/help' },
-    { label: 'حماية الضمان', href: '/escrow' },
+    { label: 'باقات المستقلين', href: '/pricing' },
   ],
 } as const;
 

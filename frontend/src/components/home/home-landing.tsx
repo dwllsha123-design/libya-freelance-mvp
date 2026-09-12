@@ -533,7 +533,7 @@ export function HomeLanding() {
             <Link href="/how-it-works" className="font-semibold text-ember hover:underline">
               {content.howItWorks.detailedGuide} ←
             </Link>
-            <Link href="/escrow" className="font-semibold text-ember hover:underline">
+            <Link href="/pricing" className="font-semibold text-ember hover:underline">
               {content.howItWorks.escrow} ←
             </Link>
             <Link href="/about" className="font-semibold text-ember hover:underline">

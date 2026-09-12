@@ -31,10 +31,23 @@ export abstract class BasePaymentProvider implements PaymentProvider {
     input: CreateProviderPaymentInput,
   ): Promise<CreateProviderPaymentResult>;
 
+  createCheckout(
+    input: CreateProviderPaymentInput,
+  ): Promise<CreateProviderPaymentResult> {
+    return this.createPayment(input);
+  }
+
   verifyWebhook?(
     _input: VerifyProviderWebhookInput,
   ): Promise<ProviderWebhookEvent | null> {
     return Promise.resolve(null);
+  }
+
+  parseWebhook?(
+    _rawBody: string | Buffer,
+    _headers?: Record<string, string | string[] | undefined>,
+  ): ProviderWebhookEvent | null {
+    return null;
   }
 
   refund?(

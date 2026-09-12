@@ -9,6 +9,8 @@ import {
 } from '@/lib/locale-content';
 import type { AppLocale } from '@/i18n/routing';
 import type { ProjectListItem } from '@/lib/schemas/project';
+import { getApiErrorCode } from '@/lib/subscriptions';
+import { Link } from '@/i18n/navigation';
 
 const COVER_MAX = 5000;
 const COVER_MIN = 50;
@@ -98,6 +100,7 @@ function ProposalFormModalBody({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [boostBoard, setBoostBoard] = useState<BoostBoardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [subscriptionGate, setSubscriptionGate] = useState(false);
 
   const EXPERIENCE_LABELS: Record<string, string> = useMemo(
     () => ({
@@ -156,6 +159,7 @@ function ProposalFormModalBody({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSubscriptionGate(false);
 
     const price = Number(proposedPrice);
     const days = Number(estimatedDurationDays);
@@ -185,7 +189,22 @@ function ProposalFormModalBody({
         boostPoints,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('submitFailed'));
+      if (err instanceof ApiError) {
+        const code = getApiErrorCode(err.details);
+        if (code === 'SUBSCRIPTION_REQUIRED') {
+          setError(t('subscriptionRequired'));
+          setSubscriptionGate(true);
+          return;
+        }
+        if (code === 'PROPOSAL_QUOTA_EXCEEDED') {
+          setError(t('proposalQuotaExceeded'));
+          setSubscriptionGate(true);
+          return;
+        }
+        setError(err.message);
+        return;
+      }
+      setError(t('submitFailed'));
     }
   }
 
@@ -563,9 +582,18 @@ function ProposalFormModalBody({
             </SectionCard>
 
             {error ? (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </p>
+              <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p>{error}</p>
+                {subscriptionGate ? (
+                  <Link
+                    href="/pricing"
+                    className="mt-2 inline-block font-semibold text-ember underline"
+                    onClick={onClose}
+                  >
+                    {t('viewPlans')}
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
           </div>
 

@@ -1,11 +1,17 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
+  NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  AdminAuditAction,
   NotificationType,
+  PaymentPurpose,
   PaymentStatus,
   PointsTransactionType,
   Prisma,
@@ -16,6 +22,10 @@ import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
+import { AdminAuditService } from '../admin/admin-audit.service.js';
+import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
+import type { PaymentProvider } from '../payments/payment.types.js';
+import { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
 import {
   calculateProfileCompletion,
   meetsProfileCompletionThreshold,
@@ -25,6 +35,10 @@ import {
   NUQATI_REASON_LABELS,
   NUQATI_TASK_DEFINITIONS,
 } from './nuqati.config.js';
+import type {
+  CreatePointsPackageDto,
+  UpdatePointsPackageDto,
+} from './dto/points-package.dto.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -57,7 +71,19 @@ export class NuqatiService {
     private readonly configService: ConfigService,
     private readonly notifications: NotificationsService,
     private readonly launchProgram: LaunchProgramService,
+    private readonly audit: AdminAuditService,
+    @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: PaymentProvider,
+    @Inject(forwardRef(() => PaymentFulfillmentService))
+    private readonly paymentFulfillment: PaymentFulfillmentService,
   ) {}
+
+  async listPointsPackages() {
+    const packages = await this.prisma.pointsPackage.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { priceLyd: 'asc' }],
+    });
+    return packages.map((pkg) => this.formatPackage(pkg));
+  }
 
   async getDashboard(userId: string, role: Role) {
     if (role !== Role.FREELANCER) {
@@ -69,10 +95,11 @@ export class NuqatiService {
       where: { userId },
     });
 
-    const [summary, tasks, streak] = await Promise.all([
+    const [summary, tasks, streak, packages] = await Promise.all([
       this.getSummary(userId),
       this.getTasks(userId),
       this.prisma.pointsStreakState.findUnique({ where: { userId } }),
+      this.listPointsPackages(),
     ]);
 
     const earnedThisMonth = await this.sumEarnedInMonth(userId);
@@ -84,7 +111,21 @@ export class NuqatiService {
       earnedThisMonth,
       monthlyCap: NUQATI_CONFIG.monthlyEarnableFromTasks,
       proposalCost: NUQATI_CONFIG.proposalSubmitCost,
-      packages: NUQATI_CONFIG.purchasePackages,
+      packages:
+        packages.length > 0
+          ? packages
+          : NUQATI_CONFIG.purchasePackages.map((p) => ({
+              id: p.id,
+              code: p.id.toUpperCase(),
+              nameAr: `${p.points} نقطة`,
+              nameEn: `${p.points} Points`,
+              points: p.points,
+              bonusPoints: 0,
+              priceLyd: p.priceLyd,
+              currency: 'LYD',
+              isActive: true,
+              sortOrder: 0,
+            })),
       tasks,
       streak: {
         currentDays: streak?.currentStreakDays ?? 0,
@@ -137,49 +178,34 @@ export class NuqatiService {
   }
 
   /**
-   * Starts a Nuqati points purchase checkout.
-   *
-   * Until PAYMENT_POINTS_GATEWAY_ENABLED=true and a real provider is wired,
-   * returns a structured "coming soon" response without crediting points.
-   *
-   * Future gateway flow:
-   * 1. Create Payment (purpose POINTS_PURCHASE) via PaymentService
-   * 2. Return checkoutUrl / requiresRedirect
-   * 3. On webhook success → credit wallet + mark PointsPurchase SUCCEEDED
+   * Starts a Nuqati points purchase checkout via Payment (POINTS_PURCHASE).
+   * Credits happen only after verified SUCCEEDED fulfillment (idempotent).
    */
-  async initiatePurchaseCheckout(userId: string, role: Role, packageId: string) {
+  async initiatePurchaseCheckout(
+    userId: string,
+    role: Role,
+    packageIdOrCode: string,
+    options: { returnUrl?: string; cancelUrl?: string } = {},
+  ) {
     if (role !== Role.FREELANCER) {
       throw new ForbiddenException('نقاطي متاح للمستقلين فقط');
     }
 
-    const pkg = NUQATI_CONFIG.purchasePackages.find((p) => p.id === packageId);
-    if (!pkg) throw new BadRequestException('باقة غير صالحة');
-
-    const gatewayEnabled =
-      this.configService.get<boolean>('payment.pointsGatewayEnabled') === true;
-
-    const purchase = await this.prisma.pointsPurchase.create({
-      data: {
-        userId,
-        pointsAmount: pkg.points,
-        priceLyd: pkg.priceLyd,
-        status: PaymentStatus.PENDING,
-        provider: gatewayEnabled ? 'pending' : 'coming_soon',
-        providerReference: gatewayEnabled
-          ? null
-          : `soon_pts_${randomUUID().slice(0, 8)}`,
+    const key = packageIdOrCode.trim();
+    const pkg = await this.prisma.pointsPackage.findFirst({
+      where: {
+        isActive: true,
+        OR: [{ id: key }, { code: key.toUpperCase() }],
       },
     });
+    if (!pkg) throw new BadRequestException('باقة غير صالحة');
 
-    if (!gatewayEnabled) {
+    if (!this.paymentProvider.capabilities.available) {
       return {
-        purchaseId: purchase.id,
-        package: {
-          id: pkg.id,
-          points: pkg.points,
-          priceLyd: pkg.priceLyd,
-        },
-        status: 'COMING_SOON' as const,
+        purchaseId: null as string | null,
+        paymentId: null as string | null,
+        package: this.formatPackage(pkg),
+        status: 'UNAVAILABLE' as const,
         comingSoon: true,
         requiresRedirect: false,
         checkoutUrl: null as string | null,
@@ -191,39 +217,279 @@ export class NuqatiService {
             comingSoon: true,
           },
         ],
-        currency: this.configService.get<string>('payment.currency') ?? 'LYD',
-        message: 'بوابة الدفع الإلكتروني قيد الإعداد — قريباً',
+        currency: pkg.currency,
+        message: 'بوابة الدفع الإلكتروني غير متاحة حالياً',
       };
     }
 
-    // Placeholder for live gateway integration — keep pending until provider wired.
+    const currency = pkg.currency || 'LYD';
+    const amount = Number(pkg.priceLyd);
+    const totalPoints = pkg.points + pkg.bonusPoints;
+    const idempotencyKey = `points-purchase:${pkg.code}:${userId}:${Date.now()}:${randomUUID().slice(0, 8)}`;
+
+    const { payment, purchase } = await this.prisma.$transaction(async (tx) => {
+      const paymentRow = await tx.payment.create({
+        data: {
+          clientId: userId,
+          purpose: PaymentPurpose.POINTS_PURCHASE,
+          amount,
+          currency,
+          status: PaymentStatus.PENDING,
+          provider: this.paymentProvider.name,
+          idempotencyKey,
+          metadata: {
+            packageId: pkg.id,
+            packageCode: pkg.code,
+            pointsAmount: pkg.points,
+            bonusPoints: pkg.bonusPoints,
+            expectedAmount: amount,
+            expectedCurrency: currency,
+          } as Prisma.InputJsonValue,
+        },
+      });
+
+      const purchaseRow = await tx.pointsPurchase.create({
+        data: {
+          userId,
+          packageId: pkg.id,
+          pointsAmount: pkg.points,
+          bonusPoints: pkg.bonusPoints,
+          priceLyd: pkg.priceLyd,
+          status: PaymentStatus.PENDING,
+          provider: this.paymentProvider.name,
+          paymentId: paymentRow.id,
+        },
+      });
+
+      return { payment: paymentRow, purchase: purchaseRow };
+    });
+
+    const providerResult = await this.paymentProvider.createCheckout({
+      paymentId: payment.id,
+      amount,
+      currency,
+      description: `شراء ${totalPoints} نقطة — ${pkg.nameAr}`,
+      clientId: userId,
+      returnUrl: options.returnUrl,
+      cancelUrl: options.cancelUrl,
+      metadata: {
+        purpose: PaymentPurpose.POINTS_PURCHASE,
+        purchaseId: purchase.id,
+        packageCode: pkg.code,
+        expectedAmount: amount,
+        expectedCurrency: currency,
+      },
+    });
+
+    if (providerResult.status === 'failed') {
+      await this.prisma.$transaction([
+        this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.FAILED,
+            failedAt: new Date(),
+            failureMessage: 'فشل إنشاء عملية الدفع لدى مزود الخدمة',
+          },
+        }),
+        this.prisma.pointsPurchase.update({
+          where: { id: purchase.id },
+          data: { status: PaymentStatus.FAILED },
+        }),
+      ]);
+      throw new BadRequestException('تعذر بدء عملية الدفع');
+    }
+
+    if (providerResult.status === 'succeeded') {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.SUCCEEDED,
+          providerReference: providerResult.providerReference,
+          paidAt: new Date(),
+        },
+      });
+      await this.paymentFulfillment.fulfillSucceededPayment(payment.id);
+      return {
+        purchaseId: purchase.id,
+        paymentId: payment.id,
+        package: this.formatPackage(pkg),
+        status: 'SUCCEEDED' as const,
+        comingSoon: false,
+        requiresRedirect: false,
+        checkoutUrl: null as string | null,
+        currency,
+        pointsCredited: totalPoints,
+      };
+    }
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: PaymentStatus.PROCESSING,
+        providerReference: providerResult.providerReference,
+        checkoutUrl: providerResult.checkoutUrl ?? null,
+      },
+    });
+
     return {
       purchaseId: purchase.id,
-      package: {
-        id: pkg.id,
-        points: pkg.points,
-        priceLyd: pkg.priceLyd,
-      },
-      status: 'PENDING' as const,
-      comingSoon: true,
-      requiresRedirect: false,
-      checkoutUrl: null as string | null,
-      paymentMethods: [
-        {
-          id: 'electronic',
-          type: 'electronic',
-          available: false,
-          comingSoon: true,
-        },
-      ],
-      currency: this.configService.get<string>('payment.currency') ?? 'LYD',
-      message: 'بوابة الدفع الإلكتروني قيد الإعداد — قريباً',
+      paymentId: payment.id,
+      package: this.formatPackage(pkg),
+      status: 'PROCESSING' as const,
+      comingSoon: false,
+      requiresRedirect: true,
+      checkoutUrl: providerResult.checkoutUrl ?? null,
+      currency,
     };
+  }
+
+  /**
+   * Idempotent credit after verified POINTS_PURCHASE payment.
+   * Keeps historical PointsPurchase + PointsTransaction rows.
+   */
+  async creditPointsPurchaseFulfillment(params: {
+    userId: string;
+    purchaseId: string;
+    pointsAmount: number;
+    bonusPoints: number;
+    paymentId: string;
+    fulfillmentKey: string;
+  }) {
+    const existing = await this.prisma.pointsTransaction.findUnique({
+      where: { fulfillmentKey: params.fulfillmentKey },
+    });
+    if (existing) {
+      return { credited: false, alreadyCredited: true, amount: existing.amount };
+    }
+
+    const total = params.pointsAmount + Math.max(0, params.bonusPoints);
+    if (total <= 0) {
+      throw new BadRequestException('كمية النقاط غير صالحة');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.credit(
+        params.userId,
+        total,
+        PointsTransactionType.PURCHASE,
+        'PURCHASE',
+        `شراء ${params.pointsAmount} نقطة` +
+          (params.bonusPoints > 0 ? ` (+${params.bonusPoints} مكافأة)` : ''),
+        params.purchaseId,
+        tx,
+        {
+          fulfillmentKey: params.fulfillmentKey,
+          source: 'PAYMENT',
+          metadata: {
+            paymentId: params.paymentId,
+            purchaseId: params.purchaseId,
+            pointsAmount: params.pointsAmount,
+            bonusPoints: params.bonusPoints,
+          },
+        },
+      );
+
+      await tx.pointsPurchase.update({
+        where: { id: params.purchaseId },
+        data: {
+          status: PaymentStatus.SUCCEEDED,
+          paidAt: new Date(),
+          providerReference: params.paymentId,
+        },
+      });
+    });
+
+    return { credited: true, alreadyCredited: false, amount: total };
   }
 
   /** @deprecated Use initiatePurchaseCheckout — kept as alias for older clients. */
   async purchasePackage(userId: string, role: Role, packageId: string) {
     return this.initiatePurchaseCheckout(userId, role, packageId);
+  }
+
+  async adminListPackages(includeInactive = true) {
+    const packages = await this.prisma.pointsPackage.findMany({
+      where: includeInactive ? undefined : { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { points: 'asc' }],
+    });
+    return packages.map((pkg) => this.formatPackage(pkg));
+  }
+
+  async adminCreatePackage(adminId: string, dto: CreatePointsPackageDto) {
+    const code = dto.code.trim().toUpperCase();
+    try {
+      const created = await this.prisma.$transaction(async (tx) => {
+        const row = await tx.pointsPackage.create({
+          data: {
+            code,
+            nameAr: dto.nameAr.trim(),
+            nameEn: dto.nameEn.trim(),
+            points: dto.points,
+            bonusPoints: dto.bonusPoints ?? 0,
+            priceLyd: dto.priceLyd,
+            currency: (dto.currency ?? 'LYD').trim().toUpperCase(),
+            sortOrder: dto.sortOrder ?? 0,
+            isActive: dto.isActive ?? true,
+          },
+        });
+        await this.audit.log(
+          adminId,
+          AdminAuditAction.POINTS_PACKAGE_CREATED,
+          'PointsPackage',
+          row.id,
+          { code: row.code },
+          tx,
+        );
+        return row;
+      });
+      return this.formatPackage(created);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('رمز باقة النقاط مستخدم مسبقاً');
+      }
+      throw error;
+    }
+  }
+
+  async adminUpdatePackage(
+    adminId: string,
+    id: string,
+    dto: UpdatePointsPackageDto,
+  ) {
+    const existing = await this.prisma.pointsPackage.findUnique({
+      where: { id },
+    });
+    if (!existing) throw new NotFoundException('باقة النقاط غير موجودة');
+
+    const data: Prisma.PointsPackageUpdateInput = {};
+    if (dto.nameAr !== undefined) data.nameAr = dto.nameAr.trim();
+    if (dto.nameEn !== undefined) data.nameEn = dto.nameEn.trim();
+    if (dto.points !== undefined) data.points = dto.points;
+    if (dto.bonusPoints !== undefined) data.bonusPoints = dto.bonusPoints;
+    if (dto.priceLyd !== undefined) data.priceLyd = dto.priceLyd;
+    if (dto.currency !== undefined) {
+      data.currency = dto.currency.trim().toUpperCase();
+    }
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.pointsPackage.update({ where: { id }, data });
+      await this.audit.log(
+        adminId,
+        AdminAuditAction.POINTS_PACKAGE_UPDATED,
+        'PointsPackage',
+        id,
+        { code: row.code, changes: Object.keys(dto) },
+        tx,
+      );
+      return row;
+    });
+
+    return this.formatPackage(updated);
   }
 
   async submitSocialShare(userId: string, role: Role, postUrl: string) {
@@ -415,8 +681,8 @@ export class NuqatiService {
   }
 
   /**
-   * Single balance check for submit + boost, then two ledger charges when boost > 0
-   * (PointsTransaction has no metadata field).
+   * Optional promotional boost only — proposal submit itself is free (quota-gated).
+   * No-op when boostPoints <= 0.
    */
   async chargeProposalSubmitWithBoost(
     userId: string,
@@ -425,62 +691,44 @@ export class NuqatiService {
     tx: Tx,
   ) {
     const boost = Math.max(0, Math.floor(boostPoints || 0));
-    const submitCost = NUQATI_CONFIG.proposalSubmitCost;
-    const total = submitCost + boost;
+    if (boost <= 0) {
+      return;
+    }
 
     await this.ensureWallet(userId, tx);
 
-    // Atomic conditional debit — prevents concurrent overdraft
     const updated = await tx.$queryRaw<{ balance: number }[]>`
       UPDATE "PointsWallet"
-      SET balance = balance - ${total},
+      SET balance = balance - ${boost},
           "updatedAt" = CURRENT_TIMESTAMP
       WHERE "userId" = ${userId}
-        AND balance >= ${total}
+        AND balance >= ${boost}
       RETURNING balance
     `;
 
     if (!updated.length) {
       throw new BadRequestException(
-        boost > 0
-          ? `ليس لديك نقاط كافية لإرسال هذا العرض. تحتاج ${total} نقاط (تقديم ${submitCost} + تعزيز ${boost}).`
-          : 'ليس لديك نقاط كافية لإرسال هذا العرض.',
+        `ليس لديك نقاط كافية لتعزيز هذا العرض. تحتاج ${boost} نقطة.`,
       );
     }
-
-    const balanceAfterSubmit = updated[0].balance + boost;
-    const balanceAfter = updated[0].balance;
 
     await tx.pointsTransaction.create({
       data: {
         userId,
-        amount: -submitCost,
+        amount: -boost,
         type: PointsTransactionType.SPEND,
-        reasonKey: 'PROPOSAL_SUBMIT',
-        descriptionAr: 'تكلفة تقديم عرض على مشروع',
+        reasonKey: 'PROPOSAL_BOOST',
+        descriptionAr: `تعزيز ظهور العرض بـ ${boost} نقطة`,
         referenceId: proposalId,
-        balanceAfter: balanceAfterSubmit,
+        source: 'BOOST',
+        balanceAfter: updated[0].balance,
       },
     });
-
-    if (boost > 0) {
-      await tx.pointsTransaction.create({
-        data: {
-          userId,
-          amount: -boost,
-          type: PointsTransactionType.SPEND,
-          reasonKey: 'PROPOSAL_BOOST',
-          descriptionAr: `تعزيز ظهور العرض بـ ${boost} نقطة`,
-          referenceId: proposalId,
-          balanceAfter,
-        },
-      });
-    }
 
     await this.launchProgram.trackAnalytics(
       userId,
       ProductAnalyticsEventType.PROPOSAL_POINTS_DEDUCTED,
-      { proposalId, submitCost, boost, total },
+      { proposalId, submitCost: 0, boost, total: boost },
       tx,
     );
   }
@@ -821,6 +1069,11 @@ export class NuqatiService {
     descriptionAr: string,
     referenceId?: string,
     tx?: Tx,
+    extras?: {
+      fulfillmentKey?: string;
+      source?: string;
+      metadata?: Prisma.InputJsonValue;
+    },
   ) {
     const db = tx ?? this.prisma;
     const wallet = await this.ensureWallet(userId, db);
@@ -839,6 +1092,9 @@ export class NuqatiService {
         reasonKey,
         descriptionAr,
         referenceId,
+        fulfillmentKey: extras?.fulfillmentKey,
+        source: extras?.source,
+        metadata: extras?.metadata,
         balanceAfter,
       },
     });
@@ -886,6 +1142,32 @@ export class NuqatiService {
       referenceId: t.referenceId,
       balanceAfter: t.balanceAfter,
       createdAt: t.createdAt.toISOString(),
+    };
+  }
+
+  private formatPackage(pkg: {
+    id: string;
+    code: string;
+    nameAr: string;
+    nameEn: string;
+    points: number;
+    bonusPoints: number;
+    priceLyd: Prisma.Decimal | number;
+    currency: string;
+    isActive: boolean;
+    sortOrder: number;
+  }) {
+    return {
+      id: pkg.id,
+      code: pkg.code,
+      nameAr: pkg.nameAr,
+      nameEn: pkg.nameEn,
+      points: pkg.points,
+      bonusPoints: pkg.bonusPoints,
+      priceLyd: Number(pkg.priceLyd),
+      currency: pkg.currency,
+      isActive: pkg.isActive,
+      sortOrder: pkg.sortOrder,
     };
   }
 }

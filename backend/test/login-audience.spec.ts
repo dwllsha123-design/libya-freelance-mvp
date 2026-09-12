@@ -46,6 +46,7 @@ describe('AuthService login audience separation', () => {
       { onFreelancerLogin: vi.fn() } as never,
       {} as never,
       {} as never,
+      {} as never,
     );
   });
 
@@ -139,6 +140,7 @@ describe('AuthService.register role promotion prevention', () => {
       {} as never,
       {} as never,
       { assertRegistrationAllowed: vi.fn() } as never,
+      {} as never,
     );
 
     await expect(

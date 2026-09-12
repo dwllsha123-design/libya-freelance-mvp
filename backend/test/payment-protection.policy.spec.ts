@@ -19,6 +19,10 @@ describe('payment-protection.policy', () => {
     vi.stubEnv('NODE_ENV', 'production');
     expect(isMarketplacePaymentProtectionActive()).toBe(false);
     expect(paymentProtectionPublicFlags().directPaymentMode).toBe(true);
+    expect(paymentProtectionPublicFlags().paymentProtectionStatus).toBe('DISABLED');
+    expect(paymentProtectionPublicFlags().platformPaymentsScope).toBe(
+      'SUBSCRIPTIONS_AND_POINTS',
+    );
   });
 
   it('blocks marketplace funding mutations in production when inactive', () => {
@@ -39,12 +43,14 @@ describe('payment-protection.policy', () => {
     }
   });
 
-  it('allows simulated funding outside production when protection inactive', () => {
+  it('blocks escrow funding outside production when protection inactive (advertising-model freeze)', () => {
     vi.stubEnv('NODE_ENV', 'test');
     vi.stubEnv('PAYMENT_PROTECTION_ACTIVE', '');
-    expect(isSimulatedMarketplaceFundingAllowed()).toBe(true);
-    expect(canMutateMarketplaceEscrowFunding()).toBe(true);
-    expect(() => assertMarketplaceFundingAllowed()).not.toThrow();
+    expect(isSimulatedMarketplaceFundingAllowed()).toBe(false);
+    expect(canMutateMarketplaceEscrowFunding()).toBe(false);
+    expect(() => assertMarketplaceFundingAllowed()).toThrow(
+      PreconditionFailedException,
+    );
   });
 
   it('allows funding when PAYMENT_PROTECTION_ACTIVE=true even in production', () => {

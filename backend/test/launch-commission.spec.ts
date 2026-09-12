@@ -17,8 +17,8 @@ describe('Launch commission policy', () => {
 });
 
 describe('Proposal point cost', () => {
-  it('charges exactly 10 points for a proposal submit', async () => {
+  it('does not charge points for a normal proposal submit (quota-gated)', async () => {
     const { NUQATI_CONFIG } = await import('../src/nuqati/nuqati.config.js');
-    expect(NUQATI_CONFIG.proposalSubmitCost).toBe(10);
+    expect(NUQATI_CONFIG.proposalSubmitCost).toBe(0);
   });
 });

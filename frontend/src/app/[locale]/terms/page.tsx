@@ -45,7 +45,7 @@ export default async function TermsPage({ params }: Props) {
           {section.beforeEscrowLink ? (
             <p>
               {section.beforeEscrowLink}
-              <Link href="/escrow">{section.escrowLinkLabel}</Link>
+              <Link href="/pricing">{section.escrowLinkLabel}</Link>
               {section.afterEscrowLink}
             </p>
           ) : null}

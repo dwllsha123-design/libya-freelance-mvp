@@ -13,6 +13,7 @@ import type { AppLocale } from '@/i18n/routing';
 import { ApiError } from '@/lib/api';
 import { FreelancerBadgesSection } from '@/components/badges/freelancer-badges-section';
 import { LaunchDashboardCard } from '@/components/launch/launch-dashboard-card';
+import { SubscriptionStatusBanner } from '@/components/dashboard/subscription-status-banner';
 
 const SETUP_TASK_KEYS = new Set(['PROFILE_COMPLETE', 'FIRST_PORTFOLIO', 'FIRST_JOB']);
 const PROMO_DISMISS_KEY = 'lf-dashboard-nuqati-promo-dismissed';
@@ -275,6 +276,8 @@ export function FreelancerDashboard() {
         <div className="mt-6">
           <FreelancerBadgesSection />
         </div>
+
+        <SubscriptionStatusBanner />
 
         <LaunchDashboardCard />
 

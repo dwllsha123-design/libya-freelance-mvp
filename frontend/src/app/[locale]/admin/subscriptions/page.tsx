@@ -14,7 +14,7 @@ type Row = {
   expiresAt: string | null;
   identityVerified: boolean;
   verificationStatus: string;
-  plan?: { nameAr: string; price: number; currency: string };
+  plan?: { nameAr: string; code?: string; price: number; currency: string };
   payment?: { id: string; status: string; amount: number } | null;
   user: {
     id: string;
@@ -34,6 +34,10 @@ export default function AdminSubscriptionsPage() {
   const [extraDays, setExtraDays] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [grantUserId, setGrantUserId] = useState('');
+  const [grantPlanCode, setGrantPlanCode] = useState('PRO');
+  const [grantDays, setGrantDays] = useState(30);
+  const [grantReason, setGrantReason] = useState('');
 
   async function load(search = q) {
     if (!accessToken) return;
@@ -83,11 +87,70 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
+  async function grant() {
+    if (!accessToken) return;
+    setError(null);
+    try {
+      await authenticatedRequest('/admin/subscriptions/grant', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: grantUserId.trim(),
+          planCode: grantPlanCode.trim().toUpperCase(),
+          days: grantDays,
+          reason: grantReason.trim(),
+        }),
+      });
+      setGrantUserId('');
+      setGrantReason('');
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : getApiErrorMessage(locale));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{t('proSubscriptions')}</h1>
         <p className="text-sm text-on-surface-variant">{t('proSubscriptionsHint')}</p>
+      </div>
+
+      <div className="space-y-3 rounded-xl border bg-white p-4">
+        <h2 className="font-semibold">{t('grantSubscription')}</h2>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input
+            className="rounded-lg border px-3 py-2 text-sm"
+            placeholder="User ID"
+            value={grantUserId}
+            onChange={(e) => setGrantUserId(e.target.value)}
+          />
+          <input
+            className="rounded-lg border px-3 py-2 text-sm"
+            placeholder="Plan code"
+            value={grantPlanCode}
+            onChange={(e) => setGrantPlanCode(e.target.value)}
+          />
+          <input
+            type="number"
+            min={1}
+            className="rounded-lg border px-3 py-2 text-sm"
+            value={grantDays}
+            onChange={(e) => setGrantDays(Number(e.target.value))}
+          />
+          <input
+            className="rounded-lg border px-3 py-2 text-sm"
+            placeholder={t('reason')}
+            value={grantReason}
+            onChange={(e) => setGrantReason(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          className="rounded-lg bg-primary px-3 py-2 text-sm text-on-primary"
+          onClick={() => void grant()}
+        >
+          {t('grantSubscription')}
+        </button>
       </div>
 
       <div className="flex gap-2">
@@ -130,7 +193,10 @@ export default function AdminSubscriptionsPage() {
                 <td className="px-3 py-2">
                   {row.identityVerified ? 'Verified' : row.verificationStatus}
                 </td>
-                <td className="px-3 py-2">{row.plan?.nameAr ?? '—'}</td>
+                <td className="px-3 py-2">
+                  {row.plan?.code ? `${row.plan.code} · ` : ''}
+                  {row.plan?.nameAr ?? '—'}
+                </td>
                 <td className="px-3 py-2">
                   {row.plan ? `${row.plan.price} ${row.plan.currency}` : '—'}
                 </td>

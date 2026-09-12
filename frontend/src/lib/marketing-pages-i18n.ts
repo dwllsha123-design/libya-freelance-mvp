@@ -10,8 +10,6 @@ import {
   PLATFORM_NAME_EN,
   PLATFORM_TAGLINE_AR,
 } from '@/lib/branding';
-// Marketing copy uses configured default as display fallback; live fee is DB-driven
-const ESCROW_PLATFORM_FEE_PERCENT = 10;
 
 export interface MarketingValueItem {
   title: string;
@@ -298,7 +296,11 @@ const AR_CONTENT: MarketingPagesContent = {
         items: [
           {
             q: 'هل يوجد نظام ضمان أو حماية للمدفوعات؟',
-            a: 'نظام حماية المدفوعات — قريبًا. نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل. الميزة غير مفعّلة حاليًا.',
+            a: 'ليبي فريلانس منصة إعلانية ووسيط تقني لربط العملاء بالمستقلين. المنصة لا تستلم قيمة المشاريع ولا تحتفظ بأموال الأطراف ولا تضمن تنفيذ أو سداد قيمة المشروع. يتم الاتفاق والدفع مباشرة بين العميل والمستقل.',
+          },
+          {
+            q: 'هل المدفوعات الإلكترونية داخل المنصة؟',
+            a: 'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.',
           },
           {
             q: 'كيف أبلّغ عن مشكلة؟',
@@ -310,7 +312,7 @@ const AR_CONTENT: MarketingPagesContent = {
     quickLinksHeading: 'روابط سريعة',
     quickLinks: [
       { href: '/how-it-works', label: 'كيف تعمل المنصة — دليل مفصّل' },
-      { href: '/escrow', label: 'حماية المدفوعات قريبًا' },
+      { href: '/pricing', label: 'باقات المستقلين' },
       { href: '/privacy', label: 'سياسة الخصوصية' },
       { href: '/terms', label: 'شروط الخدمة' },
       { href: '/contact', label: 'اتصل بنا' },
@@ -372,32 +374,32 @@ const AR_CONTENT: MarketingPagesContent = {
     verifiedIntro: 'تُمنح تلقائياً للمستقلين الليبيين الذين يستوفون المعايير التالية:',
     verificationCriteria: [...VERIFICATION_CRITERIA_AR],
     currencyHeading: 'العملة والمدفوعات',
-    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). نظام حماية المدفوعات الإلكتروني قيد التجهيز وسيكون متاحًا قريبًا — راجع `,
-    currencyLinkLabel: 'صفحة حماية المدفوعات',
+    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). الاتفاق والدفع لمشاريع العمل يتمان مباشرة بين العميل والمستقل. للدفع داخل المنصة (اشتراكات ونقاط) راجع `,
+    currencyLinkLabel: 'صفحة الباقات',
     currencyAfterLink: '.',
   },
   escrow: {
-    title: 'نظام حماية المدفوعات — قريبًا',
-    subtitle: 'نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة',
-    intro: `نعمل حاليًا على استكمال الربط مع مزودي الدفع الإلكتروني في ليبيا، لإطلاق نظام حماية مدفوعات يرفع مستوى الأمان والثقة بين العميل والمستقل على ${PLATFORM_NAME_AR}. هذه الميزة غير مفعّلة بعد.`,
-    howHeading: 'ما الذي نجهّزه؟',
+    title: 'الدفع والوساطة التقنية',
+    subtitle: 'منصة إعلانية ووسيط تقني — دون استلام أموال المشاريع',
+    intro: `ليبي فريلانس منصة إعلانية ووسيط تقني لربط العملاء بالمستقلين. المنصة لا تستلم قيمة المشاريع ولا تحتفظ بأموال الأطراف ولا تضمن تنفيذ أو سداد قيمة المشروع. يتم الاتفاق والدفع مباشرة بين العميل والمستقل.`,
+    howHeading: 'كيف يعمل الدفع؟',
     howSteps: [
-      `عند الإطلاق: تمويل آمن لمبلغ العرض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}) عبر مزوّدي دفع محليين`,
-      'حجز الأموال داخل المنصة أثناء تنفيذ المشروع حتى موافقة العميل',
-      `تحرير المستحقات للمستقل بعد التأكيد (مع عمولة المنصة ${ESCROW_PLATFORM_FEE_PERCENT}%)`,
-      'آلية نزاع عادلة عند الاختلاف — بمراجعة فريق الإدارة',
+      'يتفق العميل والمستقل على السعر والمدة والنطاق داخل المنصة أو عبر المراسلة',
+      'يُسدَّد مبلغ المشروع مباشرة بين الطرفين خارج حجز أموال المنصة',
+      'الدفع الإلكتروني داخل المنصة مخصص للاشتراكات وشراء النقاط والخدمات الرقمية فقط',
+      `الميزانيات المعروضة بالدينار الليبي (${PLATFORM_CURRENCY_CODE})`,
     ],
     forClientsHeading: 'للعملاء',
     forClientsItems: [
-      'حماية المدفوعات قريبًا — لن تحتاج للدفع المباشر دون حماية داخل المنصة',
-      'عند الإطلاق ستتمكن من فتح نزاع إذا لم يُنفَّذ العمل كما اتُفق',
+      'اختر المستقل واتفق على الدفع مباشرة معه',
+      'المنصة لا تحتفظ بقيمة مشروعك ولا تخصم عمولة من مبلغ المشروع',
     ],
     forFreelancersHeading: 'للمستقلين',
     forFreelancersItems: [
-      'عند الإطلاق: اطمئن أن المبلغ محمي قبل بدء العمل الجاد',
-      'تحرير المستحقات بعد تأكيد العميل — ضمن نظام الحماية القادم',
+      'اتفق على طريقة استلام أجرك مباشرة مع العميل',
+      'اشترك في باقة لتقديم العروض واشترِ النقاط عند الحاجة عبر دفع المنصة',
     ],
-    mvpNote: `حماية المدفوعات قريبًا. نعمل على تجهيز نظام دفع وحماية معاملات متكامل داخل المنصة. جميع الميزانيات المعروضة حاليًا بالدينار الليبي (${PLATFORM_CURRENCY_CODE}).`,
+    mvpNote: `الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.`,
   },
   privacy: {
     metaTitle: 'سياسة الخصوصية',
@@ -518,12 +520,12 @@ const AR_CONTENT: MarketingPagesContent = {
         ],
       },
       {
-        heading: '5. المدفوعات والضمان',
-        beforeEscrowLink:
-          'الميزانيات تُعرض بالدينار الليبي (د.ل). نظام حماية المدفوعات الإلكتروني غير مفعّل حاليًا ونعمل على إطلاقه قريبًا بالتعاون مع مزودي الدفع في ليبيا. عند التفعيل، ستُحمى أموال المشروع داخل المنصة حتى تأكيد الإتمام، مع خصم عمولة المنصة (10%)، وآلية نزاع عند الحاجة. راجع ',
-        escrowLinkLabel: 'صفحة حماية المدفوعات',
-        afterEscrowLink:
-          ' للتفاصيل والتحديثات. حتى إطلاق البوابة، لا تُحجز أموال حقيقية داخل المنصة.',
+        heading: '5. المدفوعات والوساطة',
+        paragraphs: [
+          'ليبي فريلانس منصة إعلانية ووسيط تقني لربط العملاء بالمستقلين. المنصة لا تستلم قيمة المشاريع ولا تحتفظ بأموال الأطراف ولا تضمن تنفيذ أو سداد قيمة المشروع. يتم الاتفاق والدفع مباشرة بين العميل والمستقل.',
+          'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.',
+          `الميزانيات تُعرض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). راجع صفحة الباقات للاشتراكات وشروط الخدمة لمزيد من التفاصيل.`,
+        ],
       },
       {
         heading: '6. التقييمات والمحتوى',
@@ -575,7 +577,7 @@ const AR_CONTENT: MarketingPagesContent = {
         links: [
           { href: '/how-it-works', label: 'كيف تعمل' },
           { href: '/help', label: 'مركز المساعدة' },
-          { href: '/escrow', label: 'حماية المدفوعات قريبًا' },
+          { href: '/pricing', label: 'باقات المستقلين' },
           { href: '/about', label: 'من نحن' },
           { href: '/contact', label: 'اتصل بنا' },
           { href: '/privacy', label: 'الخصوصية' },
@@ -705,7 +707,11 @@ const EN_CONTENT: MarketingPagesContent = {
         items: [
           {
             q: 'Is there an escrow or payment protection system?',
-            a: 'Payment Protection — Coming Soon. We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers. This feature is not live yet.',
+            a: 'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer.',
+          },
+          {
+            q: 'Are electronic payments available on the platform?',
+            a: 'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
           },
           {
             q: 'How do I report a problem?',
@@ -717,7 +723,7 @@ const EN_CONTENT: MarketingPagesContent = {
     quickLinksHeading: 'Quick links',
     quickLinks: [
       { href: '/how-it-works', label: 'How it works — detailed guide' },
-      { href: '/escrow', label: 'Payment protection — coming soon' },
+      { href: '/pricing', label: 'Freelancer plans' },
       { href: '/privacy', label: 'Privacy policy' },
       { href: '/terms', label: 'Terms of service' },
       { href: '/contact', label: 'Contact us' },
@@ -780,33 +786,34 @@ const EN_CONTENT: MarketingPagesContent = {
     verificationCriteria: [...VERIFICATION_CRITERIA_EN],
     currencyHeading: 'Currency and payments',
     currencyBeforeLink:
-      'All budgets and proposals are in Libyan Dinar (LYD). Electronic payment protection is being prepared and will be available soon — see the ',
-    currencyLinkLabel: 'payment protection page',
+      'All budgets and proposals are in Libyan Dinar (LYD). Project agreement and payment happen directly between client and freelancer. For in-platform payments (subscriptions and points), see the ',
+    currencyLinkLabel: 'pricing page',
     currencyAfterLink: '.',
   },
   escrow: {
-    title: 'Payment Protection — Coming Soon',
-    subtitle: 'We are preparing an integrated payment and transaction-protection system inside the platform',
-    intro: `We are currently working on integrating electronic payment providers in Libya to introduce a secure payment protection system for clients and freelancers on ${PLATFORM_NAME_EN}. This feature is not enabled yet.`,
-    howHeading: 'What we are building',
+    title: 'Payments and technical intermediation',
+    subtitle: 'An advertising platform and technical intermediary — without holding project funds',
+    intro:
+      'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer.',
+    howHeading: 'How payment works',
     howSteps: [
-      'At launch: secure funding of the proposal amount (LYD) via local payment providers',
-      'Holding project funds on the platform while work is in progress until client approval',
-      `Releasing payment to the freelancer after confirmation (after a ${ESCROW_PLATFORM_FEE_PERCENT}% platform fee)`,
-      'A fair dispute process when parties disagree — reviewed by the admin team',
+      'Client and freelancer agree on price, timeline, and scope on the platform or via messaging',
+      'Project fees are paid directly between the parties — not held by the platform',
+      'Electronic payments on the platform are only for subscriptions, points, and digital services',
+      'Budgets are shown in Libyan Dinar (LYD)',
     ],
     forClientsHeading: 'For clients',
     forClientsItems: [
-      'Payment protection coming soon — you will not need to pay unprotected outside the platform',
-      'Once live, you will be able to open a dispute if work is not delivered as agreed',
+      'Choose a freelancer and arrange payment directly with them',
+      'The platform does not hold your project funds and does not take a commission from the project amount',
     ],
     forFreelancersHeading: 'For freelancers',
     forFreelancersItems: [
-      'At launch: confidence that funds are protected before serious work begins',
-      'Payment released after client confirmation — within the upcoming protection system',
+      'Agree on how you receive payment directly with the client',
+      'Subscribe to a plan to submit proposals and buy points via platform payments when needed',
     ],
     mvpNote:
-      'Payment protection coming soon. We are preparing an integrated payment and transaction-protection system inside the platform. All budgets shown today are in Libyan Dinar (LYD).',
+      'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
   },
   privacy: {
     metaTitle: 'Privacy policy',
@@ -928,12 +935,12 @@ const EN_CONTENT: MarketingPagesContent = {
         ],
       },
       {
-        heading: '5. Payments and escrow',
-        beforeEscrowLink:
-          'Budgets are shown in Libyan Dinar (LYD). Electronic payment protection is not live yet — we are preparing a launch with payment providers in Libya. Once enabled, project funds will be protected on the platform until completion confirmation, minus a 10% platform fee, with a dispute process when needed. See the ',
-        escrowLinkLabel: 'payment protection page',
-        afterEscrowLink:
-          ' for details and updates. Until the gateway launches, no real funds are held on the platform.',
+        heading: '5. Payments and intermediation',
+        paragraphs: [
+          'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer.',
+          'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
+          'Budgets are shown in Libyan Dinar (LYD). See the pricing page for subscriptions and these Terms for more detail.',
+        ],
       },
       {
         heading: '6. Reviews and content',
@@ -985,7 +992,7 @@ const EN_CONTENT: MarketingPagesContent = {
         links: [
           { href: '/how-it-works', label: 'How it works' },
           { href: '/help', label: 'Help center' },
-          { href: '/escrow', label: 'Payment protection — coming soon' },
+          { href: '/pricing', label: 'Freelancer plans' },
           { href: '/about', label: 'About' },
           { href: '/contact', label: 'Contact' },
           { href: '/privacy', label: 'Privacy' },

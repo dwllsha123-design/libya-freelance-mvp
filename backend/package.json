@@ -28,6 +28,7 @@
     "prisma:seed:demo": "tsx prisma/seed-demo.ts",
     "admin:create": "tsx prisma/scripts/create-admin.ts",
     "admin:bootstrap": "node prisma/scripts/bootstrap-super-admin.mjs",
+    "subscriptions:backfill-trials": "tsx src/subscriptions/scripts/backfill-freelancer-trials.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

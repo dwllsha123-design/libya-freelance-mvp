@@ -24,6 +24,7 @@ import { LaunchProgramService } from '../launch/launch.service.js';
 import { UsersService } from '../users/users.service.js';
 import { EmailService } from '../common/services/email.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { SubscriptionEntitlementService } from '../subscriptions/subscription-entitlement.service.js';
 import { assertUserCanAuthenticate } from '../common/utils/account-status.util.js';
 import {
   generateSecureToken,
@@ -65,6 +66,7 @@ export class AuthService {
     private readonly nuqatiService: NuqatiService,
     private readonly launchProgram: LaunchProgramService,
     private readonly platformPolicy: PlatformPolicyService,
+    private readonly entitlements: SubscriptionEntitlementService,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterResult> {
@@ -199,6 +201,11 @@ export class AuthService {
 
       if (input.role === Role.FREELANCER) {
         await tx.freelancerProfile.create({ data: { profileId } });
+        await this.entitlements.grantRegistrationTrial(
+          createdUser.id,
+          createdUser.createdAt,
+          tx,
+        );
       } else if (input.role === Role.CLIENT) {
         await tx.clientProfile.create({ data: { profileId } });
       }
