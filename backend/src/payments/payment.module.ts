@@ -10,6 +10,7 @@ import { PAYMENT_PROVIDER } from './payment.types.js';
 import type { PaymentProvider } from './payment.types.js';
 import { PaymentService } from './payment.service.js';
 import { PaymentFulfillmentService } from './payment-fulfillment.service.js';
+import { PAYMENT_FULFILLMENT_SERVICE } from './payment-fulfillment.tokens.js';
 import { SimulatedPaymentProvider } from './providers/simulated-payment.provider.js';
 import { UnavailablePaymentProvider } from './providers/unavailable-payment.provider.js';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard.js';
@@ -75,6 +76,10 @@ export function resolvePaymentProviderInstance(
   providers: [
     PaymentService,
     PaymentFulfillmentService,
+    {
+      provide: PAYMENT_FULFILLMENT_SERVICE,
+      useExisting: PaymentFulfillmentService,
+    },
     SimulatedPaymentProvider,
     UnavailablePaymentProvider,
     SuperAdminGuard,
@@ -90,6 +95,11 @@ export function resolvePaymentProviderInstance(
       inject: [ConfigService, SimulatedPaymentProvider, UnavailablePaymentProvider],
     },
   ],
-  exports: [PaymentService, PaymentFulfillmentService, PAYMENT_PROVIDER],
+  exports: [
+    PaymentService,
+    PaymentFulfillmentService,
+    PAYMENT_FULFILLMENT_SERVICE,
+    PAYMENT_PROVIDER,
+  ],
 })
 export class PaymentsModule {}

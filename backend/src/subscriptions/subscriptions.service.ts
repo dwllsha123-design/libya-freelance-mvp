@@ -5,7 +5,6 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -26,7 +25,8 @@ import { AdminAuditService } from '../admin/admin-audit.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
-import { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
+import type { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
+import { PAYMENT_FULFILLMENT_SERVICE } from '../payments/payment-fulfillment.tokens.js';
 import { SIMULATED_PAYMENT_PROVIDER } from '../payments/providers/simulated-payment.provider.js';
 import {
   FREE_PORTFOLIO_ITEM_LIMIT,
@@ -54,7 +54,7 @@ export class SubscriptionsService {
     private readonly entitlements: SubscriptionEntitlementService,
     private readonly configService: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: PaymentProvider,
-    @Inject(forwardRef(() => PaymentFulfillmentService))
+    @Inject(PAYMENT_FULFILLMENT_SERVICE)
     private readonly paymentFulfillment: PaymentFulfillmentService,
   ) {}
 

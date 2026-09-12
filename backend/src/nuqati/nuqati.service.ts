@@ -5,7 +5,6 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -25,7 +24,8 @@ import { LaunchProgramService } from '../launch/launch.service.js';
 import { AdminAuditService } from '../admin/admin-audit.service.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
-import { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
+import type { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
+import { PAYMENT_FULFILLMENT_SERVICE } from '../payments/payment-fulfillment.tokens.js';
 import {
   calculateProfileCompletion,
   meetsProfileCompletionThreshold,
@@ -73,7 +73,7 @@ export class NuqatiService {
     private readonly launchProgram: LaunchProgramService,
     private readonly audit: AdminAuditService,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: PaymentProvider,
-    @Inject(forwardRef(() => PaymentFulfillmentService))
+    @Inject(PAYMENT_FULFILLMENT_SERVICE)
     private readonly paymentFulfillment: PaymentFulfillmentService,
   ) {}
 
