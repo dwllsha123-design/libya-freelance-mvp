@@ -31,6 +31,7 @@
   "buyPointsLink": "شراء نقاط",
   "loadFailed": "فشل تحميل نقاطي",
   "purchaseFailed": "فشل شراء النقاط",
+  "paymentUnavailable": "الدفع الإلكتروني غير متاح حالياً. سيتم تفعيله قريباً.",
   "shareFailed": "تعذر إرسال رابط المشاركة",
   "streakTitle": "سلسلة التقديمات",
   "streakCurrent": "السلسلة الحالية: {days} يوم",

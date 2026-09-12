@@ -27,6 +27,7 @@
   "loading": "جاري تحميل الباقات...",
   "checkoutBusy": "جاري التحويل للدفع...",
   "checkoutFailed": "تعذر بدء الدفع",
+  "paymentUnavailable": "الدفع الإلكتروني غير متاح حالياً. سيتم تفعيله قريباً.",
   "checkoutSuccess": "تم تفعيل الاشتراك",
   "checkoutBlocked": "التفعيل معلّق حتى توفر بوابة دفع حقيقية.",
   "forFreelancersOnly": "الاشتراك للمستقلين فقط",

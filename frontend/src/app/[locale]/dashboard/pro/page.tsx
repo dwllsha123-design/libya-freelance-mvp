@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { authenticatedRequest, apiRequest, getApiErrorMessage } from '@/lib/api';
+import { authenticatedRequest, apiRequest, getApiErrorMessage, ApiError } from '@/lib/api';
 import { useLocale } from 'next-intl';
 import type { AppLocale } from '@/i18n/routing';
 import { IdentityVerifiedBadge, ProBadge } from '@/components/trust/identity-pro-badges';
@@ -125,7 +125,18 @@ export default function ProDashboardPage() {
       const data = await authenticatedRequest<SubscriptionMe>('/subscriptions/me', accessToken);
       setMe(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : getApiErrorMessage(locale, 'unexpected'));
+      if (
+        err instanceof ApiError &&
+        (err.status === 503 ||
+          (err.details &&
+            typeof err.details === 'object' &&
+            (err.details as { code?: string }).code ===
+              'PAYMENT_PROVIDER_UNAVAILABLE'))
+      ) {
+        setError('الدفع الإلكتروني غير متاح حالياً. سيتم تفعيله قريباً.');
+      } else {
+        setError(err instanceof Error ? err.message : getApiErrorMessage(locale, 'unexpected'));
+      }
     } finally {
       setBusy(false);
     }

@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { AdminAuditService } from '../admin/admin-audit.service.js';
 import { PlatformPolicyService } from '../platform/platform-policy.service.js';
+import { assertPaymentProviderAvailable } from '../payments/payment-provider-availability.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
 import type { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
@@ -170,6 +171,9 @@ export class SubscriptionsService {
       where: { code: planCode, isActive: true },
     });
     if (!plan) throw new NotFoundException('الباقة غير متاحة');
+
+    // Fail before any Payment / FreelancerSubscription rows when PSP is not available.
+    assertPaymentProviderAvailable(this.paymentProvider);
 
     const access = await this.entitlements.getCurrentAccess(userId);
     const isRenewal =

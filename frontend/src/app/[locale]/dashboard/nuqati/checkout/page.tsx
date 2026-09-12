@@ -6,6 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useNuqatiApi, type NuqatiCheckoutResult } from '@/hooks/use-nuqati';
+import { ApiError } from '@/lib/api';
 import type { NuqatiDashboard } from '@/lib/nuqati';
 import type { AppLocale } from '@/i18n/routing';
 
@@ -72,8 +73,19 @@ function NuqatiCheckoutContent() {
         window.location.href = result.checkoutUrl;
         return;
       }
-    } catch {
-      setError(t('purchaseFailed'));
+    } catch (err) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 503 ||
+          (err.details &&
+            typeof err.details === 'object' &&
+            (err.details as { code?: string }).code ===
+              'PAYMENT_PROVIDER_UNAVAILABLE'))
+      ) {
+        setError(t('paymentUnavailable'));
+      } else {
+        setError(t('purchaseFailed'));
+      }
     } finally {
       setIsPaying(false);
     }

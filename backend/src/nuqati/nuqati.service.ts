@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { AdminAuditService } from '../admin/admin-audit.service.js';
+import { assertPaymentProviderAvailable } from '../payments/payment-provider-availability.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
 import type { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
@@ -191,36 +192,34 @@ export class NuqatiService {
       throw new ForbiddenException('نقاطي متاح للمستقلين فقط');
     }
 
+    if (typeof packageIdOrCode !== 'string' || !packageIdOrCode.trim()) {
+      throw new BadRequestException({
+        code: 'PACKAGE_IDENTIFIER_REQUIRED',
+        message: 'packageId or packageCode is required',
+      });
+    }
+
     const key = packageIdOrCode.trim();
     const pkg = await this.prisma.pointsPackage.findFirst({
       where: {
-        isActive: true,
         OR: [{ id: key }, { code: key.toUpperCase() }],
       },
     });
-    if (!pkg) throw new BadRequestException('باقة غير صالحة');
-
-    if (!this.paymentProvider.capabilities.available) {
-      return {
-        purchaseId: null as string | null,
-        paymentId: null as string | null,
-        package: this.formatPackage(pkg),
-        status: 'UNAVAILABLE' as const,
-        comingSoon: true,
-        requiresRedirect: false,
-        checkoutUrl: null as string | null,
-        paymentMethods: [
-          {
-            id: 'electronic',
-            type: 'electronic',
-            available: false,
-            comingSoon: true,
-          },
-        ],
-        currency: pkg.currency,
-        message: 'بوابة الدفع الإلكتروني غير متاحة حالياً',
-      };
+    if (!pkg) {
+      throw new NotFoundException({
+        code: 'POINTS_PACKAGE_NOT_FOUND',
+        message: 'Points package not found',
+      });
     }
+    if (!pkg.isActive) {
+      throw new BadRequestException({
+        code: 'POINTS_PACKAGE_INACTIVE',
+        message: 'Points package is not available',
+      });
+    }
+
+    // Fail before any Payment / PointsPurchase rows when PSP is not available.
+    assertPaymentProviderAvailable(this.paymentProvider);
 
     const currency = pkg.currency || 'LYD';
     const amount = Number(pkg.priceLyd);

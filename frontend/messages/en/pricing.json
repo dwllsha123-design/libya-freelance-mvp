@@ -27,6 +27,7 @@
   "loading": "Loading plans...",
   "checkoutBusy": "Redirecting to payment...",
   "checkoutFailed": "Could not start checkout",
+  "paymentUnavailable": "Online payment is currently unavailable. It will be enabled soon.",
   "checkoutSuccess": "Subscription activated",
   "checkoutBlocked": "Activation is on hold until a real payment gateway is available.",
   "forFreelancersOnly": "Subscriptions are for freelancers only",

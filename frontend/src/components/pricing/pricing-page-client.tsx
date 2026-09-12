@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useSubscriptionsApi } from '@/hooks/use-subscriptions';
+import { ApiError } from '@/lib/api';
 import type { AppLocale } from '@/i18n/routing';
 import {
   FALLBACK_PLANS,
@@ -104,7 +105,18 @@ export function PricingPageClient() {
       const data = await api.getMine();
       setMe(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('checkoutFailed'));
+      if (
+        err instanceof ApiError &&
+        (err.status === 503 ||
+          (err.details &&
+            typeof err.details === 'object' &&
+            (err.details as { code?: string }).code ===
+              'PAYMENT_PROVIDER_UNAVAILABLE'))
+      ) {
+        setError(t('paymentUnavailable'));
+      } else {
+        setError(err instanceof Error ? err.message : t('checkoutFailed'));
+      }
     } finally {
       setBusyCode(null);
     }

@@ -199,7 +199,12 @@ describe('SubscriptionsService activation rules', () => {
   let configService: { get: ReturnType<typeof vi.fn> };
   let paymentProvider: {
     name: string;
-    capabilities: { supportsSyncCapture: boolean };
+    capabilities: {
+      supportsSyncCapture: boolean;
+      supportsRedirectCheckout?: boolean;
+      supportsRefunds?: boolean;
+      available?: boolean;
+    };
     createPayment: ReturnType<typeof vi.fn>;
     createCheckout: ReturnType<typeof vi.fn>;
   };
@@ -331,7 +336,12 @@ describe('SubscriptionsService activation rules', () => {
     configService = { get: vi.fn().mockReturnValue('test') };
     paymentProvider = {
       name: 'simulated',
-      capabilities: { supportsSyncCapture: true },
+      capabilities: {
+        supportsSyncCapture: true,
+        supportsRedirectCheckout: true,
+        supportsRefunds: false,
+        available: true,
+      },
       createPayment: vi.fn().mockResolvedValue({
         status: 'succeeded',
         providerReference: 'sim_1',

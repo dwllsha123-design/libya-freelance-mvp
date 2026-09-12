@@ -1,8 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
+import {
+  CheckoutPointsPackageDto,
+  resolvePackageIdentifier,
+} from './dto/checkout-points-package.dto.js';
 import { NuqatiService } from './nuqati.service.js';
 
 @Controller('nuqati')
@@ -37,12 +41,19 @@ export class NuqatiController {
   @Post('checkout')
   checkout(
     @CurrentUser() user: AuthUser,
-    @Body() body: { packageId: string },
+    @Body() body: CheckoutPointsPackageDto,
   ) {
+    const packageKey = resolvePackageIdentifier(body);
+    if (!packageKey) {
+      throw new BadRequestException({
+        code: 'PACKAGE_IDENTIFIER_REQUIRED',
+        message: 'packageId or packageCode is required',
+      });
+    }
     return this.nuqatiService.initiatePurchaseCheckout(
       user.id,
       user.role,
-      body.packageId,
+      packageKey,
     );
   }
 
@@ -50,12 +61,19 @@ export class NuqatiController {
   @Post('purchase')
   purchase(
     @CurrentUser() user: AuthUser,
-    @Body() body: { packageId: string },
+    @Body() body: CheckoutPointsPackageDto,
   ) {
+    const packageKey = resolvePackageIdentifier(body);
+    if (!packageKey) {
+      throw new BadRequestException({
+        code: 'PACKAGE_IDENTIFIER_REQUIRED',
+        message: 'packageId or packageCode is required',
+      });
+    }
     return this.nuqatiService.initiatePurchaseCheckout(
       user.id,
       user.role,
-      body.packageId,
+      packageKey,
     );
   }
 

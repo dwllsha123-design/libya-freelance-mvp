@@ -31,6 +31,7 @@
   "buyPointsLink": "buy points",
   "loadFailed": "Failed to load Nuqati",
   "purchaseFailed": "Failed to purchase points",
+  "paymentUnavailable": "Online payment is currently unavailable. It will be enabled soon.",
   "shareFailed": "Could not submit share link",
   "streakTitle": "Application streak",
   "streakCurrent": "Current streak: {days} days",
