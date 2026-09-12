@@ -387,6 +387,7 @@ export class EscrowService {
   }
 
   async openDispute(userId: string, escrowId: string, reason: string) {
+    assertMarketplaceFundingAllowed();
     const escrow = await this.prisma.escrow.findUnique({
       where: { id: escrowId },
       include: { project: { select: { title: true } }, dispute: true },

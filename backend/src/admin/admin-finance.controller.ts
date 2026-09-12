@@ -13,19 +13,12 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { RequireSuperAdmin } from '../common/decorators/super-admin.decorator.js';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
+import { assertCommercialProjectFinanceWritable } from '../commercial/commercial-project-finance-freeze.js';
 import { AdminFinanceService } from './admin-finance.service.js';
 import {
   CommissionPreviewDto,
-  CreateInvestmentAgreementDto,
-  CreateInvestorDto,
-  EndProjectOverrideDto,
   FinancePermissionDto,
   ResolveCommissionPreviewDto,
-  SchedulePlatformCommissionDto,
-  SetCategoryCommissionDto,
-  SetProjectCommissionOverrideDto,
-  TerminateAgreementDto,
-  UpdateFutureFeeSettingDto,
 } from './dto/admin-finance.dto.js';
 
 /**
@@ -61,41 +54,26 @@ export class AdminFinanceController {
 
   @Post('commission-settings')
   @RequireSuperAdmin()
-  scheduleCommission(
-    @CurrentUser() admin: AuthUser,
-    @Body() dto: SchedulePlatformCommissionDto,
-  ) {
-    return this.finance.schedulePlatformCommission(admin.id, dto);
+  scheduleCommission() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('categories/:categoryId/commission')
   @RequireSuperAdmin()
-  setCategoryCommission(
-    @CurrentUser() admin: AuthUser,
-    @Param('categoryId') categoryId: string,
-    @Body() dto: SetCategoryCommissionDto,
-  ) {
-    return this.finance.setCategoryCommission(admin.id, categoryId, dto);
+  setCategoryCommission() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('projects/:projectId/commission-override')
   @RequireSuperAdmin()
-  setProjectOverride(
-    @CurrentUser() admin: AuthUser,
-    @Param('projectId') projectId: string,
-    @Body() dto: SetProjectCommissionOverrideDto,
-  ) {
-    return this.finance.setProjectOverride(admin.id, projectId, dto);
+  setProjectOverride() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('project-overrides/:id/end')
   @RequireSuperAdmin()
-  endProjectOverride(
-    @CurrentUser() admin: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: EndProjectOverrideDto,
-  ) {
-    return this.finance.endProjectOverride(admin.id, id, dto.reason);
+  endProjectOverride() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Get('investors')
@@ -120,27 +98,20 @@ export class AdminFinanceController {
 
   @Post('investors')
   @RequireSuperAdmin()
-  createInvestor(@CurrentUser() admin: AuthUser, @Body() dto: CreateInvestorDto) {
-    return this.finance.createInvestor(admin.id, dto);
+  createInvestor() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investment-agreements')
   @RequireSuperAdmin()
-  createAgreement(
-    @CurrentUser() admin: AuthUser,
-    @Body() dto: CreateInvestmentAgreementDto,
-  ) {
-    return this.finance.createInvestmentAgreement(admin.id, dto);
+  createAgreement() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investment-agreements/:id/terminate')
   @RequireSuperAdmin()
-  terminateAgreement(
-    @CurrentUser() admin: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: TerminateAgreementDto,
-  ) {
-    return this.finance.terminateAgreement(admin.id, id, dto);
+  terminateAgreement() {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('permissions/grant')
@@ -157,11 +128,7 @@ export class AdminFinanceController {
 
   @Patch('future-fees/:key')
   @RequireSuperAdmin()
-  updateFutureFee(
-    @CurrentUser() admin: AuthUser,
-    @Param('key') key: string,
-    @Body() dto: UpdateFutureFeeSettingDto,
-  ) {
-    return this.finance.updateFutureFeeSetting(admin.id, key, dto);
+  updateFutureFee() {
+    assertCommercialProjectFinanceWritable();
   }
 }

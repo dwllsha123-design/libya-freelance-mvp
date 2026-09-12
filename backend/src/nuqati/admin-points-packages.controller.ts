@@ -15,12 +15,17 @@ import { RequireAdminPermission } from '../common/decorators/admin-permission.de
 import { SuperAdminGuard } from '../common/guards/super-admin.guard.js';
 import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
+import { assertPaidPointsPurchaseEnabled } from './paid-points-purchase.policy.js';
 import { NuqatiService } from './nuqati.service.js';
 import {
   CreatePointsPackageDto,
   UpdatePointsPackageDto,
 } from './dto/points-package.dto.js';
 
+/**
+ * Points package admin — read-only for commercial launch.
+ * Paid Nuqati commerce is disabled; historical packages remain listable.
+ */
 @Controller('admin/points-packages')
 @Roles(Role.ADMIN)
 @UseGuards(SuperAdminGuard, AdminPermissionGuard)
@@ -38,19 +43,19 @@ export class AdminPointsPackagesController {
   @Post()
   @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
   create(
-    @CurrentUser() admin: AuthUser,
-    @Body() dto: CreatePointsPackageDto,
-  ) {
-    return this.nuqati.adminCreatePackage(admin.id, dto);
+    @CurrentUser() _admin: AuthUser,
+    @Body() _dto: CreatePointsPackageDto,
+  ): never {
+    assertPaidPointsPurchaseEnabled();
   }
 
   @Patch(':id')
   @RequireAdminPermission(AdminPermission.MANAGE_SUBSCRIPTIONS)
   update(
-    @CurrentUser() admin: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: UpdatePointsPackageDto,
-  ) {
-    return this.nuqati.adminUpdatePackage(admin.id, id, dto);
+    @CurrentUser() _admin: AuthUser,
+    @Param('id') _id: string,
+    @Body() _dto: UpdatePointsPackageDto,
+  ): never {
+    assertPaidPointsPurchaseEnabled();
   }
 }

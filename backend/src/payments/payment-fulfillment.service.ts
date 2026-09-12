@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NuqatiService } from '../nuqati/nuqati.service.js';
+import { assertPaidPointsPurchaseEnabled } from '../nuqati/paid-points-purchase.policy.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 
 type PaymentRow = {
@@ -177,75 +178,10 @@ export class PaymentFulfillmentService {
   }
 
   private async fulfillPointsPurchase(payment: PaymentRow): Promise<FulfillmentResult> {
-    const purchase = payment.pointsPurchase;
-    if (!purchase) {
-      throw new BadRequestException({
-        message: 'عملية شراء النقاط غير مرتبطة بالدفع',
-        code: 'POINTS_PURCHASE_MISSING',
-      });
-    }
-
-    const fulfillmentKey = `points-purchase:${payment.id}`;
-    this.assertAmountCurrencyMatch(payment, {
-      expectedAmount: Number(purchase.priceLyd),
-      expectedCurrency:
-        this.metadataString(payment.metadata, 'expectedCurrency') ??
-        this.metadataString(payment.metadata, 'currency') ??
-        'LYD',
-    });
-
-    await this.markFulfillmentPending(payment.id);
-
-    try {
-      await this.nuqati.creditPointsPurchaseFulfillment({
-        userId: purchase.userId,
-        purchaseId: purchase.id,
-        pointsAmount: purchase.pointsAmount,
-        bonusPoints: purchase.bonusPoints,
-        paymentId: payment.id,
-        fulfillmentKey,
-      });
-
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          fulfillmentStatus: PaymentFulfillmentStatus.FULFILLED,
-          fulfillmentKey,
-          fulfilledAt: new Date(),
-        },
-      });
-
-      return {
-        paymentId: payment.id,
-        purpose: PaymentPurpose.POINTS_PURCHASE,
-        fulfilled: true,
-        purchaseId: purchase.id,
-      };
-    } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2002'
-      ) {
-        // Concurrent retry raced on fulfillmentKey — treat as already done.
-        await this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            fulfillmentStatus: PaymentFulfillmentStatus.FULFILLED,
-            fulfillmentKey,
-            fulfilledAt: new Date(),
-          },
-        });
-        return {
-          paymentId: payment.id,
-          purpose: PaymentPurpose.POINTS_PURCHASE,
-          fulfilled: true,
-          alreadyFulfilled: true,
-          purchaseId: purchase.id,
-        };
-      }
-      await this.markFulfillmentFailed(payment.id, err);
-      throw err;
-    }
+    // Commercial launch: paid Nuqati is disabled — never credit new POINTS_PURCHASE.
+    // Historical POINTS_PURCHASE rows remain in DB; fulfillment path is frozen.
+    void payment;
+    assertPaidPointsPurchaseEnabled();
   }
 
   private assertAmountCurrencyMatch(

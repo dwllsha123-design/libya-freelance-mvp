@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -13,18 +13,16 @@ function NuqatiCheckoutDisabledContent() {
   const t = useTranslations('nuqati');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const [ready, setReady] = useState(false);
+  const allowed = Boolean(user && user.role === 'FREELANCER');
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'FREELANCER') {
+    if (!allowed) {
       router.replace('/dashboard');
-      return;
     }
-    setReady(true);
-  }, [authLoading, user, router]);
+  }, [authLoading, allowed, router]);
 
-  if (authLoading || !ready) {
+  if (authLoading || !allowed) {
     return <div className="p-8 text-center text-slate-500">{t('loading')}</div>;
   }
 

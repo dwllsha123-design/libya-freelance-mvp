@@ -1,18 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  CommissionPolicyStatus,
-  CommissionSource,
-  InvestmentAgreementStatus,
-  Prisma,
-} from '@prisma/client';
+import { CommissionSource, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
-import {
-  calculateFeesFromPercent,
-  FALLBACK_COMMISSION_PERCENT,
-  previewCommissionSplit,
-  roundMoney,
-} from './commercial.constants.js';
+import { previewCommissionSplit } from './commercial.constants.js';
+import { zeroCommissionResolution } from './commercial-project-finance-freeze.js';
 
 export type ResolvedCommission = {
   commissionPercent: number;
@@ -28,6 +19,11 @@ export type ResolvedCommission = {
 
 type Tx = Prisma.TransactionClient | PrismaService;
 
+/**
+ * Advertising / subscription marketplace:
+ * project commission is always 0; investor accruals from project fees are frozen.
+ * Historical tables/enums remain for audit.
+ */
 @Injectable()
 export class CommissionResolutionService {
   constructor(
@@ -36,138 +32,16 @@ export class CommissionResolutionService {
   ) {}
 
   async resolveForProject(
-    projectId: string,
+    _projectId: string,
     amount: number,
-    asOf: Date = new Date(),
-    client: Tx = this.prisma,
+    _asOf: Date = new Date(),
+    _client: Tx = this.prisma,
   ): Promise<ResolvedCommission> {
-    const launch = await this.launchProgram.getConfig(
-      client === this.prisma ? undefined : (client as Prisma.TransactionClient),
-    );
-    if (launch.enabled) {
-      const fees = calculateFeesFromPercent(
-        amount,
-        launch.freelancerCommissionPercent,
-      );
-      return {
-        commissionPercent: fees.commissionPercent,
-        platformFee: fees.platformFee,
-        freelancerPayout: fees.freelancerPayout,
-        source: CommissionSource.PLATFORM_DEFAULT,
-        platformCommissionPolicyId: null,
-        categoryCommissionOverrideId: null,
-        projectCommissionOverrideId: null,
-        minimumCommissionAmount: null,
-        maximumCommissionAmount: null,
-      };
-    }
-
-    const project = await client.project.findUnique({
-      where: { id: projectId },
-      select: { id: true, categoryId: true },
-    });
-    if (!project) {
-      return this.fromPlatformDefault(amount, asOf, client);
-    }
-
-    const projectOverride = await client.projectCommissionOverride.findFirst({
-      where: {
-        projectId,
-        OR: [
-          {
-            status: CommissionPolicyStatus.ACTIVE,
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-          {
-            status: CommissionPolicyStatus.SCHEDULED,
-            effectiveFrom: { lte: asOf },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-        ],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-
-    const platform = await this.getActivePlatformPolicy(asOf, client);
-
-    if (
-      projectOverride &&
-      (projectOverride.status === CommissionPolicyStatus.ACTIVE ||
-        projectOverride.effectiveFrom <= asOf)
-    ) {
-      const percent = Number(projectOverride.commissionPercentage);
-      const fees = calculateFeesFromPercent(amount, percent, {
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      });
-      return {
-        commissionPercent: fees.commissionPercent,
-        platformFee: fees.platformFee,
-        freelancerPayout: fees.freelancerPayout,
-        source: CommissionSource.PROJECT_OVERRIDE,
-        platformCommissionPolicyId: platform?.id ?? null,
-        categoryCommissionOverrideId: null,
-        projectCommissionOverrideId: projectOverride.id,
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      };
-    }
-
-    const categoryOverride = await client.categoryCommissionOverride.findFirst({
-      where: {
-        categoryId: project.categoryId,
-        commissionPercentage: { not: null },
-        OR: [
-          {
-            status: CommissionPolicyStatus.ACTIVE,
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-          {
-            status: CommissionPolicyStatus.SCHEDULED,
-            effectiveFrom: { lte: asOf },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-        ],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-
-    if (categoryOverride?.commissionPercentage != null) {
-      const percent = Number(categoryOverride.commissionPercentage);
-      const fees = calculateFeesFromPercent(amount, percent, {
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      });
-      return {
-        commissionPercent: fees.commissionPercent,
-        platformFee: fees.platformFee,
-        freelancerPayout: fees.freelancerPayout,
-        source: CommissionSource.CATEGORY_OVERRIDE,
-        platformCommissionPolicyId: platform?.id ?? null,
-        categoryCommissionOverrideId: categoryOverride.id,
-        projectCommissionOverrideId: null,
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      };
-    }
-
-    return this.fromPlatformDefault(amount, asOf, client, platform);
+    const zero = zeroCommissionResolution(Number(amount) || 0);
+    return {
+      ...zero,
+      source: CommissionSource.PLATFORM_DEFAULT,
+    };
   }
 
   async preview(input: {
@@ -177,67 +51,34 @@ export class CommissionResolutionService {
     investorSharePercent?: number;
     asOf?: Date;
   }) {
-    const asOf = input.asOf ?? new Date();
-    let resolved: ResolvedCommission;
-
-    if (input.commissionPercent != null) {
-      const platform = await this.getActivePlatformPolicy(asOf);
-      const fees = calculateFeesFromPercent(input.projectValue, input.commissionPercent, {
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      });
-      resolved = {
-        commissionPercent: fees.commissionPercent,
-        platformFee: fees.platformFee,
-        freelancerPayout: fees.freelancerPayout,
-        source: CommissionSource.PLATFORM_DEFAULT,
-        platformCommissionPolicyId: platform?.id ?? null,
-        categoryCommissionOverrideId: null,
-        projectCommissionOverrideId: null,
-        minimumCommissionAmount: platform?.minimumCommissionAmount
-          ? Number(platform.minimumCommissionAmount)
-          : null,
-        maximumCommissionAmount: platform?.maximumCommissionAmount
-          ? Number(platform.maximumCommissionAmount)
-          : null,
-      };
-    } else if (input.projectId) {
-      resolved = await this.resolveForProject(
-        input.projectId,
-        input.projectValue,
-        asOf,
-      );
-    } else {
-      resolved = await this.fromPlatformDefault(input.projectValue, asOf);
-    }
+    const resolved = await this.resolveForProject(
+      input.projectId ?? 'preview',
+      input.projectValue,
+    );
 
     return {
       ...previewCommissionSplit({
         projectValue: input.projectValue,
-        commissionPercent: resolved.commissionPercent,
+        commissionPercent: 0,
         investorSharePercent: input.investorSharePercent,
-        minimumCommissionAmount: resolved.minimumCommissionAmount,
-        maximumCommissionAmount: resolved.maximumCommissionAmount,
+        minimumCommissionAmount: null,
+        maximumCommissionAmount: null,
       }),
       source: resolved.source,
       hierarchy: {
-        projectOverride: resolved.source === CommissionSource.PROJECT_OVERRIDE,
-        categoryOverride: resolved.source === CommissionSource.CATEGORY_OVERRIDE,
-        platformDefault: resolved.source === CommissionSource.PLATFORM_DEFAULT,
+        projectOverride: false,
+        categoryOverride: false,
+        platformDefault: true,
       },
+      advertisingModel: true,
+      projectCommission: 0,
     };
   }
 
   async listActiveAgreementsForSettlement(asOf: Date, client: Tx = this.prisma) {
+    // Kept for historical tooling / admin reads; settlement no longer creates accruals.
     return client.investmentAgreement.findMany({
       where: {
-        status: {
-          in: [InvestmentAgreementStatus.ACTIVE, InvestmentAgreementStatus.SCHEDULED],
-        },
         effectiveFrom: { lte: asOf },
         OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
         revenueBase: 'PLATFORM_COMMISSION',
@@ -250,117 +91,16 @@ export class CommissionResolutionService {
   }
 
   /**
-   * Persist investor accruals from settled platform commission.
-   * Respects returnCap using historical accrual sum for the agreement.
+   * Frozen: no new investor accruals from project commission.
+   * Historical InvestorAccrual rows are preserved.
    */
   async createInvestorAccrualsInTx(
-    tx: Prisma.TransactionClient,
-    escrowId: string,
-    platformCommissionAmount: number,
-    currency: string,
-    asOf: Date = new Date(),
+    _tx: Prisma.TransactionClient,
+    _escrowId: string,
+    _platformCommissionAmount: number,
+    _currency: string,
+    _asOf: Date = new Date(),
   ) {
-    const agreements = await this.listActiveAgreementsForSettlement(asOf, tx);
-    const created = [];
-
-    for (const agreement of agreements) {
-      if (agreement.status === InvestmentAgreementStatus.SCHEDULED) {
-        // Activate scheduled agreements that are already effective
-        if (agreement.effectiveFrom <= asOf) {
-          await tx.investmentAgreement.update({
-            where: { id: agreement.id },
-            data: { status: InvestmentAgreementStatus.ACTIVE },
-          });
-        } else {
-          continue;
-        }
-      }
-
-      const share = Number(agreement.sharePercentage);
-      let accrual = roundMoney(platformCommissionAmount * (share / 100));
-      if (agreement.returnCap != null) {
-        const prior = agreement.accruals.reduce(
-          (sum, row) => sum + Number(row.accrualAmount),
-          0,
-        );
-        const remaining = Number(agreement.returnCap) - prior;
-        if (remaining <= 0) continue;
-        accrual = Math.min(accrual, roundMoney(remaining));
-      }
-      if (accrual <= 0) continue;
-
-      const row = await tx.investorAccrual.create({
-        data: {
-          agreementId: agreement.id,
-          escrowId,
-          sharePercentageSnapshot: share,
-          platformCommissionAmount,
-          accrualAmount: accrual,
-          currency,
-        },
-      });
-      created.push(row);
-    }
-
-    return created;
-  }
-
-  private async getActivePlatformPolicy(asOf: Date, client: Tx = this.prisma) {
-    return client.platformCommissionPolicy.findFirst({
-      where: {
-        OR: [
-          {
-            status: CommissionPolicyStatus.ACTIVE,
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-          {
-            status: CommissionPolicyStatus.SCHEDULED,
-            effectiveFrom: { lte: asOf },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: asOf } }],
-          },
-        ],
-      },
-      orderBy: { effectiveFrom: 'desc' },
-    });
-  }
-
-  private async fromPlatformDefault(
-    amount: number,
-    asOf: Date,
-    client: Tx = this.prisma,
-    platform?: Awaited<ReturnType<CommissionResolutionService['getActivePlatformPolicy']>>,
-  ): Promise<ResolvedCommission> {
-    const policy = platform ?? (await this.getActivePlatformPolicy(asOf, client));
-    const launch = await this.launchProgram.getConfig(
-      client === this.prisma ? undefined : (client as Prisma.TransactionClient),
-    );
-    // During launch program, use centralized launch commission (default 0%).
-    // Project/category overrides still win when present (checked earlier).
-    const percent = launch.enabled
-      ? launch.freelancerCommissionPercent
-      : policy
-        ? Number(policy.defaultCommissionPercentage)
-        : FALLBACK_COMMISSION_PERCENT;
-    const min = policy?.minimumCommissionAmount
-      ? Number(policy.minimumCommissionAmount)
-      : null;
-    const max = policy?.maximumCommissionAmount
-      ? Number(policy.maximumCommissionAmount)
-      : null;
-    const fees = calculateFeesFromPercent(amount, percent, {
-      minimumCommissionAmount: min,
-      maximumCommissionAmount: max,
-    });
-    return {
-      commissionPercent: fees.commissionPercent,
-      platformFee: fees.platformFee,
-      freelancerPayout: fees.freelancerPayout,
-      source: CommissionSource.PLATFORM_DEFAULT,
-      platformCommissionPolicyId: policy?.id ?? null,
-      categoryCommissionOverrideId: null,
-      projectCommissionOverrideId: null,
-      minimumCommissionAmount: min,
-      maximumCommissionAmount: max,
-    };
+    return [];
   }
 }

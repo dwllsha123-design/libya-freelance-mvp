@@ -39,10 +39,10 @@ import {
 } from './dto/admin.dto.js';
 import { AdminUpdateFreelancerDto } from './dto/admin-update-freelancer.dto.js';
 import { EscrowService } from '../escrow/escrow.service.js';
-import { ResolveDisputeDto } from '../escrow/dto/escrow.dto.js';
 import { AgreementsService } from '../agreements/agreements.service.js';
 import { BadgeService } from '../badges/badge.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
+import { assertMarketplaceFundingAllowed } from '../payments/payment-protection.policy.js';
 
 @Controller('admin')
 @Roles(Role.ADMIN)
@@ -279,12 +279,8 @@ export class AdminController {
   }
 
   @Post('escrow/disputes/:id/resolve')
-  resolveEscrowDispute(
-    @CurrentUser() admin: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: ResolveDisputeDto,
-  ) {
-    return this.escrow.resolveDispute(admin.id, id, dto.resolution, dto.outcome);
+  resolveEscrowDispute() {
+    assertMarketplaceFundingAllowed();
   }
 
   @Get('project-agreements')

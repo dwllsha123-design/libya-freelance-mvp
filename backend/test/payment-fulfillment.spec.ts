@@ -93,7 +93,8 @@ describe('PaymentFulfillmentService', () => {
     expect(result.purpose).toBe(PaymentPurpose.SUBSCRIPTION);
   });
 
-  it('credits points once for POINTS_PURCHASE', async () => {
+  it('rejects POINTS_PURCHASE fulfillment while paid Nuqati is disabled', async () => {
+    const { GoneException } = await import('@nestjs/common');
     prisma.payment.findUnique.mockResolvedValue({
       id: 'pay-4',
       purpose: PaymentPurpose.POINTS_PURCHASE,
@@ -113,11 +114,11 @@ describe('PaymentFulfillmentService', () => {
       },
     });
     prisma.payment.updateMany.mockResolvedValue({ count: 1 });
-    prisma.payment.update.mockResolvedValue({});
-    nuqati.creditPointsPurchaseFulfillment.mockResolvedValue({ credited: true });
 
-    await service.fulfillSucceededPayment('pay-4');
-    expect(nuqati.creditPointsPurchaseFulfillment).toHaveBeenCalled();
+    await expect(service.fulfillSucceededPayment('pay-4')).rejects.toBeInstanceOf(
+      GoneException,
+    );
+    expect(nuqati.creditPointsPurchaseFulfillment).not.toHaveBeenCalled();
   });
 
   it('rejects mismatched amount vs plan price', async () => {

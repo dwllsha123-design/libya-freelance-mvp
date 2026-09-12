@@ -17,6 +17,7 @@ import { RequireAdminPermission } from '../common/decorators/admin-permission.de
 import { SuperAdminGuard } from '../common/guards/super-admin.guard.js';
 import { AdminPermissionGuard } from '../common/guards/admin-permission.guard.js';
 import type { AuthUser } from '../auth/types/auth-user.type.js';
+import { assertCommercialProjectFinanceWritable } from '../commercial/commercial-project-finance-freeze.js';
 import { AdminOpsService } from './admin-ops.service.js';
 import {
   AdminPortfolioQueryDto,
@@ -25,8 +26,6 @@ import {
   BroadcastPreviewDto,
   BroadcastSendDto,
   CreateBannerDto,
-  CreateInvestorPayoutDto,
-  CreateInvestorStatementDto,
   CreateStaffAdminDto,
   FeatureItemDto,
   PatchCmsContentDto,
@@ -34,7 +33,6 @@ import {
   PatchPlatformSettingsDto,
   PortfolioModerationDto,
   ReorderFeaturedDto,
-  TransitionInvestorPayoutDto,
   UpdateBannerDto,
 } from './dto/admin-ops.dto.js';
 
@@ -236,30 +234,26 @@ export class AdminOpsController {
 
   @Post('investors/payouts')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  createPayout(@CurrentUser() user: AuthUser, @Body() dto: CreateInvestorPayoutDto) {
-    return this.ops.createPayout(user.id, dto);
+  createPayout(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investors/payouts/:id/approve')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  approvePayout(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.ops.approvePayout(user.id, id);
+  approvePayout(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investors/payouts/:id/paid')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  markPaid(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: TransitionInvestorPayoutDto,
-  ) {
-    return this.ops.markPayoutPaid(user.id, id, dto);
+  markPaid(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investors/payouts/:id/cancel')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  cancelPayout(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.ops.cancelPayout(user.id, id);
+  cancelPayout(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Get('investors/statements')
@@ -270,14 +264,14 @@ export class AdminOpsController {
 
   @Post('investors/statements')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  createStatement(@CurrentUser() user: AuthUser, @Body() dto: CreateInvestorStatementDto) {
-    return this.ops.createStatement(user.id, dto);
+  createStatement(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Post('investors/statements/:id/finalize')
   @RequireAdminPermission(AdminPermission.MANAGE_FINANCE, AdminPermission.FINANCE_WRITE)
-  finalizeStatement(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.ops.finalizeStatement(user.id, id);
+  finalizeStatement(): never {
+    assertCommercialProjectFinanceWritable();
   }
 
   @Get('search')

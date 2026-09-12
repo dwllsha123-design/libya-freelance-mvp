@@ -189,6 +189,7 @@ export class PaymentService {
       currency: string;
     },
   ): Promise<EscrowFundingCaptureResult> {
+    assertMarketplaceFundingAllowed();
     const existingSucceeded = await tx.payment.findFirst({
       where: {
         escrowId: params.escrowId,
