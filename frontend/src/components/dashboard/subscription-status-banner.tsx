@@ -31,7 +31,7 @@ export function SubscriptionStatusBanner() {
 
   if (!me) return null;
 
-  if (!me.hasAccess) {
+  if (!me.hasAccess && me.subscriptionsCommercialLive) {
     return (
       <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
         <p className="font-semibold">{t('expiredBannerTitle')}</p>
@@ -46,7 +46,11 @@ export function SubscriptionStatusBanner() {
     );
   }
 
-  if (me.access.kind === 'TRIAL' && me.trialDaysRemaining != null) {
+  if (
+    me.subscriptionsCommercialLive &&
+    me.access.kind === 'TRIAL' &&
+    me.trialDaysRemaining != null
+  ) {
     return (
       <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         <p className="font-semibold">{t('trialBannerTitle')}</p>

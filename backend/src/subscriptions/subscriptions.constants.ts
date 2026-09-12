@@ -10,6 +10,12 @@ export const FREE_PORTFOLIO_ITEM_LIMIT = 8;
 export const TRIAL_DURATION_DAYS = 30;
 export const TRIAL_MIGRATION_BATCH = 'subscription-marketplace-golive-v1';
 
+/**
+ * Proposal quota used only while commercial go-live is OFF so freelancers are
+ * never blocked by missing plans/PSP. Not a sold product quota.
+ */
+export const PRE_COMMERCIAL_PROPOSAL_QUOTA = 10_000;
+
 export const IDENTITY_VERIFICATION_VALIDITY_DAYS = 730;
 export const VERIFICATION_DOC_MAX_SIZE = 5 * 1024 * 1024;
 export const VERIFICATION_DOC_MAX_COUNT = 3;

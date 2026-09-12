@@ -81,4 +81,10 @@ export default () => ({
   redis: {
     url: process.env.REDIS_URL ?? '',
   },
+  /**
+   * Commercial subscription go-live (ISO UTC). Unset = pre-commercial:
+   * no trial countdown, no paywall. Staging may set a synthetic past value.
+   * Never treat deploy/migrate date as go-live.
+   */
+  subscriptionsGoLiveAt: process.env.SUBSCRIPTIONS_GO_LIVE_AT ?? '',
 });

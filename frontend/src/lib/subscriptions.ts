@@ -1,6 +1,11 @@
 /** Client-side subscription plan / access types matching GET /subscriptions/* */
 
-export type AccessKind = 'NONE' | 'TRIAL' | 'PAID' | 'ADMIN_GRANT';
+export type AccessKind =
+  | 'NONE'
+  | 'TRIAL'
+  | 'PAID'
+  | 'ADMIN_GRANT'
+  | 'PRE_COMMERCIAL';
 
 export interface SubscriptionPlan {
   id: string;
@@ -56,6 +61,11 @@ export interface SubscriptionMe {
   hasAccess: boolean;
   isPro: boolean;
   daysRemaining: number;
+  /** ISO UTC commercial go-live; null = pre-commercial (no trial countdown) */
+  subscriptionsGoLiveAt: string | null;
+  subscriptionsCommercialLive: boolean;
+  /** Always false until a real PSP is integrated and verified */
+  readyForSubscriptionPaywall: boolean;
   subscription: {
     id: string;
     status: string;

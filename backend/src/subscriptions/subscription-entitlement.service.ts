@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import {
   PROPOSAL_BLOCKED_AR,
   PROPOSAL_QUOTA_EXCEEDED_AR,
+  PRE_COMMERCIAL_PROPOSAL_QUOTA,
   STARTER_PLAN_CODE,
   TRIAL_DURATION_DAYS,
   TRIAL_MIGRATION_BATCH,
@@ -21,8 +22,17 @@ import {
   calendarMonthPeriodKey,
   type SubscriptionFeatureKey,
 } from './subscriptions.constants.js';
+import {
+  isSubscriptionsCommercialLive,
+  resolveSubscriptionsGoLiveAt,
+} from './subscriptions-go-live.js';
 
-export type AccessKind = 'NONE' | 'TRIAL' | 'PAID' | 'ADMIN_GRANT';
+export type AccessKind =
+  | 'NONE'
+  | 'TRIAL'
+  | 'PAID'
+  | 'ADMIN_GRANT'
+  | 'PRE_COMMERCIAL';
 
 export interface PlanEntitlements {
   id: string;
@@ -214,6 +224,11 @@ export class SubscriptionEntitlementService {
    * Atomically consume one proposal slot. Call inside the same transaction that creates the proposal.
    */
   async consumeProposalQuota(userId: string, tx: Tx, asOf: Date = new Date()) {
+    // Before commercial go-live: do not consume quota or block freelancers.
+    if (!isSubscriptionsCommercialLive(asOf)) {
+      return;
+    }
+
     const access = await this.buildAccessSnapshot(userId, asOf, tx);
     if (!access.canSubmitProposal) {
       throw new ForbiddenException({
@@ -406,6 +421,29 @@ export class SubscriptionEntitlementService {
       };
     }
 
+    // Commercial go-live not reached: freelancers keep marketplace access.
+    // Trial countdown and paywall must not start on deploy/migrate alone.
+    if (!isSubscriptionsCommercialLive(asOf)) {
+      return {
+        kind: 'PRE_COMMERCIAL',
+        canSubmitProposal: true,
+        isExpired: false,
+        plan: null,
+        subscriptionId: null,
+        status: null,
+        startedAt: null,
+        expiresAt: null,
+        trialStartedAt: user.trialStartedAt,
+        trialEndsAt: user.trialEndsAt,
+        trialDaysRemaining: null,
+        proposalLimit: PRE_COMMERCIAL_PROPOSAL_QUOTA,
+        proposalUsed: used,
+        proposalRemaining: PRE_COMMERCIAL_PROPOSAL_QUOTA,
+        periodKey,
+        visibilityWeight: 0,
+      };
+    }
+
     return {
       ...empty,
       proposalUsed: used,
@@ -417,9 +455,22 @@ export class SubscriptionEntitlementService {
 
   /**
    * Grant a 30-day trial for a newly registered freelancer.
+   * Only after commercial go-live — deploy/migrate must not start countdowns.
    * Idempotent if hasUsedTrial already true.
    */
   async grantRegistrationTrial(userId: string, registeredAt: Date, tx?: Tx) {
+    if (!isSubscriptionsCommercialLive(registeredAt)) {
+      this.logger.debug(
+        `Skipping registration trial for ${userId}: commercial go-live not reached`,
+      );
+      return null;
+    }
+
+    const goLiveAt = resolveSubscriptionsGoLiveAt();
+    // Trial starts at registration, but never before the approved go-live instant.
+    const startedAt =
+      goLiveAt && registeredAt < goLiveAt ? goLiveAt : registeredAt;
+
     const db = tx ?? this.prisma;
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -436,7 +487,6 @@ export class SubscriptionEntitlementService {
       throw new PreconditionFailedException('خطة البداية غير متاحة');
     }
 
-    const startedAt = registeredAt;
     const endsAt = addDays(startedAt, TRIAL_DURATION_DAYS);
 
     await db.user.update({
@@ -465,7 +515,10 @@ export class SubscriptionEntitlementService {
         source: SubscriptionSource.TRIAL,
         startedAt,
         expiresAt: endsAt,
-        metadata: { grantedBy: 'registration' } as Prisma.InputJsonValue,
+        metadata: {
+          grantedBy: 'registration',
+          goLiveAt: goLiveAt?.toISOString() ?? null,
+        } as Prisma.InputJsonValue,
       },
       include: { plan: true },
     });
@@ -473,8 +526,15 @@ export class SubscriptionEntitlementService {
 
   /**
    * Idempotent go-live backfill for freelancers without an active paid subscription.
+   * Requires an explicit goLiveAt (never default to deploy/"now").
    */
-  async backfillExistingFreelancerTrials(goLiveAt: Date = new Date()) {
+  async backfillExistingFreelancerTrials(goLiveAt: Date) {
+    if (!(goLiveAt instanceof Date) || Number.isNaN(goLiveAt.getTime())) {
+      throw new PreconditionFailedException(
+        'Commercial go-live timestamp is required for trial backfill',
+      );
+    }
+
     const starter = await this.prisma.subscriptionPlan.findFirst({
       where: { code: STARTER_PLAN_CODE, isActive: true },
     });

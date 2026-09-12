@@ -34,6 +34,10 @@ import {
   addDays,
   allowSimulatedProductActivation,
 } from './subscriptions.constants.js';
+import {
+  isSubscriptionsCommercialLive,
+  resolveSubscriptionsGoLiveAt,
+} from './subscriptions-go-live.js';
 import { clampProBoostScore } from './ranking.util.js';
 import { SubscriptionEntitlementService } from './subscription-entitlement.service.js';
 import type {
@@ -85,6 +89,8 @@ export class SubscriptionsService {
     });
 
     const now = new Date();
+    const goLiveAt = resolveSubscriptionsGoLiveAt();
+    const commercialLive = isSubscriptionsCommercialLive(now);
     const hasAccess = access.canSubmitProposal && !access.isExpired;
     const paidDaysRemaining =
       access.expiresAt && access.expiresAt > now
@@ -109,9 +115,17 @@ export class SubscriptionsService {
       },
       requiresIdentityVerification: false,
       hasAccess,
-      /** @deprecated Prefer hasAccess — true when user has any active entitlement */
-      isPro: hasAccess,
+      /** Paid/admin badge only — not true for pre-commercial open access */
+      isPro: access.kind === 'PAID' || access.kind === 'ADMIN_GRANT',
       daysRemaining: paidDaysRemaining,
+      /** Explicit commercial go-live — unset means trials/paywall not started */
+      subscriptionsGoLiveAt: goLiveAt?.toISOString() ?? null,
+      subscriptionsCommercialLive: commercialLive,
+      /**
+       * Separate from go-live: paywall stays off until a real PSP is verified.
+       * READY_FOR_SUBSCRIPTION_PAYWALL = NO until then.
+       */
+      readyForSubscriptionPaywall: false,
       subscription: latest ? this.formatSubscription(latest) : null,
       payment: {
         provider: this.paymentProvider.name,

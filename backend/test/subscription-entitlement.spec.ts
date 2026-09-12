@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   FreelancerSubscriptionStatus,
   Role,
@@ -60,13 +60,24 @@ describe('SubscriptionEntitlementService', () => {
   };
 
   let service: SubscriptionEntitlementService;
+  const previousGoLive = process.env.SUBSCRIPTIONS_GO_LIVE_AT;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.SUBSCRIPTIONS_GO_LIVE_AT;
     service = new SubscriptionEntitlementService(prisma as never);
   });
 
+  afterEach(() => {
+    if (previousGoLive === undefined) {
+      delete process.env.SUBSCRIPTIONS_GO_LIVE_AT;
+    } else {
+      process.env.SUBSCRIPTIONS_GO_LIVE_AT = previousGoLive;
+    }
+  });
+
   it('allows proposals during active user trial with Starter quota', async () => {
+    process.env.SUBSCRIPTIONS_GO_LIVE_AT = '2026-01-01T00:00:00.000Z';
     const now = new Date('2026-09-12T12:00:00.000Z');
     const ends = addDays(now, 10);
     prisma.user.findUnique.mockResolvedValue({
@@ -88,7 +99,33 @@ describe('SubscriptionEntitlementService', () => {
     expect(access.trialDaysRemaining).toBe(10);
   });
 
-  it('blocks new proposals when trial and paid access expired', async () => {
+  it('before commercial go-live allows freelancers without starting a trial', async () => {
+    const now = new Date('2026-09-12T12:00:00.000Z');
+    prisma.user.findUnique.mockResolvedValue({
+      role: Role.FREELANCER,
+      trialStartedAt: null,
+      trialEndsAt: null,
+      hasUsedTrial: false,
+    });
+    prisma.freelancerSubscription.findFirst.mockResolvedValue(null);
+    prisma.proposalUsagePeriod.findUnique.mockResolvedValue(null);
+
+    const access = await service.getCurrentAccess('u1', now);
+    expect(access.kind).toBe('PRE_COMMERCIAL');
+    expect(access.canSubmitProposal).toBe(true);
+    expect(access.trialDaysRemaining).toBeNull();
+    await expect(service.assertCanSubmitProposal('u1', now)).resolves.toBeTruthy();
+  });
+
+  it('skips registration trial grant before commercial go-live', async () => {
+    const registeredAt = new Date('2026-09-01T08:00:00.000Z');
+    const result = await service.grantRegistrationTrial('u1', registeredAt);
+    expect(result).toBeNull();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks new proposals when trial and paid access expired after go-live', async () => {
+    process.env.SUBSCRIPTIONS_GO_LIVE_AT = '2026-01-01T00:00:00.000Z';
     const now = new Date('2026-09-12T12:00:00.000Z');
     prisma.user.findUnique.mockResolvedValue({
       role: Role.FREELANCER,
@@ -120,6 +157,7 @@ describe('SubscriptionEntitlementService', () => {
   });
 
   it('enforces Pro quota of 60', async () => {
+    process.env.SUBSCRIPTIONS_GO_LIVE_AT = '2026-01-01T00:00:00.000Z';
     const now = new Date('2026-09-12T12:00:00.000Z');
     prisma.user.findUnique.mockResolvedValue({
       role: Role.FREELANCER,
@@ -144,6 +182,7 @@ describe('SubscriptionEntitlementService', () => {
   });
 
   it('enforces Premium quota of 120', async () => {
+    process.env.SUBSCRIPTIONS_GO_LIVE_AT = '2026-01-01T00:00:00.000Z';
     const now = new Date('2026-09-12T12:00:00.000Z');
     prisma.user.findUnique.mockResolvedValue({
       role: Role.FREELANCER,
@@ -171,7 +210,8 @@ describe('SubscriptionEntitlementService', () => {
     expect(result.access.proposalRemaining).toBe(1);
   });
 
-  it('grantRegistrationTrial sets 30-day window from registration date', async () => {
+  it('grantRegistrationTrial sets 30-day window from registration date after go-live', async () => {
+    process.env.SUBSCRIPTIONS_GO_LIVE_AT = '2026-08-01T00:00:00.000Z';
     const registeredAt = new Date('2026-09-01T08:00:00.000Z');
     prisma.user.findUnique.mockResolvedValue({
       id: 'u1',
