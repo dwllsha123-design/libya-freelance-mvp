@@ -37,5 +37,12 @@
   "mobileAppsTitle": "ليبي فريلانس قريبًا على هاتفك",
   "mobileAppsSubtitle": "نعمل على توفير تجربة ليبي فريلانس على iPhone وAndroid لتتمكن من إدارة مشاريعك وعروضك ورسائلك أينما كنت.",
   "prayerTimesTitle": "مواقيت الصلاة",
-  "prayerTimesSubtitle": "مواقيت الصلاة حسب موقعك المحلي"
+  "prayerTimesSubtitle": "مواقيت الصلاة حسب موقعك التقريبي",
+  "prayerChangeCity": "تغيير المدينة",
+  "prayerChangeCityHint": "اختر الدولة والمدينة دون الحاجة إلى إذن الموقع من المتصفح.",
+  "prayerCountry": "الدولة",
+  "prayerCity": "المدينة",
+  "prayerSaveCity": "حفظ",
+  "prayerCancel": "إلغاء",
+  "prayerUsePrecise": "استخدام موقعي الدقيق"
 }

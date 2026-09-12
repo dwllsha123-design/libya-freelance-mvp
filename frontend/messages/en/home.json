@@ -37,5 +37,12 @@
   "mobileAppsTitle": "Libyan Freelance — coming soon to your phone",
   "mobileAppsSubtitle": "We are building Libyan Freelance for iPhone and Android so you can manage projects, proposals, and messages wherever you are.",
   "prayerTimesTitle": "Prayer times",
-  "prayerTimesSubtitle": "Prayer times based on your local location"
+  "prayerTimesSubtitle": "Approximate prayer times for your area",
+  "prayerChangeCity": "Change city",
+  "prayerChangeCityHint": "Choose a country and city without granting browser location permission.",
+  "prayerCountry": "Country",
+  "prayerCity": "City",
+  "prayerSaveCity": "Save",
+  "prayerCancel": "Cancel",
+  "prayerUsePrecise": "Use my precise location"
 }
