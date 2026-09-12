@@ -10,19 +10,16 @@ import { ConfigService } from '@nestjs/config';
 import {
   AdminAuditAction,
   NotificationType,
-  PaymentPurpose,
   PaymentStatus,
   PointsTransactionType,
   Prisma,
   ProductAnalyticsEventType,
   Role,
 } from '@prisma/client';
-import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { LaunchProgramService } from '../launch/launch.service.js';
 import { AdminAuditService } from '../admin/admin-audit.service.js';
-import { assertPaymentProviderAvailable } from '../payments/payment-provider-availability.js';
 import { PAYMENT_PROVIDER } from '../payments/payment.types.js';
 import type { PaymentProvider } from '../payments/payment.types.js';
 import type { PaymentFulfillmentService } from '../payments/payment-fulfillment.service.js';
@@ -40,6 +37,7 @@ import type {
   CreatePointsPackageDto,
   UpdatePointsPackageDto,
 } from './dto/points-package.dto.js';
+import { assertPaidPointsPurchaseEnabled } from './paid-points-purchase.policy.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -78,12 +76,12 @@ export class NuqatiService {
     private readonly paymentFulfillment: PaymentFulfillmentService,
   ) {}
 
+  /**
+   * Paid packages are disabled for the commercial release.
+   * Admin CRUD still exists for historical/audit rows.
+   */
   async listPointsPackages() {
-    const packages = await this.prisma.pointsPackage.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { priceLyd: 'asc' }],
-    });
-    return packages.map((pkg) => this.formatPackage(pkg));
+    return [];
   }
 
   async getDashboard(userId: string, role: Role) {
@@ -112,21 +110,9 @@ export class NuqatiService {
       earnedThisMonth,
       monthlyCap: NUQATI_CONFIG.monthlyEarnableFromTasks,
       proposalCost: NUQATI_CONFIG.proposalSubmitCost,
-      packages:
-        packages.length > 0
-          ? packages
-          : NUQATI_CONFIG.purchasePackages.map((p) => ({
-              id: p.id,
-              code: p.id.toUpperCase(),
-              nameAr: `${p.points} نقطة`,
-              nameEn: `${p.points} Points`,
-              points: p.points,
-              bonusPoints: 0,
-              priceLyd: p.priceLyd,
-              currency: 'LYD',
-              isActive: true,
-              sortOrder: 0,
-            })),
+      /** Paid Nuqati commerce disabled — earn via rewards/tasks only. */
+      paidPurchaseEnabled: false as const,
+      packages,
       tasks,
       streak: {
         currentDays: streak?.currentStreakDays ?? 0,
@@ -179,15 +165,15 @@ export class NuqatiService {
   }
 
   /**
-   * Starts a Nuqati points purchase checkout via Payment (POINTS_PURCHASE).
-   * Credits happen only after verified SUCCEEDED fulfillment (idempotent).
+   * Paid Nuqati checkout is disabled for the commercial release.
+   * Endpoint kept for API compatibility; always rejects before payment side effects.
    */
   async initiatePurchaseCheckout(
-    userId: string,
+    _userId: string,
     role: Role,
     packageIdOrCode: string,
-    options: { returnUrl?: string; cancelUrl?: string } = {},
-  ) {
+    _options: { returnUrl?: string; cancelUrl?: string } = {},
+  ): Promise<never> {
     if (role !== Role.FREELANCER) {
       throw new ForbiddenException('نقاطي متاح للمستقلين فقط');
     }
@@ -199,147 +185,7 @@ export class NuqatiService {
       });
     }
 
-    const key = packageIdOrCode.trim();
-    const pkg = await this.prisma.pointsPackage.findFirst({
-      where: {
-        OR: [{ id: key }, { code: key.toUpperCase() }],
-      },
-    });
-    if (!pkg) {
-      throw new NotFoundException({
-        code: 'POINTS_PACKAGE_NOT_FOUND',
-        message: 'Points package not found',
-      });
-    }
-    if (!pkg.isActive) {
-      throw new BadRequestException({
-        code: 'POINTS_PACKAGE_INACTIVE',
-        message: 'Points package is not available',
-      });
-    }
-
-    // Fail before any Payment / PointsPurchase rows when PSP is not available.
-    assertPaymentProviderAvailable(this.paymentProvider);
-
-    const currency = pkg.currency || 'LYD';
-    const amount = Number(pkg.priceLyd);
-    const totalPoints = pkg.points + pkg.bonusPoints;
-    const idempotencyKey = `points-purchase:${pkg.code}:${userId}:${Date.now()}:${randomUUID().slice(0, 8)}`;
-
-    const { payment, purchase } = await this.prisma.$transaction(async (tx) => {
-      const paymentRow = await tx.payment.create({
-        data: {
-          clientId: userId,
-          purpose: PaymentPurpose.POINTS_PURCHASE,
-          amount,
-          currency,
-          status: PaymentStatus.PENDING,
-          provider: this.paymentProvider.name,
-          idempotencyKey,
-          metadata: {
-            packageId: pkg.id,
-            packageCode: pkg.code,
-            pointsAmount: pkg.points,
-            bonusPoints: pkg.bonusPoints,
-            expectedAmount: amount,
-            expectedCurrency: currency,
-          } as Prisma.InputJsonValue,
-        },
-      });
-
-      const purchaseRow = await tx.pointsPurchase.create({
-        data: {
-          userId,
-          packageId: pkg.id,
-          pointsAmount: pkg.points,
-          bonusPoints: pkg.bonusPoints,
-          priceLyd: pkg.priceLyd,
-          status: PaymentStatus.PENDING,
-          provider: this.paymentProvider.name,
-          paymentId: paymentRow.id,
-        },
-      });
-
-      return { payment: paymentRow, purchase: purchaseRow };
-    });
-
-    const providerResult = await this.paymentProvider.createCheckout({
-      paymentId: payment.id,
-      amount,
-      currency,
-      description: `شراء ${totalPoints} نقطة — ${pkg.nameAr}`,
-      clientId: userId,
-      returnUrl: options.returnUrl,
-      cancelUrl: options.cancelUrl,
-      metadata: {
-        purpose: PaymentPurpose.POINTS_PURCHASE,
-        purchaseId: purchase.id,
-        packageCode: pkg.code,
-        expectedAmount: amount,
-        expectedCurrency: currency,
-      },
-    });
-
-    if (providerResult.status === 'failed') {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.FAILED,
-            failedAt: new Date(),
-            failureMessage: 'فشل إنشاء عملية الدفع لدى مزود الخدمة',
-          },
-        }),
-        this.prisma.pointsPurchase.update({
-          where: { id: purchase.id },
-          data: { status: PaymentStatus.FAILED },
-        }),
-      ]);
-      throw new BadRequestException('تعذر بدء عملية الدفع');
-    }
-
-    if (providerResult.status === 'succeeded') {
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.SUCCEEDED,
-          providerReference: providerResult.providerReference,
-          paidAt: new Date(),
-        },
-      });
-      await this.paymentFulfillment.fulfillSucceededPayment(payment.id);
-      return {
-        purchaseId: purchase.id,
-        paymentId: payment.id,
-        package: this.formatPackage(pkg),
-        status: 'SUCCEEDED' as const,
-        comingSoon: false,
-        requiresRedirect: false,
-        checkoutUrl: null as string | null,
-        currency,
-        pointsCredited: totalPoints,
-      };
-    }
-
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: PaymentStatus.PROCESSING,
-        providerReference: providerResult.providerReference,
-        checkoutUrl: providerResult.checkoutUrl ?? null,
-      },
-    });
-
-    return {
-      purchaseId: purchase.id,
-      paymentId: payment.id,
-      package: this.formatPackage(pkg),
-      status: 'PROCESSING' as const,
-      comingSoon: false,
-      requiresRedirect: true,
-      checkoutUrl: providerResult.checkoutUrl ?? null,
-      currency,
-    };
+    assertPaidPointsPurchaseEnabled();
   }
 
   /**

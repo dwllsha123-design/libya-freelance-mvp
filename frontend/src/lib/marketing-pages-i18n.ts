@@ -275,7 +275,7 @@ const AR_CONTENT: MarketingPagesContent = {
         items: [
           {
             q: 'ما هو نظام نقاطي؟',
-            a: 'نقاطي هي عملة المنصة للمستقلين. تكسب نقاطاً بالنشاط (تسجيل دخول، إكمال الملف، معرض الأعمال) وتُنفقها عند تقديم العروض. يمكنك أيضاً شراء نقاط بالدينار الليبي من لوحة نقاطي.',
+            a: 'نقاطي هي عملة المنصة للمستقلين. تكسب نقاطاً بالنشاط (تسجيل دخول، إكمال الملف، معرض الأعمال) وتُنفقها عند تقديم العروض. لا يمكن شراء النقاط — الاكتساب عبر النشاط فقط.',
           },
           {
             q: 'كيف أحصل على مشاريع؟',
@@ -295,12 +295,12 @@ const AR_CONTENT: MarketingPagesContent = {
         title: 'الأمان والمدفوعات',
         items: [
           {
-            q: 'هل يوجد نظام ضمان أو حماية للمدفوعات؟',
+            q: 'كيف يتم دفع قيمة المشاريع؟',
             a: 'ليبي فريلانس منصة إعلانية ووسيط تقني لربط العملاء بالمستقلين. المنصة لا تستلم قيمة المشاريع ولا تحتفظ بأموال الأطراف ولا تضمن تنفيذ أو سداد قيمة المشروع. يتم الاتفاق والدفع مباشرة بين العميل والمستقل.',
           },
           {
             q: 'هل المدفوعات الإلكترونية داخل المنصة؟',
-            a: 'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.',
+            a: 'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط لاشتراكات المستقلين الشهرية التي تقدمها المنصة.',
           },
           {
             q: 'كيف أبلّغ عن مشكلة؟',
@@ -374,7 +374,7 @@ const AR_CONTENT: MarketingPagesContent = {
     verifiedIntro: 'تُمنح تلقائياً للمستقلين الليبيين الذين يستوفون المعايير التالية:',
     verificationCriteria: [...VERIFICATION_CRITERIA_AR],
     currencyHeading: 'العملة والمدفوعات',
-    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). الاتفاق والدفع لمشاريع العمل يتمان مباشرة بين العميل والمستقل. للدفع داخل المنصة (اشتراكات ونقاط) راجع `,
+    currencyBeforeLink: `جميع الميزانيات والعروض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). الاتفاق والدفع لمشاريع العمل يتمان مباشرة بين العميل والمستقل. للدفع داخل المنصة (اشتراكات المستقلين فقط) راجع `,
     currencyLinkLabel: 'صفحة الباقات',
     currencyAfterLink: '.',
   },
@@ -385,8 +385,8 @@ const AR_CONTENT: MarketingPagesContent = {
     howHeading: 'كيف يعمل الدفع؟',
     howSteps: [
       'يتفق العميل والمستقل على السعر والمدة والنطاق داخل المنصة أو عبر المراسلة',
-      'يُسدَّد مبلغ المشروع مباشرة بين الطرفين خارج حجز أموال المنصة',
-      'الدفع الإلكتروني داخل المنصة مخصص للاشتراكات وشراء النقاط والخدمات الرقمية فقط',
+      'يُسدَّد مبلغ المشروع مباشرة بين الطرفين خارج المنصة — دون حجز أموال أو ضمان دفع من ليبي فريلانس',
+      'الدفع الإلكتروني داخل المنصة مخصص لاشتراكات المستقلين الشهرية فقط',
       `الميزانيات المعروضة بالدينار الليبي (${PLATFORM_CURRENCY_CODE})`,
     ],
     forClientsHeading: 'للعملاء',
@@ -397,9 +397,9 @@ const AR_CONTENT: MarketingPagesContent = {
     forFreelancersHeading: 'للمستقلين',
     forFreelancersItems: [
       'اتفق على طريقة استلام أجرك مباشرة مع العميل',
-      'اشترك في باقة لتقديم العروض واشترِ النقاط عند الحاجة عبر دفع المنصة',
+      'اشترك في باقة شهرية لتقديم العروض — النقاط تُكتسب بالنشاط ولا تُشترى',
     ],
-    mvpNote: `الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.`,
+    mvpNote: `الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط لاشتراكات المستقلين الشهرية التي تقدمها المنصة.`,
   },
   privacy: {
     metaTitle: 'سياسة الخصوصية',
@@ -522,9 +522,11 @@ const AR_CONTENT: MarketingPagesContent = {
       {
         heading: '5. المدفوعات والوساطة',
         paragraphs: [
-          'ليبي فريلانس منصة إعلانية ووسيط تقني لربط العملاء بالمستقلين. المنصة لا تستلم قيمة المشاريع ولا تحتفظ بأموال الأطراف ولا تضمن تنفيذ أو سداد قيمة المشروع. يتم الاتفاق والدفع مباشرة بين العميل والمستقل.',
-          'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط للاشتراكات وشراء النقاط والخدمات الرقمية التي تقدمها المنصة.',
-          `الميزانيات تُعرض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). راجع صفحة الباقات للاشتراكات وشروط الخدمة لمزيد من التفاصيل.`,
+          'ليبي فريلانس منصة إعلانية ووسيط تقني يربط أصحاب المشاريع بالمستقلين. لا تستلم المنصة قيمة المشاريع ولا تحتفظ بأموال الأطراف، ويتم الاتفاق والدفع مباشرة بين العميل والمستقل.',
+          'ليبي فريلانس ليست طرفاً في دفع قيمة المشروع ولا تضمن السداد أو تنفيذ العمل. لا توجد عمولة على قيمة المشاريع.',
+          'رسوم الاشتراك الشهري للمستقلين هي مقابل الوصول إلى ميزات المنصة (مثل حدود العروض) وهي منفصلة تماماً عن قيمة أي مشروع.',
+          'الدفع الإلكتروني داخل ليبي فريلانس مخصص فقط لاشتراكات المستقلين الشهرية.',
+          `الميزانيات تُعرض بالدينار الليبي (${PLATFORM_CURRENCY_CODE}). راجع صفحة الباقات للاشتراكات.`,
         ],
       },
       {
@@ -686,7 +688,7 @@ const EN_CONTENT: MarketingPagesContent = {
         items: [
           {
             q: 'What is Nuqati?',
-            a: 'Nuqati is the platform currency for freelancers. Earn points through activity (login, completing your profile, portfolio) and spend them when submitting proposals. You can also buy points in Libyan Dinar from the Nuqati dashboard.',
+            a: 'Nuqati is the platform currency for freelancers. Earn points through activity (login, completing your profile, portfolio) and spend them when submitting proposals. Points cannot be purchased — they are earned through activity only.',
           },
           {
             q: 'How do I get projects?',
@@ -706,12 +708,12 @@ const EN_CONTENT: MarketingPagesContent = {
         title: 'Safety and payments',
         items: [
           {
-            q: 'Is there an escrow or payment protection system?',
+            q: 'How are project payments handled?',
             a: 'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer.',
           },
           {
             q: 'Are electronic payments available on the platform?',
-            a: 'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
+            a: 'Electronic payments inside Libyan Freelance are only for freelancer monthly subscriptions offered by the platform.',
           },
           {
             q: 'How do I report a problem?',
@@ -786,7 +788,7 @@ const EN_CONTENT: MarketingPagesContent = {
     verificationCriteria: [...VERIFICATION_CRITERIA_EN],
     currencyHeading: 'Currency and payments',
     currencyBeforeLink:
-      'All budgets and proposals are in Libyan Dinar (LYD). Project agreement and payment happen directly between client and freelancer. For in-platform payments (subscriptions and points), see the ',
+      'All budgets and proposals are in Libyan Dinar (LYD). Project agreement and payment happen directly between client and freelancer. For in-platform payments (freelancer subscriptions only), see the ',
     currencyLinkLabel: 'pricing page',
     currencyAfterLink: '.',
   },
@@ -798,8 +800,8 @@ const EN_CONTENT: MarketingPagesContent = {
     howHeading: 'How payment works',
     howSteps: [
       'Client and freelancer agree on price, timeline, and scope on the platform or via messaging',
-      'Project fees are paid directly between the parties — not held by the platform',
-      'Electronic payments on the platform are only for subscriptions, points, and digital services',
+      'Project fees are paid directly between the parties outside the platform — Libyan Freelance does not hold funds or guarantee payment',
+      'Electronic payments on the platform are for freelancer monthly subscriptions only',
       'Budgets are shown in Libyan Dinar (LYD)',
     ],
     forClientsHeading: 'For clients',
@@ -810,10 +812,10 @@ const EN_CONTENT: MarketingPagesContent = {
     forFreelancersHeading: 'For freelancers',
     forFreelancersItems: [
       'Agree on how you receive payment directly with the client',
-      'Subscribe to a plan to submit proposals and buy points via platform payments when needed',
+      'Subscribe to a monthly plan to submit proposals — points are earned through activity and cannot be purchased',
     ],
     mvpNote:
-      'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
+      'Electronic payments inside Libyan Freelance are only for freelancer monthly subscriptions offered by the platform.',
   },
   privacy: {
     metaTitle: 'Privacy policy',
@@ -937,8 +939,8 @@ const EN_CONTENT: MarketingPagesContent = {
       {
         heading: '5. Payments and intermediation',
         paragraphs: [
-          'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer.',
-          'Electronic payments inside Libyan Freelance are only for subscriptions, points purchases, and digital services offered by the platform.',
+          'Libyan Freelance is an advertising platform and technical intermediary connecting clients with freelancers. The platform is not a party to project payment, does not receive project payment amounts, does not hold parties\' funds, and does not guarantee project delivery or payment. Agreement and payment are made directly between the client and the freelancer outside the platform.',
+          'Freelancer monthly subscription fees are entirely separate from project value, and are the only charges that may be collected via electronic payment on the platform.',
           'Budgets are shown in Libyan Dinar (LYD). See the pricing page for subscriptions and these Terms for more detail.',
         ],
       },

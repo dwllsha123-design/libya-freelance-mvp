@@ -16,8 +16,8 @@ describe('direct-payment launch model — agreement copy & flags', () => {
     expect(DEFAULT_PAYMENT_TERMS).not.toMatch(/يُحرَّر صافي المستقل بعد إكمال/);
   });
 
-  it('payment protection stays off unless env enables it', () => {
-    vi.stubEnv('PAYMENT_PROTECTION_ACTIVE', '');
+  it('payment protection is permanently off', () => {
+    vi.stubEnv('PAYMENT_PROTECTION_ACTIVE', 'true');
     expect(isMarketplacePaymentProtectionActive()).toBe(false);
   });
 });

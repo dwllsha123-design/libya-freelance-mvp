@@ -60,5 +60,7 @@
   "payNow": "Pay now",
   "comingSoon": "Coming soon",
   "comingSoonBody": "The electronic payment gateway is being set up. We will enable it once a provider is connected.",
-  "checkoutPackageMissing": "Package not found. Choose a package from the Nuqati page."
+  "checkoutPackageMissing": "Package not found. Choose a package from the Nuqati page.",
+  "paidPurchaseDisabled": "Point purchases unavailable",
+  "paidPurchaseDisabledBody": "Nuqati points are earned through activity on the platform only and cannot be purchased. Use tasks and rewards to grow your balance."
 }

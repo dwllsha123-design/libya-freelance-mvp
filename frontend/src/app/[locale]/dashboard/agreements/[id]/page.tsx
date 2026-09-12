@@ -12,9 +12,7 @@ import {
   type AgreementTimelineEvent,
   type ProjectAgreementDetail,
 } from '@/hooks/use-agreements';
-import { useEscrowApi } from '@/hooks/use-escrow';
 import { useProposalsApi } from '@/hooks/use-proposals';
-import { EscrowFundDialog } from '@/components/escrow/escrow-fund-dialog';
 import { ApiError } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import type { AppLocale } from '@/i18n/routing';
@@ -27,7 +25,6 @@ export default function AgreementDetailPage() {
   const params = useParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const api = useAgreementsApi();
-  const escrowApi = useEscrowApi();
   const proposalsApi = useProposalsApi();
 
   const [agreement, setAgreement] = useState<ProjectAgreementDetail | null>(null);
@@ -37,7 +34,6 @@ export default function AgreementDetailPage() {
   const [checked, setChecked] = useState(false);
   const [isActing, setIsActing] = useState(false);
   const [showChange, setShowChange] = useState(false);
-  const [showFund, setShowFund] = useState(false);
   const [showConfirmStart, setShowConfirmStart] = useState(false);
   const [changeType, setChangeType] = useState<AgreementChangeType>('SCOPE');
   const [changeReason, setChangeReason] = useState('');
@@ -119,21 +115,6 @@ export default function AgreementDetailPage() {
     }
   }
 
-  async function handleFundAndStart() {
-    if (!agreement) return;
-    setIsActing(true);
-    setError(null);
-    try {
-      await escrowApi.fundAndAccept(agreement.proposalId);
-      setShowFund(false);
-      await reload();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('actionFailed'));
-    } finally {
-      setIsActing(false);
-    }
-  }
-
   async function handleConfirmAgreementStart() {
     if (!agreement) return;
     setIsActing(true);
@@ -167,7 +148,6 @@ export default function AgreementDetailPage() {
 
   const v = agreement.currentVersion;
   const isClient = agreement.viewerRole === 'CLIENT';
-  const showFreelancerNet = agreement.viewerRole === 'FREELANCER' || isClient;
 
   return (
     <div className="page-gutter mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden py-8 sm:py-10">
@@ -178,11 +158,9 @@ export default function AgreementDetailPage() {
       <p className="mt-2 text-sm text-on-surface-variant">
         {isClient ? t('clientPrompt') : t('freelancerPrompt')}
       </p>
-      {agreement.directPaymentMode ? (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-          {t('directPaymentNotice')}
-        </p>
-      ) : null}
+      <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+        {t('directPaymentNotice')}
+      </p>
 
       <div className="mt-4 inline-flex rounded-full bg-surface-container px-3 py-1 text-xs font-medium">
         {t('status')}: {t(`statuses.${agreement.status}`)} ·{' '}
@@ -211,18 +189,6 @@ export default function AgreementDetailPage() {
           label={t('agreedValue')}
           value={formatCurrency(v.grossAmount, v.currency, locale)}
         />
-        {agreement.paymentProtectionActive ? (
-          <DetailRow
-            label={t('platformFee')}
-            value={formatCurrency(v.platformFee, v.currency, locale)}
-          />
-        ) : null}
-        {agreement.paymentProtectionActive && showFreelancerNet ? (
-          <DetailRow
-            label={t('freelancerNet')}
-            value={formatCurrency(v.freelancerNet, v.currency, locale)}
-          />
-        ) : null}
         <DetailRow label={t('duration')} value={t('days', { count: v.durationDays })} />
         <DetailRow
           label={t('deliveryDate')}
@@ -260,9 +226,7 @@ export default function AgreementDetailPage() {
       </section>
 
       {agreement.status === 'APPROVED' || agreement.status === 'PAYMENT_PENDING' ? (
-        <p className="mt-4 text-sm text-emerald-700">
-          {agreement.directPaymentMode ? t('approvedHintDirect') : t('approvedHint')}
-        </p>
+        <p className="mt-4 text-sm text-emerald-700">{t('approvedHintDirect')}</p>
       ) : null}
 
       {agreement.canAccept ? (
@@ -319,14 +283,9 @@ export default function AgreementDetailPage() {
               {t('confirmAgreementCta')}
             </button>
           ) : null}
-          {isClient && agreement.canFund ? (
-            <button
-              type="button"
-              onClick={() => setShowFund(true)}
-              className="rounded-lg bg-primary px-4 py-2 text-sm text-white"
-            >
-              {t('fundCta')}
-            </button>
+          {/* Escrow / fund CTA frozen: advertising marketplace — payment is direct outside platform */}
+          {isClient && agreement.canFund && !agreement.canConfirmStart ? (
+            <p className="w-full text-sm text-on-surface-variant">{t('fundCta')}</p>
           ) : null}
         </div>
       )}
@@ -483,15 +442,6 @@ export default function AgreementDetailPage() {
         </div>
       ) : null}
 
-      {agreement.canFund ? (
-        <EscrowFundDialog
-          open={showFund}
-          proposedPrice={v.grossAmount}
-          isLoading={isActing}
-          onConfirm={() => void handleFundAndStart()}
-          onCancel={() => setShowFund(false)}
-        />
-      ) : null}
       <p className="mt-8 text-center text-sm">
         <Link href={`/projects/${agreement.project.slug}`} className="text-primary underline">
           {agreement.project.title}

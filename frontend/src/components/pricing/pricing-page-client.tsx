@@ -270,6 +270,7 @@ export function PricingPageClient() {
       <section className="space-y-3 rounded-2xl border border-line bg-cream-deep/30 p-6 text-sm text-ink">
         <h2 className="font-display text-lg font-bold">{t('disclaimerTitle')}</h2>
         <p>{t('disclaimerBody')}</p>
+        <p className="font-semibold text-ink">{t('noProjectCommission')}</p>
         <p>{t('platformPaymentsNote')}</p>
         {user?.role === 'FREELANCER' ? (
           <Link href="/account/subscription" className="inline-block font-semibold text-ember hover:underline">

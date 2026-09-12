@@ -9,17 +9,16 @@ import {
 } from './helpers/e2e-setup.js';
 import {
   createOpenProject,
-  fundAndAcceptProposal,
   getReferenceIds,
-  registerAdmin,
   registerUser,
   seedTestReferenceData,
   validProposalBody,
 } from './helpers/project-e2e.helpers.js';
+import { PAYMENT_PROTECTION_NOT_ACTIVE } from '../src/payments/payment-protection.policy.js';
 
 const prisma = new PrismaClient();
 
-describe('Escrow E2E (PostgreSQL)', () => {
+describe('Escrow E2E (PostgreSQL) — permanently frozen', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>;
   let dbReady = false;
   let categoryId = '';
@@ -32,7 +31,7 @@ describe('Escrow E2E (PostgreSQL)', () => {
       return;
     }
 
-    // Legacy escrow flows require explicit flag (advertising model freezes funding otherwise).
+    // Even if env is set, advertising model permanently freezes mutations.
     process.env.PAYMENT_PROTECTION_ACTIVE = 'true';
 
     app = await createTestApp({ testStorage: true });
@@ -49,12 +48,17 @@ describe('Escrow E2E (PostgreSQL)', () => {
     await prisma.$disconnect();
   });
 
-  it('fund-and-accept, complete releases escrow to freelancer', async (ctx) => {
+  it('fund-and-accept is always rejected (no project escrow)', async (ctx) => {
     if (!dbReady) ctx.skip();
 
-    const client = await registerUser(app, 'CLIENT', 'escrow-client');
-    const freelancer = await registerUser(app, 'FREELANCER', 'escrow-fl');
-    const project = await createOpenProject(app, client.accessToken, categoryId, skillId);
+    const client = await registerUser(app, 'CLIENT', 'escrow-frozen-client');
+    const freelancer = await registerUser(app, 'FREELANCER', 'escrow-frozen-fl');
+    const project = await createOpenProject(
+      app,
+      client.accessToken,
+      categoryId,
+      skillId,
+    );
 
     const proposal = await authAgent(app)
       .post(`/api/projects/${project.id}/proposals`)
@@ -63,45 +67,30 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .send(validProposalBody)
       .expect(201);
 
-    await fundAndAcceptProposal(
-      app,
-      client.accessToken,
-      proposal.body.id,
-      freelancer.accessToken,
-    );
-
-    const escrow = await prisma.escrow.findUniqueOrThrow({
-      where: { proposalId: proposal.body.id },
-    });
-    expect(escrow.status).toBe('FUNDED');
-    expect(Number(escrow.amount)).toBe(validProposalBody.proposedPrice);
-
-    await authAgent(app)
-      .post(`/api/projects/${project.id}/request-completion`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${freelancer.accessToken}`)
-      .expect(201);
-
-    await authAgent(app)
-      .post(`/api/projects/${project.id}/complete`)
+    const res = await authAgent(app)
+      .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(201);
+      .expect(412);
 
-    const released = await prisma.escrow.findUniqueOrThrow({
-      where: { id: escrow.id },
+    expect(res.body.code).toBe(PAYMENT_PROTECTION_NOT_ACTIVE);
+    const escrow = await prisma.escrow.findUnique({
+      where: { proposalId: proposal.body.id },
     });
-    expect(released.status).toBe('RELEASED');
-    expect(released.releasedAt).not.toBeNull();
+    expect(escrow).toBeNull();
   });
 
-  it('dispute blocks completion; admin can resolve with refund', async (ctx) => {
+  it('prepare escrow is rejected', async (ctx) => {
     if (!dbReady) ctx.skip();
 
-    const admin = await registerAdmin(prisma, app, 'escrow-admin');
-    const client = await registerUser(app, 'CLIENT', 'escrow-dispute-client');
-    const freelancer = await registerUser(app, 'FREELANCER', 'escrow-dispute-fl');
-    const project = await createOpenProject(app, client.accessToken, categoryId, skillId);
+    const client = await registerUser(app, 'CLIENT', 'escrow-prep-client');
+    const freelancer = await registerUser(app, 'FREELANCER', 'escrow-prep-fl');
+    const project = await createOpenProject(
+      app,
+      client.accessToken,
+      categoryId,
+      skillId,
+    );
 
     const proposal = await authAgent(app)
       .post(`/api/projects/${project.id}/proposals`)
@@ -110,74 +99,16 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .send(validProposalBody)
       .expect(201);
 
-    await fundAndAcceptProposal(
-      app,
-      client.accessToken,
-      proposal.body.id,
-      freelancer.accessToken,
-    );
-
-    const escrow = await prisma.escrow.findUniqueOrThrow({
-      where: { proposalId: proposal.body.id },
-    });
-
-    const dispute = await authAgent(app)
-      .post(`/api/escrow/${escrow.id}/dispute`)
+    const res = await authAgent(app)
+      .post(`/api/escrow/prepare/${proposal.body.id}`)
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
-      .send({ reason: 'العمل لم يُسلَّم وفق الاتفاق والجودة غير مقبولة' })
-      .expect(201);
+      .expect(412);
 
-    expect(dispute.body.status).toBe('OPEN');
-
-    const disputedEscrow = await prisma.escrow.findUniqueOrThrow({
-      where: { id: escrow.id },
-    });
-    expect(disputedEscrow.status).toBe('DISPUTED');
-
-    await authAgent(app)
-      .post(`/api/projects/${project.id}/complete`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${client.accessToken}`)
-      .expect(409);
-
-    const openDisputes = await authAgent(app)
-      .get('/api/admin/escrow/disputes?status=open')
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${admin.accessToken}`)
-      .expect(200);
-
-    expect(openDisputes.body.some((d: { id: string }) => d.id === dispute.body.id)).toBe(
-      true,
-    );
-
-    await authAgent(app)
-      .post(`/api/admin/escrow/disputes/${dispute.body.id}/resolve`)
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${admin.accessToken}`)
-      .send({
-        resolution: 'بعد المراجعة، يستحق العميل استرداد المبلغ.',
-        outcome: 'REFUND_CLIENT',
-      })
-      .expect(201);
-
-    const refunded = await prisma.escrow.findUniqueOrThrow({
-      where: { id: escrow.id },
-    });
-    expect(refunded.status).toBe('REFUNDED');
-
-    const resolvedList = await authAgent(app)
-      .get('/api/admin/escrow/disputes?status=resolved')
-      .set(CLIENT_HEADER)
-      .set('Authorization', `Bearer ${admin.accessToken}`)
-      .expect(200);
-
-    expect(
-      resolvedList.body.some((d: { id: string }) => d.id === dispute.body.id),
-    ).toBe(true);
+    expect(res.body.code).toBe(PAYMENT_PROTECTION_NOT_ACTIVE);
   });
 
-  it('accept without approved agreement returns precondition failed', async (ctx) => {
+  it('accept without agreement still returns precondition failed', async (ctx) => {
     if (!dbReady) ctx.skip();
 
     const client = await registerUser(app, 'CLIENT', 'escrow-no-fund');
@@ -196,43 +127,5 @@ describe('Escrow E2E (PostgreSQL)', () => {
       .set(CLIENT_HEADER)
       .set('Authorization', `Bearer ${client.accessToken}`)
       .expect(412);
-  });
-
-  it('fund-and-accept is rejected when PAYMENT_PROTECTION_ACTIVE is off', async (ctx) => {
-    if (!dbReady) ctx.skip();
-
-    const previous = process.env.PAYMENT_PROTECTION_ACTIVE;
-    process.env.PAYMENT_PROTECTION_ACTIVE = '';
-
-    try {
-      const client = await registerUser(app, 'CLIENT', 'escrow-frozen-client');
-      const freelancer = await registerUser(app, 'FREELANCER', 'escrow-frozen-fl');
-      const project = await createOpenProject(
-        app,
-        client.accessToken,
-        categoryId,
-        skillId,
-      );
-
-      const proposal = await authAgent(app)
-        .post(`/api/projects/${project.id}/proposals`)
-        .set(CLIENT_HEADER)
-        .set('Authorization', `Bearer ${freelancer.accessToken}`)
-        .send(validProposalBody)
-        .expect(201);
-
-      await authAgent(app)
-        .post(`/api/escrow/fund-and-accept/${proposal.body.id}`)
-        .set(CLIENT_HEADER)
-        .set('Authorization', `Bearer ${client.accessToken}`)
-        .expect(412);
-    } finally {
-      process.env.PAYMENT_PROTECTION_ACTIVE = previous ?? 'true';
-    }
-  });
-
-  it('production-like gate unit coverage remains in payment-protection.policy.spec.ts', async (ctx) => {
-    if (!dbReady) ctx.skip();
-    expect(process.env.NODE_ENV).not.toBe('production');
   });
 });

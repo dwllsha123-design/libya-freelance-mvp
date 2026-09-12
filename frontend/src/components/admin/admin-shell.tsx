@@ -41,29 +41,16 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/verifications', labelKey: 'identityVerifications' },
       { href: '/admin/subscription-plans', labelKey: 'subscriptionPlans' },
       { href: '/admin/subscriptions', labelKey: 'proSubscriptions' },
-      { href: '/admin/point-packages', labelKey: 'pointPackages' },
+      // point-packages frozen: Nuqati is earn-only (no paid point purchase)
       { href: '/admin/points', labelKey: 'pointsAdmin' },
       { href: '/admin/payments', labelKey: 'commercialPayments' },
       { href: '/admin/launch-program', labelKey: 'launchProgram' },
       { href: '/admin/reviews', labelKey: 'reviews' },
       { href: '/admin/portfolio', labelKey: 'portfolioModeration' },
-      { href: '/admin/disputes', labelKey: 'disputes' },
+      // disputes frozen: no escrow / payment-protection product
     ],
   },
-  {
-    id: 'finance',
-    titleKey: 'navFinanceGroup',
-    items: [
-      { href: '/admin/finance', labelKey: 'financeOverview' },
-      { href: '/admin/payments', labelKey: 'commercialPayments' },
-      { href: '/admin/finance/commission', labelKey: 'commissionSettings' },
-      { href: '/admin/finance/transactions', labelKey: 'financeTransactions' },
-      { href: '/admin/investors', labelKey: 'investors' },
-      { href: '/admin/investors/agreements', labelKey: 'investmentAgreements' },
-      { href: '/admin/investors/accruals', labelKey: 'investorAccruals' },
-      { href: '/admin/investors/payouts', labelKey: 'investorPayouts' },
-    ],
-  },
+  // finance group frozen: advertising marketplace — no project escrow, commission, or investor payouts
   {
     id: 'site',
     titleKey: 'navSite',

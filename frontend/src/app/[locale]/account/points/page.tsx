@@ -11,6 +11,7 @@ import type { AppLocale } from '@/i18n/routing';
 
 export default function AccountPointsPage() {
   const t = useTranslations('subscription');
+  const tNuqati = useTranslations('nuqati');
   const tCommon = useTranslations('common');
   const locale = useLocale() as AppLocale;
   const brand = getNuqatiBrand(locale);
@@ -52,6 +53,8 @@ export default function AccountPointsPage() {
   }
 
   const packages = dash?.packages ?? [];
+  const purchaseEnabled =
+    dash?.paidPurchaseEnabled !== false && packages.length > 0;
 
   return (
     <div className="page-gutter page-shell page-shell--app page-shell--padded mx-auto max-w-3xl space-y-6 py-8">
@@ -88,30 +91,37 @@ export default function AccountPointsPage() {
             {t('pointsHistory')}
           </Link>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {packages.map((pkg) => {
-            const title =
-              (locale === 'en' ? pkg.nameEn : pkg.nameAr) ||
-              `${pkg.points} ${brand}`;
-            return (
-              <Link
-                key={pkg.id}
-                href={`/dashboard/nuqati/checkout?packageId=${pkg.id}`}
-                className="rounded-2xl border border-line bg-surface p-4 transition hover:border-ember/40"
-              >
-                <p className="font-semibold text-ink">{title}</p>
-                <p className="mt-1 text-sm text-ink-soft">
-                  {pkg.points}
-                  {pkg.bonusPoints ? ` + ${pkg.bonusPoints}` : ''} · {pkg.priceLyd}{' '}
-                  {locale === 'en' ? 'LYD' : 'د.ل'}
-                </p>
-                <span className="mt-3 inline-block text-sm font-semibold text-ember">
-                  {t('pointsBuy')}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        {purchaseEnabled ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {packages.map((pkg) => {
+              const title =
+                (locale === 'en' ? pkg.nameEn : pkg.nameAr) ||
+                `${pkg.points} ${brand}`;
+              return (
+                <Link
+                  key={pkg.id}
+                  href={`/dashboard/nuqati/checkout?packageId=${pkg.id}`}
+                  className="rounded-2xl border border-line bg-surface p-4 transition hover:border-ember/40"
+                >
+                  <p className="font-semibold text-ink">{title}</p>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    {pkg.points}
+                    {pkg.bonusPoints ? ` + ${pkg.bonusPoints}` : ''} · {pkg.priceLyd}{' '}
+                    {locale === 'en' ? 'LYD' : 'د.ل'}
+                  </p>
+                  <span className="mt-3 inline-block text-sm font-semibold text-ember">
+                    {t('pointsBuy')}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-line bg-slate-50 px-4 py-5 text-center">
+            <p className="font-semibold text-ink">{tNuqati('paidPurchaseDisabled')}</p>
+            <p className="mt-2 text-sm text-ink-soft">{tNuqati('paidPurchaseDisabledBody')}</p>
+          </div>
+        )}
       </section>
     </div>
   );

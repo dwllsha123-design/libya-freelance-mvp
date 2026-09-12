@@ -20,7 +20,7 @@
   "statusFailed": "Failed",
   "statusCancelled": "Cancelled",
   "statusRefunded": "Refunded",
-  "modeSimulated": "Payment protection coming soon. Current funding is simulated only and does not mean an electronic payment gateway is live.",
-  "modeRedirect": "The electronic payment gateway is being prepared and will be available soon.",
-  "modeDefault": "Payment protection and electronic payments are not enabled yet — coming soon."
+  "modeSimulated": "Project payments are arranged directly between client and freelancer outside the platform. Libyan Freelance does not hold project funds.",
+  "modeRedirect": "Electronic payments on the platform are for freelancer subscriptions only — not for project value.",
+  "modeDefault": "Project value is paid directly between the parties. Electronic payments on the platform are for subscriptions only."
 }

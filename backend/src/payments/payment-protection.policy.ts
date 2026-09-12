@@ -1,61 +1,55 @@
 /**
- * Launch-phase payment protection gate — escrow funding is frozen.
+ * Permanent advertising / subscription marketplace freeze.
  *
- * Advertising / subscription marketplace model: Libyan Freelance must not create
- * FUNDED / escrowed marketplace states that imply the platform held project funds.
- * Escrow prepare/fund/release paths remain in the codebase for a future protected
- * payout product, but mutations stay blocked unless PAYMENT_PROTECTION_ACTIVE=true.
+ * Libyan Freelance does NOT hold project funds, run escrow, or take project commission.
+ * Escrow tables/endpoints may remain for historical rows, but mutations are impossible.
  *
- * Simulated funding must NEVER bypass this gate (including local/dev) — use the
- * explicit protection flag only when intentionally testing legacy escrow flows.
+ * Platform electronic payments are for MONTHLY FREELANCER SUBSCRIPTIONS only.
+ * Paid Nuqati (points) purchase is disabled for the current commercial release.
  */
 import { PreconditionFailedException } from '@nestjs/common';
 
 export const PAYMENT_PROTECTION_NOT_ACTIVE = 'PAYMENT_PROTECTION_NOT_ACTIVE';
 
+/**
+ * Always false — payment protection / escrow is not part of the product.
+ * Env flag is ignored so the model cannot be re-enabled accidentally.
+ */
 export function isMarketplacePaymentProtectionActive(): boolean {
-  return process.env.PAYMENT_PROTECTION_ACTIVE === 'true';
+  return false;
 }
 
 /**
- * @deprecated Escrow is frozen for the advertising model. Simulated env alone
- * must not unlock funding — kept only for callers that still import this helper.
+ * @deprecated Escrow funding is permanently frozen for the advertising model.
  */
 export function isSimulatedMarketplaceFundingAllowed(): boolean {
   return false;
 }
 
-/**
- * Marketplace escrow funding mutations are allowed only when payment protection
- * is explicitly active. Always false otherwise (permanent advertising-model freeze).
- */
+/** Marketplace escrow funding mutations are never allowed. */
 export function canMutateMarketplaceEscrowFunding(): boolean {
-  return isMarketplacePaymentProtectionActive();
+  return false;
 }
 
 export function assertMarketplaceFundingAllowed(): void {
-  if (canMutateMarketplaceEscrowFunding()) {
-    return;
-  }
-
   throw new PreconditionFailedException({
     message:
-      'تمويل الضمان مجمّد. ليبي فريلانس تعمل بنموذج الإعلان والاشتراك — الدفع يتم مباشرة بين صاحب المشروع والمستقل خارج المنصة.',
+      'تمويل المشاريع غير متاح. ليبي فريلانس منصة إعلانية ووسيط تقني — الدفع يتم مباشرة بين صاحب المشروع والمستقل خارج المنصة.',
     code: PAYMENT_PROTECTION_NOT_ACTIVE,
     messageEn:
-      'Escrow funding is frozen. Libyan Freelance uses an advertising/subscription model — pay freelancers directly outside the platform.',
+      'Project funding is not available. Libyan Freelance is an advertising marketplace — clients and freelancers arrange payment directly outside the platform.',
   });
 }
 
 export function paymentProtectionPublicFlags() {
-  const active = isMarketplacePaymentProtectionActive();
   return {
-    paymentProtectionActive: active,
-    /** Escrow is not a public product; default status is frozen/disabled — not "coming soon". */
-    paymentProtectionStatus: active
-      ? ('ACTIVE' as const)
-      : ('DISABLED' as const),
-    directPaymentMode: !active,
-    platformPaymentsScope: 'SUBSCRIPTIONS_AND_POINTS' as const,
+    paymentProtectionActive: false,
+    paymentProtectionStatus: 'DISABLED' as const,
+    directPaymentMode: true,
+    /** Commercial launch: subscription fees only (paid points purchase disabled). */
+    platformPaymentsScope: 'SUBSCRIPTIONS_ONLY' as const,
+    projectPaymentModel: 'DIRECT_BETWEEN_USERS' as const,
+    projectCommission: 0 as const,
+    paidPointsPurchaseEnabled: false as const,
   };
 }

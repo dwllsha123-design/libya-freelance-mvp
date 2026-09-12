@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import {
   BadRequestException,
-  NotFoundException,
+  GoneException,
   ServiceUnavailableException,
   ValidationPipe,
 } from '@nestjs/common';
@@ -12,25 +12,14 @@ import {
   resolvePackageIdentifier,
 } from '../src/nuqati/dto/checkout-points-package.dto.js';
 import { NuqatiService } from '../src/nuqati/nuqati.service.js';
-import {
-  PAYMENT_PROVIDER_UNAVAILABLE,
-  assertPaymentProviderAvailable,
-} from '../src/payments/payment-provider-availability.js';
+import { PAID_POINTS_PURCHASE_DISABLED } from '../src/nuqati/paid-points-purchase.policy.js';
+import { PAYMENT_PROVIDER_UNAVAILABLE } from '../src/payments/payment-provider-availability.js';
 import { SubscriptionsService } from '../src/subscriptions/subscriptions.service.js';
-import { STARTER_PLAN_CODE, PRO_PLAN_CODE, PREMIUM_PLAN_CODE } from '../src/subscriptions/subscriptions.constants.js';
-
-const activePackage = {
-  id: 'pkg-p100',
-  code: 'P100',
-  nameAr: 'مئة نقطة',
-  nameEn: '100 Points',
-  points: 100,
-  bonusPoints: 10,
-  priceLyd: 15,
-  currency: 'LYD',
-  isActive: true,
-  sortOrder: 1,
-};
+import {
+  STARTER_PLAN_CODE,
+  PRO_PLAN_CODE,
+  PREMIUM_PLAN_CODE,
+} from '../src/subscriptions/subscriptions.constants.js';
 
 function unavailableProvider() {
   return {
@@ -42,24 +31,6 @@ function unavailableProvider() {
       available: false,
     },
     createCheckout: vi.fn(),
-    createPayment: vi.fn(),
-  };
-}
-
-function availableProvider() {
-  return {
-    name: 'simulated',
-    capabilities: {
-      supportsSyncCapture: true,
-      supportsRedirectCheckout: true,
-      supportsRefunds: false,
-      available: true,
-    },
-    createCheckout: vi.fn().mockResolvedValue({
-      status: 'pending',
-      providerReference: 'sim_1',
-      checkoutUrl: 'https://pay.example/checkout',
-    }),
     createPayment: vi.fn(),
   };
 }
@@ -122,27 +93,9 @@ describe('CheckoutPointsPackageDto', () => {
   });
 });
 
-describe('assertPaymentProviderAvailable', () => {
-  it('throws 503 PAYMENT_PROVIDER_UNAVAILABLE', () => {
-    try {
-      assertPaymentProviderAvailable(unavailableProvider() as never);
-      expect.unreachable('should throw');
-    } catch (err) {
-      expect(err).toBeInstanceOf(ServiceUnavailableException);
-      const response = (err as ServiceUnavailableException).getResponse() as {
-        code: string;
-        statusCode: number;
-      };
-      expect(response.code).toBe(PAYMENT_PROVIDER_UNAVAILABLE);
-      expect((err as ServiceUnavailableException).getStatus()).toBe(503);
-    }
-  });
-});
-
-describe('NuqatiService.initiatePurchaseCheckout', () => {
+describe('NuqatiService.initiatePurchaseCheckout — paid commerce disabled', () => {
   let prisma: {
     pointsPackage: { findFirst: ReturnType<typeof vi.fn> };
-    pointsWallet: { findUnique: ReturnType<typeof vi.fn> };
     pointsTransaction: { create: ReturnType<typeof vi.fn> };
     payment: { create: ReturnType<typeof vi.fn> };
     pointsPurchase: { create: ReturnType<typeof vi.fn> };
@@ -155,7 +108,6 @@ describe('NuqatiService.initiatePurchaseCheckout', () => {
   beforeEach(() => {
     prisma = {
       pointsPackage: { findFirst: vi.fn() },
-      pointsWallet: { findUnique: vi.fn().mockResolvedValue({ balance: 40 }) },
       pointsTransaction: { create: vi.fn() },
       payment: { create: vi.fn() },
       pointsPurchase: { create: vi.fn() },
@@ -174,11 +126,10 @@ describe('NuqatiService.initiatePurchaseCheckout', () => {
     );
   });
 
-  it('rejects missing identifier without calling trim unsafely', async () => {
+  it('rejects missing identifier with 400', async () => {
     await expect(
       service.initiatePurchaseCheckout('u1', Role.FREELANCER, undefined as never),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(prisma.pointsPackage.findFirst).not.toHaveBeenCalled();
   });
 
   it('rejects empty identifier', async () => {
@@ -193,33 +144,13 @@ describe('NuqatiService.initiatePurchaseCheckout', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('returns 404 for nonexistent package', async () => {
-    prisma.pointsPackage.findFirst.mockResolvedValue(null);
-    await expect(
-      service.initiatePurchaseCheckout('u1', Role.FREELANCER, 'MISSING'),
-    ).rejects.toBeInstanceOf(NotFoundException);
-  });
-
-  it('returns 400 for inactive package', async () => {
-    prisma.pointsPackage.findFirst.mockResolvedValue({
-      ...activePackage,
-      isActive: false,
-    });
-    await expect(
-      service.initiatePurchaseCheckout('u1', Role.FREELANCER, 'P100'),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('returns 503 PAYMENT_PROVIDER_UNAVAILABLE for valid package without PSP', async () => {
-    prisma.pointsPackage.findFirst.mockResolvedValue(activePackage);
+  it('returns 410 PAID_POINTS_PURCHASE_DISABLED for valid-looking id', async () => {
     await expect(
       service.initiatePurchaseCheckout('u1', Role.FREELANCER, 'P100'),
     ).rejects.toSatisfy((err: unknown) => {
-      expect(err).toBeInstanceOf(ServiceUnavailableException);
-      const body = (err as ServiceUnavailableException).getResponse() as {
-        code: string;
-      };
-      expect(body.code).toBe(PAYMENT_PROVIDER_UNAVAILABLE);
+      expect(err).toBeInstanceOf(GoneException);
+      const body = (err as GoneException).getResponse() as { code: string };
+      expect(body.code).toBe(PAID_POINTS_PURCHASE_DISABLED);
       return true;
     });
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -230,68 +161,8 @@ describe('NuqatiService.initiatePurchaseCheckout', () => {
     expect(paymentFulfillment.fulfillSucceededPayment).not.toHaveBeenCalled();
   });
 
-  it('does not credit wallet when provider unavailable', async () => {
-    prisma.pointsPackage.findFirst.mockResolvedValue(activePackage);
-    await expect(
-      service.initiatePurchaseCheckout('u1', Role.FREELANCER, 'P100'),
-    ).rejects.toBeInstanceOf(ServiceUnavailableException);
-    expect(prisma.pointsTransaction.create).not.toHaveBeenCalled();
-    expect(prisma.pointsPurchase.create).not.toHaveBeenCalled();
-    expect(prisma.payment.create).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(paymentFulfillment.fulfillSucceededPayment).not.toHaveBeenCalled();
-  });
-
-  it('uses DB price/points and ignores client-supplied amounts', async () => {
-    paymentProvider = availableProvider();
-    paymentFulfillment = { fulfillSucceededPayment: vi.fn() };
-    const paymentUpdate = vi.fn().mockResolvedValue({});
-    service = new NuqatiService(
-      {
-        ...prisma,
-        payment: { create: vi.fn(), update: paymentUpdate },
-      } as never,
-      { get: vi.fn() } as never,
-      { create: vi.fn() } as never,
-      {} as never,
-      { log: vi.fn() } as never,
-      paymentProvider as never,
-      paymentFulfillment as never,
-    );
-    prisma.pointsPackage.findFirst.mockResolvedValue(activePackage);
-    prisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
-      const tx = {
-        payment: {
-          create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-            expect(data.amount).toBe(15);
-            expect(data.currency).toBe('LYD');
-            const metadata = data.metadata as Record<string, unknown>;
-            expect(metadata.pointsAmount).toBe(100);
-            expect(metadata.bonusPoints).toBe(10);
-            expect(metadata.expectedAmount).toBe(15);
-            return { id: 'pay-1', ...data };
-          }),
-        },
-        pointsPurchase: {
-          create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-            expect(data.pointsAmount).toBe(100);
-            expect(data.bonusPoints).toBe(10);
-            expect(data.priceLyd).toBe(activePackage.priceLyd);
-            return { id: 'purchase-1', ...data };
-          }),
-        },
-      };
-      return fn(tx);
-    });
-
-    await service.initiatePurchaseCheckout('u1', Role.FREELANCER, 'P100');
-    expect(paymentProvider.createCheckout).toHaveBeenCalledWith(
-      expect.objectContaining({
-        amount: 15,
-        currency: 'LYD',
-      }),
-    );
-    expect(paymentFulfillment.fulfillSucceededPayment).not.toHaveBeenCalled();
+  it('listPointsPackages returns empty (commerce disabled)', async () => {
+    expect(await service.listPointsPackages()).toEqual([]);
   });
 });
 

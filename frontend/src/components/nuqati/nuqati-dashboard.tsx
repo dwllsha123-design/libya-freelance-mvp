@@ -23,10 +23,12 @@ const TAB_KEYS = [
 function TaskCard({
   task,
   proposalCost,
+  purchaseEnabled,
   onPurchaseHint,
 }: {
   task: NuqatiTask;
   proposalCost: number;
+  purchaseEnabled: boolean;
   onPurchaseHint?: () => void;
 }) {
   const t = useTranslations('nuqati');
@@ -51,9 +53,11 @@ function TaskCard({
         {task.key === 'MONTHLY_APPLY' ? (
           <p className="mt-1 text-xs text-slate-500">
             {t('applyCostHint', { cost: proposalCost })}{' '}
-            <button type="button" onClick={onPurchaseHint} className="text-primary hover:underline">
-              {t('buyPointsLink')}
-            </button>
+            {purchaseEnabled && onPurchaseHint ? (
+              <button type="button" onClick={onPurchaseHint} className="text-primary hover:underline">
+                {t('buyPointsLink')}
+              </button>
+            ) : null}
           </p>
         ) : null}
         {task.maxProgress && task.maxProgress > 1 ? (
@@ -155,6 +159,10 @@ export function NuqatiDashboardView() {
       .filter((task) => !task.completed)
       .reduce((sum, task) => sum + task.reward, 0) ?? 0;
 
+  const packages = data?.packages ?? [];
+  const purchaseEnabled =
+    data?.paidPurchaseEnabled !== false && packages.length > 0;
+
   return (
     <div className="page-gutter page-shell page-shell--app page-shell--padded">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -193,22 +201,31 @@ export function NuqatiDashboardView() {
       </div>
 
       <section id="nuqati-purchase" className="mt-8 rounded-2xl border border-outline-variant/40 bg-surface p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold">{t('buyPointsTitle')}</h2>
-          <span className="text-sm text-slate-500">{t('inLyd')}</span>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {(data?.packages ?? []).map((pkg) => (
-            <Link
-              key={pkg.id}
-              href={`/dashboard/nuqati/checkout?packageId=${pkg.id}`}
-              className="rounded-xl border border-slate-200 p-4 text-start transition hover:border-primary"
-            >
-              <p className="text-xl font-bold text-primary">{pkg.points} {t('point')}</p>
-              <p className="mt-1 text-sm text-slate-600">{pkg.priceLyd} {tCommon('lyd')}</p>
-            </Link>
-          ))}
-        </div>
+        {purchaseEnabled ? (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-bold">{t('buyPointsTitle')}</h2>
+              <span className="text-sm text-slate-500">{t('inLyd')}</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {packages.map((pkg) => (
+                <Link
+                  key={pkg.id}
+                  href={`/dashboard/nuqati/checkout?packageId=${pkg.id}`}
+                  className="rounded-xl border border-slate-200 p-4 text-start transition hover:border-primary"
+                >
+                  <p className="text-xl font-bold text-primary">{pkg.points} {t('point')}</p>
+                  <p className="mt-1 text-sm text-slate-600">{pkg.priceLyd} {tCommon('lyd')}</p>
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-xl bg-slate-50 px-4 py-4 text-center">
+            <p className="font-semibold text-on-surface">{t('paidPurchaseDisabled')}</p>
+            <p className="mt-2 text-sm text-on-surface-variant">{t('paidPurchaseDisabledBody')}</p>
+          </div>
+        )}
       </section>
 
       <section className="mt-8 rounded-2xl border border-outline-variant/40 bg-surface p-6">
@@ -235,9 +252,16 @@ export function NuqatiDashboardView() {
               key={task.key}
               task={task}
               proposalCost={data?.proposalCost ?? 10}
-              onPurchaseHint={() => {
-                document.getElementById('nuqati-purchase')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              purchaseEnabled={purchaseEnabled}
+              onPurchaseHint={
+                purchaseEnabled
+                  ? () => {
+                      document
+                        .getElementById('nuqati-purchase')
+                        ?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  : undefined
+              }
             />
           ))}
         </div>

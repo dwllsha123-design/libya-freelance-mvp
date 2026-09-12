@@ -30,6 +30,8 @@ export interface NuqatiDashboard {
   earnedThisMonth: number;
   monthlyCap: number;
   proposalCost: number;
+  /** When false or omitted with empty packages, paid point purchase UI is hidden. */
+  paidPurchaseEnabled?: boolean;
   packages: {
     id: string;
     code?: string;
